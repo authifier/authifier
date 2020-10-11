@@ -1,0 +1,18 @@
+[package]
+name = "rauth"
+version = "0.1.0"
+authors = ["Paul Makles <paulmakles@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+snafu = "0.6.9"
+rocket_contrib = "0.4.5"
+rocket = { version = "0.4.5", default-features = false }
+serde = { version = "1.0.116", features = [ "derive" ] }
+mongodb = "1.1.1"
+validator = { version = "0.11", features = ["derive"] }
+lazy_static = "1.4.0"
+regex = "1.3.9"
+tokio = "0.2.22"
