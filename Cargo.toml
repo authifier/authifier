@@ -8,8 +8,8 @@ edition = "2018"
 
 [dependencies]
 snafu = "0.6.9"
-rocket_contrib = "0.4.5"
-rocket = { version = "0.4.5", default-features = false }
+rocket_contrib = { git = "https://github.com/SergioBenitez/Rocket" }
+rocket = { git = "https://github.com/SergioBenitez/Rocket", default-features = false }
 serde = { version = "1.0.116", features = [ "derive" ] }
 mongodb = "1.1.1"
 validator = { version = "0.11", features = ["derive"] }

@@ -8,5 +8,5 @@ async fn main() {
     let col = client.database("rauth").collection("accounts");
     let auth = rauth::auth::Auth::new(col);
     rauth::routes::mount(rocket::ignite(), "/", auth)
-        .launch();
+        .launch().await.unwrap();
 }

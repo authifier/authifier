@@ -5,17 +5,20 @@ use serde::Deserialize;
 use mongodb::Collection;
 use validator::{Validate, ValidationError};
 
-pub struct Session {
-    user_id: String,
-    session_token: String
-}
-
 pub struct Auth {
     collection: Collection
 }
 
 lazy_static! {
     static ref RE_USERNAME: Regex = Regex::new(r"^[A-z0-9-]+$").unwrap();
+}
+
+#[derive(Debug, Validate, Deserialize)]
+pub struct Session {
+    #[validate(length(min = 26, max = 26))]
+    user_id: String,
+    #[validate(length(min = 64, max = 128))]
+    session_token: String
 }
 
 #[derive(Debug, Validate, Deserialize)]
@@ -28,6 +31,20 @@ pub struct Create {
     password: String
 }
 
+#[derive(Debug, Validate, Deserialize)]
+pub struct Verify {
+    #[validate(length(min = 24, max = 64))]
+    pub code: String
+}
+
+#[derive(Debug, Validate, Deserialize)]
+pub struct Login {
+    #[validate(email)]
+    email: String,
+    #[validate(length(min = 8, max = 72))]
+    password: String
+}
+
 impl Auth {
     pub fn new(collection: Collection) -> Auth {
         Auth {
@@ -35,7 +52,7 @@ impl Auth {
         }
     }
 
-    pub fn create_account(&self, data: Create) -> Result<String> {
+    pub async fn create_account(&self, data: Create) -> Result<String> {
         data
             .validate()
             .map_err(|error| Error::FailedValidation { error })?;
@@ -43,19 +60,19 @@ impl Auth {
         Ok("bruh".to_string())
     }
 
-    pub fn verify_account(code: &str) -> Result<String> {
+    pub fn verify_account(&self, data: Verify) -> Result<String> {
         unimplemented!()
     }
     
-    pub fn fetch_verification(email: String) -> Result<String> {
+    pub fn fetch_verification(&self, email: String) -> Result<String> {
         unimplemented!()
     }
     
-    pub fn login(email: String, password: String) -> Result<Session> {
+    pub fn login(&self, data: Login) -> Result<Session> {
         unimplemented!()
     }
     
-    pub fn verify_session(session: &Session) -> Result<bool> {
+    pub fn verify_session(&self, session: Session) -> Result<bool> {
         unimplemented!()
     }
 }
