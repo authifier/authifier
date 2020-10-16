@@ -1,35 +1,31 @@
 use rocket::{ Rocket, State };
 use rocket_contrib::json::{ Json, JsonValue };
-use super::auth::{ Auth, Create, Verify };
+use super::auth::{ Auth, Create, Verify, Login };
 
 #[post("/create", data = "<data>")]
 async fn create(auth: State<'_, Auth>, data: Json<Create>) -> super::util::Result<JsonValue> {
-    /*match auth.inner().create_account(data.into_inner()) {
-        Ok(_) => {
-            json!({
-                "bruh": true
-            })
-        },
-        Err(error) => {
-            json!({
-                "error": error
-            })
-        }
-    }*/
+    let user_id = auth.inner().create_account(data.into_inner()).await?;
 
-    auth.inner().create_account(data.into_inner()).await?;
+    Ok(json!({
+        "user_id": user_id
+    }))
+}
+
+#[get("/verify/<code>")]
+async fn verify(auth: State<'_, Auth>, code: String) -> super::util::Result<JsonValue> {
+    auth.inner().verify_account(Verify { code }).await?;
 
     Ok(json!({ "nice": true }))
 }
 
-#[get("/verify/<code>")]
-fn verify(auth: State<Auth>, code: String) -> super::util::Result<JsonValue> {
-    auth.inner().verify_account(Verify { code })?;
+#[post("/login", data = "<data>")]
+async fn login(auth: State<'_, Auth>, data: Json<Login>) -> super::util::Result<JsonValue> {
+    let session = auth.inner().login(data.into_inner()).await?;
 
-    Ok(json!({ "nice": true }))
+    Ok(json!(session))
 }
 
 pub fn mount(rocket: Rocket, path: &str, auth: Auth) -> Rocket {
     rocket.manage(auth)
-        .mount(path, routes![ create ])
+        .mount(path, routes![ create, verify, login ])
 }
