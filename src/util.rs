@@ -18,6 +18,15 @@ pub enum Error {
     #[snafu(display("Encountered a database error."))]
     #[serde(rename = "database_error")]
     DatabaseError,
+    #[snafu(display("Encountered an internal error."))]
+    #[serde(rename = "internal_error")]
+    InternalError,
+    #[snafu(display("Missing authentication headers."))]
+    #[serde(rename = "missing_headers")]
+    MissingHeaders,
+    #[snafu(display("Invalid session information."))]
+    #[serde(rename = "invalid_session")]
+    InvalidSession,
     #[snafu(display("This user does not exist!"))]
     #[serde(rename = "unknown_user")]
     UnknownUser,
@@ -28,9 +37,13 @@ pub enum Error {
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
+/// HTTP response builder for Error enum
 impl<'r> Responder<'r, 'static> for Error {
     fn respond_to(self, _: &'r Request<'_>) -> response::Result<'static> {
+        // Serialize the error data structure into JSON.
         let string = json!(self).to_string();
+
+        // Build and send the request.
         Response::build()
             .sized_body(string.len(), Cursor::new(string))
             .header(ContentType::new("application", "json"))

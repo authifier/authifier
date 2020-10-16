@@ -4,9 +4,11 @@ use ulid::Ulid;
 use regex::Regex;
 use mongodb::bson::doc;
 use mongodb::Collection;
+use rocket::http::Status;
+use validator::{Validate};
 use serde::{Serialize, Deserialize};
 use mongodb::options::FindOneOptions;
-use validator::{Validate, ValidationError};
+use rocket::request::{self, Outcome, FromRequest, Request};
 
 pub struct Auth {
     collection: Collection
@@ -16,7 +18,7 @@ lazy_static! {
     static ref RE_USERNAME: Regex = Regex::new(r"^[A-z0-9-]+$").unwrap();
 }
 
-#[derive(Debug, Validate, Serialize, Deserialize)]
+#[derive(Debug, Clone, Validate, Serialize, Deserialize)]
 pub struct Session {
     #[validate(length(min = 26, max = 26))]
     pub user_id: String,
@@ -38,6 +40,12 @@ pub struct Create {
 pub struct Verify {
     #[validate(length(min = 24, max = 64))]
     pub code: String
+}
+
+#[derive(Debug, Validate, Deserialize)]
+pub struct FetchVerification {
+    #[validate(email)]
+    email: String
 }
 
 #[derive(Debug, Validate, Deserialize)]
@@ -76,7 +84,7 @@ impl Auth {
         Ok(user_id)
     }
 
-    pub async fn verify_account(&self, data: Verify) -> Result<String> {
+    pub async fn verify_account(&self, data: Verify) -> Result<()> {
         data
             .validate()
             .map_err(|error| Error::FailedValidation { error })?;
@@ -84,7 +92,11 @@ impl Auth {
         unimplemented!()
     }
     
-    pub async fn fetch_verification(&self, email: String) -> Result<String> {
+    pub async fn fetch_verification(&self, data: FetchVerification) -> Result<String> {
+        data
+            .validate()
+            .map_err(|error| Error::FailedValidation { error })?;
+
         unimplemented!()
     }
     
@@ -119,8 +131,63 @@ impl Auth {
         })
     }
     
-    pub async fn verify_session(&self, session: Session) -> Result<bool> {
-        unimplemented!()
+    pub async fn verify_session(&self, session: Session) -> Result<Session> {
+        self.collection.find_one(
+            doc! {
+                "_id": &session.user_id,
+                "password": &session.session_token
+            },
+            None
+        )
+        .await
+        .map_err(|_| Error::DatabaseError)?
+        .ok_or(Error::InvalidSession)?;
+
+        Ok(session)
     }
 }
 
+#[rocket::async_trait]
+impl<'a, 'r> FromRequest<'a, 'r> for Session {
+    type Error = Error;
+
+    async fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
+        let header_user_id = request
+            .headers()
+            .get("x-user-id")
+            .next()
+            .map(|x| x.to_string());
+
+        let header_session_token = request
+            .headers()
+            .get("x-session-token")
+            .next()
+            .map(|x| x.to_string());
+
+        match (
+            request.managed_state::<Auth>(),
+            header_user_id, header_session_token
+        ) {
+            (Some(auth), Some(user_id), Some(session_token)) => {
+                let session = Session {
+                    user_id,
+                    session_token
+                };
+
+                if let Ok(session) = auth
+                    .verify_session(session)
+                    .await {
+                    Outcome::Success(session)
+                } else {
+                    Outcome::Failure((Status::Forbidden, Error::InvalidSession))
+                }
+            }
+            (None, _, _) => {
+                Outcome::Failure((Status::InternalServerError, Error::InternalError))
+            }
+            (_, _, _) => {
+                Outcome::Failure((Status::Forbidden, Error::MissingHeaders))
+            }
+        }
+    }
+}
