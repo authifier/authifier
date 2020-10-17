@@ -1,6 +1,7 @@
 use super::util::{ Error, Result };
 
 use ulid::Ulid;
+use nanoid::nanoid;
 use mongodb::bson::doc;
 use mongodb::Collection;
 use validator::Validate;
@@ -21,8 +22,10 @@ lazy_static! {
 #[derive(Debug, Clone, Validate, Serialize, Deserialize)]
 pub struct Session {
     #[validate(length(min = 26, max = 26))]
+    pub id: Option<String>,
+    #[validate(length(min = 26, max = 26))]
     pub user_id: String,
-    #[validate(length(min = 64, max = 128))]
+    #[validate(length(min = 64, max = 64))]
     pub session_token: String
 }
 
@@ -36,7 +39,7 @@ pub struct Create {
 
 #[derive(Debug, Validate, Deserialize)]
 pub struct Verify {
-    #[validate(length(min = 24, max = 64))]
+    #[validate(length(min = 32, max = 32))]
     pub code: String
 }
 
@@ -51,7 +54,9 @@ pub struct Login {
     #[validate(email)]
     email: String,
     #[validate(length(min = 8, max = 72))]
-    password: String
+    password: String,
+    #[validate(length(min = 0, max = 72))]
+    device_name: Option<String>
 }
 
 impl Auth {
@@ -90,7 +95,11 @@ impl Auth {
             doc! {
                 "_id": &user_id,
                 "email": data.email,
-                "password": hash
+                "password": hash,
+                "verification": {
+                    "verified": true
+                },
+                "sessions": []
             },
             None
         )
@@ -136,6 +145,11 @@ impl Auth {
         .map_err(|_| Error::DatabaseError)?
         .ok_or(Error::UnknownUser)?;
 
+        let user_id = user
+            .get_str("_id")
+            .map_err(|_| Error::DatabaseError)?
+            .to_string();
+
         if !argon2::verify_encoded(
             user
                 .get_str("password")
@@ -145,26 +159,117 @@ impl Auth {
         .map_err(|_| Error::InternalError)? {
             Err(Error::WrongPassword)?
         }
+
+        let id = Ulid::new().to_string();
+        let session_token = nanoid!(64);
+        self.collection.update_one(
+            doc! {
+                "_id": &user_id
+            },
+            doc! {
+                "$push": {
+                    "sessions": {
+                        "id": &id,
+                        "token": &session_token,
+                        "friendly_name": data.device_name.unwrap_or_else(|| "Unknown device.".to_string())
+                    }
+                }
+            },
+            None
+        )
+        .await
+        .map_err(|_| Error::DatabaseError)?;
         
         Ok(Session {
-            user_id: user.get_str("_id").map_err(|_| Error::DatabaseError)?.to_string(),
-            session_token: data.password
+            id: Some(id),
+            user_id,
+            session_token
         })
     }
     
-    pub async fn verify_session(&self, session: Session) -> Result<Session> {
-        self.collection.find_one(
+    pub async fn verify_session(&self, mut session: Session) -> Result<Session> {
+        let doc = self.collection.find_one(
             doc! {
                 "_id": &session.user_id,
-                "password": &session.session_token
+                "sessions.token": &session.session_token
             },
-            None
+            FindOneOptions::builder()
+                .projection(
+                    doc! {
+                        "_id": 1,
+                        "sessions.$": 1
+                    }
+                )
+                .build()
         )
         .await
         .map_err(|_| Error::DatabaseError)?
         .ok_or(Error::InvalidSession)?;
 
+        session.id = Some(
+            doc
+                .get_array("sessions")
+                .map_err(|_| Error::DatabaseError)?
+                .into_iter()
+                .next()
+                .ok_or(Error::DatabaseError)?
+                .as_document()
+                .ok_or(Error::DatabaseError)?
+                .get_str("id")
+                .map_err(|_| Error::DatabaseError)?
+                .to_string()
+        );
+
         Ok(session)
+    }
+
+    pub async fn fetch_all_sessions(&self, session: Session) -> Result<Vec<super::db::AccountSessionInfo>> {
+        let user = self.collection.find_one(
+            doc! {
+                "_id": &session.user_id,
+                "sessions.token": &session.session_token
+            },
+            FindOneOptions::builder()
+                .projection(doc! { "sessions": 1 })
+                .build()
+        )
+        .await
+        .map_err(|_| Error::DatabaseError)?
+        .ok_or(Error::InvalidSession)?;
+
+        user
+            .get_array("sessions")
+            .map_err(|_| Error::DatabaseError)?
+            .into_iter()
+            .map(|x|
+                mongodb::bson::from_bson(x.clone())
+                    .map_err(|_| Error::InternalError)
+            )
+            .collect()
+    }
+
+    pub async fn deauth_session(&self, session: Session, target: String) -> Result<()> {
+        if self.collection.update_one(
+            doc! {
+                "_id": &session.user_id,
+                "sessions.token": &session.session_token
+            },
+            doc! {
+                "$pull": {
+                    "sessions": {
+                        "id": target
+                    }
+                }
+            },
+            None
+        )
+        .await
+        .map_err(|_| Error::DatabaseError)?
+        .modified_count == 0 {
+            Err(Error::OperationFailed)?
+        }
+
+        Ok(())
     }
 }
 
@@ -191,6 +296,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for Session {
         ) {
             (Some(auth), Some(user_id), Some(session_token)) => {
                 let session = Session {
+                    id: None,
                     user_id,
                     session_token
                 };

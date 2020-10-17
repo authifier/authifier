@@ -7,8 +7,15 @@ pub struct AccountVerification {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AccountSession {
+    pub id: String,
     pub token: String,
     pub friendly_name: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AccountSessionInfo {
+    pub id: String,
+    pub friendly_name: String
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -17,4 +24,6 @@ pub struct Account {
     pub id: String,
     pub email: String,
     pub password: String,
+    pub verification: AccountVerification,
+    pub sessions: Vec<AccountSession>
 }

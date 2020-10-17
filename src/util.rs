@@ -21,6 +21,9 @@ pub enum Error {
     #[snafu(display("Encountered an internal error."))]
     #[serde(rename = "internal_error")]
     InternalError,
+    #[snafu(display("Operation did not succeed."))]
+    #[serde(rename = "operation_failed")]
+    OperationFailed,
     #[snafu(display("Missing authentication headers."))]
     #[serde(rename = "missing_headers")]
     MissingHeaders,
