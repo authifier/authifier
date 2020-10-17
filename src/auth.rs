@@ -1,7 +1,6 @@
 use super::util::{ Error, Result };
 
 use ulid::Ulid;
-use regex::Regex;
 use mongodb::bson::doc;
 use mongodb::Collection;
 use validator::Validate;
@@ -17,7 +16,6 @@ pub struct Auth {
 
 lazy_static! {
     static ref ARGON_CONFIG: Config<'static> = Config::default();
-    static ref RE_USERNAME: Regex = Regex::new(r"^[A-z0-9-]+$").unwrap();
 }
 
 #[derive(Debug, Clone, Validate, Serialize, Deserialize)]
@@ -32,8 +30,6 @@ pub struct Session {
 pub struct Create {
     #[validate(email)]
     email: String,
-    #[validate(regex = "RE_USERNAME", length(min = 3, max = 32))]
-    username: String,
     #[validate(length(min = 8, max = 72))]
     password: String
 }
@@ -69,6 +65,18 @@ impl Auth {
         data
             .validate()
             .map_err(|error| Error::FailedValidation { error })?;
+
+        if self.collection.find_one(
+            doc! {
+                "email": &data.email
+            },
+            None
+        )
+        .await
+        .map_err(|_| Error::DatabaseError)?
+        .is_some() {
+            Err(Error::EmailInUse)?
+        }
         
         let hash = argon2::hash_encoded(
             data.password.as_bytes(),
@@ -82,7 +90,6 @@ impl Auth {
             doc! {
                 "_id": &user_id,
                 "email": data.email,
-                "username": data.username,
                 "password": hash
             },
             None

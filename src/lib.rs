@@ -6,3 +6,4 @@
 pub mod routes;
 pub mod auth;
 pub mod util;
+pub mod db;

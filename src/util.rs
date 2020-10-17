@@ -30,6 +30,9 @@ pub enum Error {
     #[snafu(display("This user does not exist!"))]
     #[serde(rename = "unknown_user")]
     UnknownUser,
+    #[snafu(display("Email is use."))]
+    #[serde(rename = "email_in_use")]
+    EmailInUse,
     #[snafu(display("Wrong password."))]
     #[serde(rename = "wrong_password")]
     WrongPassword,
