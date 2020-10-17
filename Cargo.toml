@@ -13,6 +13,7 @@ rocket = { git = "https://github.com/SergioBenitez/Rocket", default-features = f
 serde = { version = "1.0.116", features = [ "derive" ] }
 validator = { version = "0.11", features = ["derive"] }
 lazy_static = "1.4.0"
+rust-argon2 = "0.8.2"
 regex = "1.3.9"
 tokio = "0.2.22"
 mongodb = "1.1.1"

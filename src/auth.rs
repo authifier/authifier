@@ -4,8 +4,9 @@ use ulid::Ulid;
 use regex::Regex;
 use mongodb::bson::doc;
 use mongodb::Collection;
+use validator::Validate;
 use rocket::http::Status;
-use validator::{Validate};
+use argon2::{self, Config};
 use serde::{Serialize, Deserialize};
 use mongodb::options::FindOneOptions;
 use rocket::request::{self, Outcome, FromRequest, Request};
@@ -15,6 +16,7 @@ pub struct Auth {
 }
 
 lazy_static! {
+    static ref ARGON_CONFIG: Config<'static> = Config::default();
     static ref RE_USERNAME: Regex = Regex::new(r"^[A-z0-9-]+$").unwrap();
 }
 
@@ -68,13 +70,20 @@ impl Auth {
             .validate()
             .map_err(|error| Error::FailedValidation { error })?;
         
+        let hash = argon2::hash_encoded(
+            data.password.as_bytes(),
+            Ulid::new().to_string().as_bytes(),
+            &ARGON_CONFIG
+        )
+        .map_err(|_| Error::InternalError)?;
+        
         let user_id = Ulid::new().to_string();
         self.collection.insert_one(
             doc! {
                 "_id": &user_id,
                 "email": data.email,
                 "username": data.username,
-                "password": data.password
+                "password": hash
             },
             None
         )
@@ -120,9 +129,14 @@ impl Auth {
         .map_err(|_| Error::DatabaseError)?
         .ok_or(Error::UnknownUser)?;
 
-        if &data.password != user.get_str("password")
-            .map_err(|_| Error::DatabaseError)? {
-            Err(Error::WrongPassword)?;
+        if !argon2::verify_encoded(
+            user
+                .get_str("password")
+                .map_err(|_| Error::DatabaseError)?,
+            data.password.as_bytes()
+        )
+        .map_err(|_| Error::InternalError)? {
+            Err(Error::WrongPassword)?
         }
         
         Ok(Session {
