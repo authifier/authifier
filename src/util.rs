@@ -30,6 +30,9 @@ pub enum Error {
     #[snafu(display("Invalid session information."))]
     #[serde(rename = "invalid_session")]
     InvalidSession,
+    #[snafu(display("User account has not been verified."))]
+    #[serde(rename = "unverified_account")]
+    UnverifiedAccount,
     #[snafu(display("This user does not exist!"))]
     #[serde(rename = "unknown_user")]
     UnknownUser,

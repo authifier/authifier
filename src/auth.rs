@@ -137,13 +137,21 @@ impl Auth {
             FindOneOptions::builder()
                 .projection(doc! {
                     "_id": 1,
-                    "password": 1
+                    "password": 1,
+                    "verification.verified": 1
                 })
                 .build()
         )
         .await
         .map_err(|_| Error::DatabaseError)?
         .ok_or(Error::UnknownUser)?;
+
+        if !user.get_document("verification")
+            .map_err(|_| Error::DatabaseError)?
+            .get_bool("verified")
+            .map_err(|_| Error::DatabaseError)? {
+            Err(Error::UnverifiedAccount)?
+        }
 
         let user_id = user
             .get_str("_id")
