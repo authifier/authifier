@@ -1,4 +1,5 @@
 use rocket::{ Rocket, State };
+use rocket::http::{Cookie, CookieJar};
 use rocket_contrib::json::{ Json, JsonValue };
 use super::auth::{ Auth, Create, Verify, Login, Session };
 
@@ -16,8 +17,12 @@ async fn verify(auth: State<'_, Auth>, code: String) -> super::util::Result<()> 
 }
 
 #[post("/login", data = "<data>")]
-async fn login(auth: State<'_, Auth>, data: Json<Login>) -> super::util::Result<JsonValue> {
-    Ok(json!(auth.inner().login(data.into_inner()).await?))
+async fn login(auth: State<'_, Auth>, cookies: &CookieJar<'_>, data: Json<Login>) -> super::util::Result<JsonValue> {
+    let session = auth.inner().login(data.into_inner()).await?;
+    // ! FIXME: add a way to disable cookies
+    cookies.add(Cookie::new("session_uid", session.user_id.clone()));
+    cookies.add(Cookie::new("session_token", session.session_token.clone()));
+    Ok(json!(session))
 }
 
 #[get("/check")]
@@ -36,8 +41,10 @@ async fn deauth_session(auth: State<'_, Auth>, session: Session, id: String) -> 
 }
 
 #[get("/logout")]
-async fn logout(auth: State<'_, Auth>, session: Session) -> super::util::Result<()> {
+async fn logout(auth: State<'_, Auth>, cookies: &CookieJar<'_>, session: Session) -> super::util::Result<()> {
     let id = session.id.clone().unwrap();
+    cookies.remove(Cookie::named("session_uid"));
+    cookies.remove(Cookie::named("session_token"));
     auth.deauth_session(session, id).await
 }
 

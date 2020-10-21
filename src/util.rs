@@ -3,8 +3,8 @@ use snafu::Snafu;
 use std::io::Cursor;
 use serde::Serialize;
 use rocket::request::Request;
-use rocket::http::ContentType;
 use validator::ValidationErrors;
+use rocket::http::{ContentType, Status};
 use rocket::response::{self, Response, Responder};
 
 #[derive(Serialize, Debug, Snafu)]
@@ -56,6 +56,7 @@ impl<'r> Responder<'r, 'static> for Error {
         Response::build()
             .sized_body(string.len(), Cursor::new(string))
             .header(ContentType::new("application", "json"))
+            .status(Status::UnprocessableEntity)
             .ok()
     }
 }
