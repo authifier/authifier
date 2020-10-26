@@ -27,3 +27,10 @@ pub struct Account {
     pub verification: AccountVerification,
     pub sessions: Vec<AccountSession>
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AccountShort {
+    pub id: String,
+    pub email: String,
+    pub verified: bool
+}

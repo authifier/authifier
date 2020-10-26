@@ -1,3 +1,4 @@
+use super::db::AccountShort;
 use super::util::{ Error, Result };
 
 use ulid::Ulid;
@@ -192,6 +193,41 @@ impl Auth {
             id: Some(id),
             user_id,
             session_token
+        })
+    }
+    
+    pub async fn get_account(&self, session: Session) -> Result<AccountShort> {
+        let user = self.collection.find_one(
+            doc! {
+                "_id": &session.user_id,
+                "sessions.token": &session.session_token
+            },
+            FindOneOptions::builder()
+                .projection(doc! {
+                    "_id": 1,
+                    "email": 1,
+                    "verification.verified": 1
+                })
+                .build()
+        )
+        .await
+        .map_err(|_| Error::DatabaseError)?
+        .ok_or(Error::UnknownUser)?;
+
+        Ok(AccountShort {
+            id: user
+                .get_str("_id")
+                .map_err(|_| Error::DatabaseError)?
+                .to_string(),
+            email: user
+                .get_str("email")
+                .map_err(|_| Error::DatabaseError)?
+                .to_string(),
+            verified: user
+                .get_document("verification")
+                .map_err(|_| Error::DatabaseError)?
+                .get_bool("verified")
+                .map_err(|_| Error::DatabaseError)?
         })
     }
     
