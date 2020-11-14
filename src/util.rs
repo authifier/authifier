@@ -1,20 +1,18 @@
 use json;
+use rocket::http::{ContentType, Status};
+use rocket::request::Request;
+use rocket::response::{self, Responder, Response};
+use serde::Serialize;
 use snafu::Snafu;
 use std::io::Cursor;
-use serde::Serialize;
-use rocket::request::Request;
 use validator::ValidationErrors;
-use rocket::http::{ContentType, Status};
-use rocket::response::{self, Response, Responder};
 
 #[derive(Serialize, Debug, Snafu)]
 #[serde(tag = "type")]
 pub enum Error {
     #[snafu(display("Failed to validate fields."))]
     #[serde(rename = "failed_validation")]
-    FailedValidation {
-        error: ValidationErrors
-    },
+    FailedValidation { error: ValidationErrors },
     #[snafu(display("Encountered a database error."))]
     #[serde(rename = "database_error")]
     DatabaseError,

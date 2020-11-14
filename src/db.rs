@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AccountVerification {
@@ -15,7 +15,7 @@ pub struct AccountSession {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AccountSessionInfo {
     pub id: String,
-    pub friendly_name: String
+    pub friendly_name: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -25,12 +25,12 @@ pub struct Account {
     pub email: String,
     pub password: String,
     pub verification: AccountVerification,
-    pub sessions: Vec<AccountSession>
+    pub sessions: Vec<AccountSession>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AccountShort {
     pub id: String,
     pub email: String,
-    pub verified: bool
+    pub verified: bool,
 }

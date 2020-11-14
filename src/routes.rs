@@ -1,6 +1,6 @@
-use rocket::{ Rocket, State };
-use rocket_contrib::json::{ Json, JsonValue };
-use super::auth::{ Auth, Create, Verify, Login, Session };
+use super::auth::{Auth, Create, Login, Session, Verify};
+use rocket::{Rocket, State};
+use rocket_contrib::json::{Json, JsonValue};
 
 #[post("/create", data = "<data>")]
 async fn create(auth: State<'_, Auth>, data: Json<Create>) -> super::util::Result<JsonValue> {
@@ -36,7 +36,11 @@ async fn fetch_sessions(auth: State<'_, Auth>, session: Session) -> super::util:
 }
 
 #[delete("/sessions/<id>")]
-async fn deauth_session(auth: State<'_, Auth>, session: Session, id: String) -> super::util::Result<()> {
+async fn deauth_session(
+    auth: State<'_, Auth>,
+    session: Session,
+    id: String,
+) -> super::util::Result<()> {
     auth.deauth_session(session, id).await
 }
 
@@ -47,6 +51,17 @@ async fn logout(auth: State<'_, Auth>, session: Session) -> super::util::Result<
 }
 
 pub fn mount(rocket: Rocket, path: &str, auth: Auth) -> Rocket {
-    rocket.manage(auth)
-        .mount(path, routes![ create, verify, login, get_account, check, fetch_sessions, deauth_session, logout ])
+    rocket.manage(auth).mount(
+        path,
+        routes![
+            create,
+            verify,
+            login,
+            get_account,
+            check,
+            fetch_sessions,
+            deauth_session,
+            logout
+        ],
+    )
 }
