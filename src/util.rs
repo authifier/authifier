@@ -7,7 +7,7 @@ use snafu::Snafu;
 use std::io::Cursor;
 use validator::ValidationErrors;
 
-#[derive(Serialize, Debug, Snafu)]
+#[derive(Serialize, Deserialize, Debug, Snafu)]
 #[serde(tag = "type")]
 pub enum Error {
     #[snafu(display("Failed to validate fields."))]
