@@ -2,7 +2,7 @@ use json;
 use rocket::http::{ContentType, Status};
 use rocket::request::Request;
 use rocket::response::{self, Responder, Response};
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 use snafu::Snafu;
 use std::io::Cursor;
 use validator::ValidationErrors;
