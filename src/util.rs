@@ -2,12 +2,12 @@ use json;
 use rocket::http::{ContentType, Status};
 use rocket::request::Request;
 use rocket::response::{self, Responder, Response};
-use serde::{Serialize, Deserialize};
+use serde::Serialize;
 use snafu::Snafu;
 use std::io::Cursor;
 use validator::ValidationErrors;
 
-#[derive(Serialize, Deserialize, Debug, Snafu)]
+#[derive(Serialize, Debug, Snafu)]
 #[serde(tag = "type")]
 pub enum Error {
     #[snafu(display("Failed to validate fields."))]
