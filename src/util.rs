@@ -11,34 +11,24 @@ use validator::ValidationErrors;
 #[serde(tag = "type")]
 pub enum Error {
     #[snafu(display("Failed to validate fields."))]
-    #[serde(rename = "failed_validation")]
     FailedValidation { error: ValidationErrors },
     #[snafu(display("Encountered a database error."))]
-    #[serde(rename = "database_error")]
     DatabaseError,
     #[snafu(display("Encountered an internal error."))]
-    #[serde(rename = "internal_error")]
     InternalError,
     #[snafu(display("Operation did not succeed."))]
-    #[serde(rename = "operation_failed")]
     OperationFailed,
     #[snafu(display("Missing authentication headers."))]
-    #[serde(rename = "missing_headers")]
     MissingHeaders,
     #[snafu(display("Invalid session information."))]
-    #[serde(rename = "invalid_session")]
     InvalidSession,
     #[snafu(display("User account has not been verified."))]
-    #[serde(rename = "unverified_account")]
     UnverifiedAccount,
     #[snafu(display("This user does not exist!"))]
-    #[serde(rename = "unknown_user")]
     UnknownUser,
     #[snafu(display("Email is use."))]
-    #[serde(rename = "email_in_use")]
     EmailInUse,
     #[snafu(display("Wrong password."))]
-    #[serde(rename = "wrong_password")]
     WrongPassword,
 }
 
