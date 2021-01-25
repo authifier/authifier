@@ -7,8 +7,11 @@ async fn main() {
     let client = Client::with_uri_str("mongodb://localhost:27017/")
         .await
         .unwrap();
+    
     let col = client.database("rauth").collection("accounts");
-    let auth = rauth::auth::Auth::new(col);
+    let options = rauth::options::Options::new();
+
+    let auth = rauth::auth::Auth::new(col, options);
     rauth::routes::mount(rocket::ignite(), "/", auth)
         .launch()
         .await

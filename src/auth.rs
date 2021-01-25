@@ -1,3 +1,4 @@
+use super::options::Options;
 use super::db::AccountShort;
 use super::util::{Error, Result};
 
@@ -14,6 +15,7 @@ use validator::Validate;
 
 pub struct Auth {
     collection: Collection,
+    pub options: Options
 }
 
 lazy_static! {
@@ -61,8 +63,8 @@ pub struct Login {
 }
 
 impl Auth {
-    pub fn new(collection: Collection) -> Auth {
-        Auth { collection }
+    pub fn new(collection: Collection, options: Options) -> Auth {
+        Auth { collection, options }
     }
 
     pub async fn create_account(&self, data: Create) -> Result<String> {

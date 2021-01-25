@@ -1,5 +1,7 @@
 use super::auth::{Auth, Create, Login, Session, Verify};
+
 use rocket::{Rocket, State};
+use rocket::response::Redirect;
 use rocket_contrib::json::{Json, JsonValue};
 
 #[post("/create", data = "<data>")]
@@ -10,9 +12,9 @@ async fn create(auth: State<'_, Auth>, data: Json<Create>) -> super::util::Resul
 }
 
 #[get("/verify/<code>")]
-async fn verify(auth: State<'_, Auth>, code: String) -> super::util::Result<()> {
+async fn verify(auth: State<'_, Auth>, code: String) -> super::util::Result<Redirect> {
     auth.inner().verify_account(Verify { code }).await?;
-    unimplemented!()
+    Ok(Redirect::to(auth.options.verified_uri.clone()))
 }
 
 #[post("/login", data = "<data>")]

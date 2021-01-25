@@ -10,3 +10,4 @@ pub mod auth;
 pub mod db;
 pub mod routes;
 pub mod util;
+pub mod options;
