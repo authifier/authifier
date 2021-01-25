@@ -1,14 +1,14 @@
 use crate::auth::{Auth, Session};
 use crate::util::{Error, Result};
 
+use mongodb::bson::doc;
+use mongodb::options::FindOneOptions;
 use nanoid::nanoid;
 use rocket::State;
-use mongodb::bson::doc;
+use rocket_contrib::json::{Json, JsonValue};
 use serde::Deserialize;
 use ulid::Ulid;
 use validator::Validate;
-use mongodb::options::FindOneOptions;
-use rocket_contrib::json::{Json, JsonValue};
 
 #[derive(Debug, Validate, Deserialize)]
 pub struct Login {
@@ -40,27 +40,41 @@ impl Auth {
                     .build(),
             )
             .await
-            .map_err(|_| Error::DatabaseError { operation: "find_one", with: "account" })?
+            .map_err(|_| Error::DatabaseError {
+                operation: "find_one",
+                with: "account",
+            })?
             .ok_or(Error::UnknownUser)?;
 
         if user
             .get_document("verification")
-            .map_err(|_| Error::DatabaseError { operation: "get_document(verification)", with: "account" })?
+            .map_err(|_| Error::DatabaseError {
+                operation: "get_document(verification)",
+                with: "account",
+            })?
             .get_str("type")
-            .map_err(|_| Error::DatabaseError { operation: "get_str(type)", with: "account" })? == "Pending"
+            .map_err(|_| Error::DatabaseError {
+                operation: "get_str(type)",
+                with: "account",
+            })?
+            == "Pending"
         {
             return Err(Error::UnverifiedAccount);
         }
 
         let user_id = user
             .get_str("_id")
-            .map_err(|_| Error::DatabaseError { operation: "get_str(_id)", with: "account" })?
+            .map_err(|_| Error::DatabaseError {
+                operation: "get_str(_id)",
+                with: "account",
+            })?
             .to_string();
 
         if !argon2::verify_encoded(
-            user
-                .get_str("password")
-                .map_err(|_| Error::DatabaseError { operation: "get_str(password)", with: "account" })?,
+            user.get_str("password").map_err(|_| Error::DatabaseError {
+                operation: "get_str(password)",
+                with: "account",
+            })?,
             data.password.as_bytes(),
         )
         .map_err(|_| Error::InternalError)?

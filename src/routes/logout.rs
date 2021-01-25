@@ -1,8 +1,8 @@
 use crate::auth::{Auth, Session};
 use crate::util::{Error, Result};
 
-use rocket::State;
 use mongodb::bson::doc;
+use rocket::State;
 
 impl Auth {
     pub async fn deauth_session(&self, session: Session, target: String) -> Result<()> {
@@ -23,7 +23,10 @@ impl Auth {
                 None,
             )
             .await
-            .map_err(|_| Error::DatabaseError { operation: "update_one", with: "account" })?
+            .map_err(|_| Error::DatabaseError {
+                operation: "update_one",
+                with: "account",
+            })?
             .modified_count
             == 0
         {

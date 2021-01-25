@@ -4,7 +4,7 @@ pub struct SMTP {
     pub from: String,
     pub host: String,
     pub username: String,
-    pub password: String
+    pub password: String,
 }
 
 pub enum EmailVerification {
@@ -14,8 +14,8 @@ pub enum EmailVerification {
         verification_expiry: Duration,
         verification_ratelimit: Duration,
 
-        smtp: SMTP
-    }
+        smtp: SMTP,
+    },
 }
 
 pub struct Options {

@@ -2,15 +2,15 @@ use lettre::message::{header, MultiPart, SinglePart};
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::{Message, SmtpTransport, Transport};
 
-use crate::util::{Error, Result};
 use crate::options::SMTP;
+use crate::util::{Error, Result};
 
 pub fn send(smtp: &SMTP, message: Message) -> Result<()> {
     SmtpTransport::relay(&smtp.host)
         .unwrap()
         .credentials(Credentials::new(
             smtp.username.clone(),
-            smtp.password.clone()
+            smtp.password.clone(),
         ))
         .build()
         .send(&message)

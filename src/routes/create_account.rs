@@ -4,14 +4,14 @@ use crate::util::normalise_email;
 use crate::util::{Error, Result};
 
 use argon2::Config;
+use chrono::Utc;
+use mongodb::bson::{doc, Bson};
 use nanoid::nanoid;
 use rocket::State;
-use mongodb::bson::{Bson, doc};
 use rocket_contrib::json::{Json, JsonValue};
+use serde::Deserialize;
 use ulid::Ulid;
 use validator::Validate;
-use serde::Deserialize;
-use chrono::Utc;
 
 lazy_static! {
     static ref ARGON_CONFIG: Config<'static> = Config::default();
@@ -41,7 +41,10 @@ impl Auth {
                 None,
             )
             .await
-            .map_err(|_| Error::DatabaseError { operation: "find_one", with: "account" })?
+            .map_err(|_| Error::DatabaseError {
+                operation: "find_one",
+                with: "account",
+            })?
             .is_some()
         {
             return Err(Error::EmailInUse);
@@ -54,22 +57,28 @@ impl Auth {
         )
         .map_err(|_| Error::InternalError)?;
 
-        let verification = if let EmailVerification::Enabled { smtp, verification_expiry, verification_ratelimit, .. } = &self.options.email_verification {
+        let verification = if let EmailVerification::Enabled {
+            smtp,
+            verification_expiry,
+            verification_ratelimit,
+            ..
+        } = &self.options.email_verification
+        {
             let token = nanoid!(32);
             self.email_send_verification(&smtp, &data.email, &token)?;
 
             doc! {
-                "type": "Pending",
+                "status": "Pending",
                 "token": token,
                 "expiry": Bson::DateTime(Utc::now() + *verification_expiry),
                 "rate_limit": Bson::DateTime(Utc::now() + *verification_ratelimit)
             }
         } else {
             doc! {
-                "type": "Verified"
+                "status": "Verified"
             }
         };
-        
+
         let user_id = Ulid::new().to_string();
         self.collection
             .insert_one(
@@ -84,7 +93,10 @@ impl Auth {
                 None,
             )
             .await
-            .map_err(|_| Error::DatabaseError { operation: "insert_one", with: "account" })?;
+            .map_err(|_| Error::DatabaseError {
+                operation: "insert_one",
+                with: "account",
+            })?;
 
         Ok(user_id)
     }

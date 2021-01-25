@@ -1,3 +1,4 @@
+use regex::Regex;
 use rocket::http::{ContentType, Status};
 use rocket::request::Request;
 use rocket::response::{self, Responder, Response};
@@ -5,7 +6,6 @@ use serde::Serialize;
 use snafu::Snafu;
 use std::io::Cursor;
 use validator::ValidationErrors;
-use regex::Regex;
 
 #[derive(Serialize, Debug, Snafu)]
 #[serde(tag = "type")]
@@ -13,7 +13,10 @@ pub enum Error {
     #[snafu(display("Failed to validate fields."))]
     FailedValidation { error: ValidationErrors },
     #[snafu(display("Encountered a database error."))]
-    DatabaseError { operation: &'static str, with: &'static str },
+    DatabaseError {
+        operation: &'static str,
+        with: &'static str,
+    },
     #[snafu(display("Encountered an internal error."))]
     InternalError,
     #[snafu(display("Operation did not succeed."))]
@@ -32,6 +35,8 @@ pub enum Error {
     EmailFailed,
     #[snafu(display("Wrong password."))]
     WrongPassword,
+    #[snafu(display("This token is not valid."))]
+    InvalidToken,
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -58,7 +63,9 @@ pub fn normalise_email(original: String) -> String {
     }
 
     let split = SPLIT.captures(&original).unwrap();
-    let mut clean = SYMBOL_RE.replace_all(split.get(1).unwrap().as_str(), "").to_string();
+    let mut clean = SYMBOL_RE
+        .replace_all(split.get(1).unwrap().as_str(), "")
+        .to_string();
     clean.push_str(split.get(2).unwrap().as_str());
 
     clean

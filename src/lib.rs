@@ -8,7 +8,7 @@ extern crate rocket_contrib;
 
 pub mod auth;
 pub mod db;
-pub mod options;
 pub mod email;
+pub mod options;
 pub mod routes;
 pub mod util;

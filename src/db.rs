@@ -8,14 +8,14 @@ pub enum AccountVerification {
     Pending {
         token: String,
         expiry: DateTime,
-        rate_limit: DateTime
+        rate_limit: DateTime,
     },
     Moving {
         new_email: String,
         token: String,
         expiry: DateTime,
-        rate_limit: DateTime
-    }
+        rate_limit: DateTime,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize)]

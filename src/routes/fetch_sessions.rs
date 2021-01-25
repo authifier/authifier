@@ -1,17 +1,14 @@
 use crate::auth::{Auth, Session};
-use crate::util::{Error, Result};
 use crate::db::AccountSessionInfo;
+use crate::util::{Error, Result};
 
-use rocket::State;
 use mongodb::bson::doc;
-use rocket_contrib::json::JsonValue;
 use mongodb::options::FindOneOptions;
+use rocket::State;
+use rocket_contrib::json::JsonValue;
 
 impl Auth {
-    pub async fn fetch_all_sessions(
-        &self,
-        session: Session,
-    ) -> Result<Vec<AccountSessionInfo>> {
+    pub async fn fetch_all_sessions(&self, session: Session) -> Result<Vec<AccountSessionInfo>> {
         let user = self
             .collection
             .find_one(
@@ -24,13 +21,24 @@ impl Auth {
                     .build(),
             )
             .await
-            .map_err(|_| Error::DatabaseError { operation: "find_one", with: "account" })?
+            .map_err(|_| Error::DatabaseError {
+                operation: "find_one",
+                with: "account",
+            })?
             .ok_or(Error::InvalidSession)?;
 
         user.get_array("sessions")
-            .map_err(|_| Error::DatabaseError { operation: "get_array(sessions)", with: "account" })?
+            .map_err(|_| Error::DatabaseError {
+                operation: "get_array(sessions)",
+                with: "account",
+            })?
             .iter()
-            .map(|x| mongodb::bson::from_bson(x.clone()).map_err(|_| Error::DatabaseError { operation: "from_bson", with: "array(sessions)" }))
+            .map(|x| {
+                mongodb::bson::from_bson(x.clone()).map_err(|_| Error::DatabaseError {
+                    operation: "from_bson",
+                    with: "array(sessions)",
+                })
+            })
             .collect()
     }
 }

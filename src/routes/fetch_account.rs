@@ -1,11 +1,11 @@
-use crate::db::AccountShort;
 use crate::auth::{Auth, Session};
+use crate::db::AccountShort;
 use crate::util::{Error, Result};
 
+use mongodb::bson::{doc, from_document};
+use mongodb::options::FindOneOptions;
 use rocket::State;
 use rocket_contrib::json::JsonValue;
-use mongodb::options::FindOneOptions;
-use mongodb::bson::{doc, from_document};
 
 impl Auth {
     pub async fn get_account(&self, session: Session) -> Result<AccountShort> {
@@ -25,10 +25,16 @@ impl Auth {
                     .build(),
             )
             .await
-            .map_err(|_| Error::DatabaseError { operation: "find_one", with: "account" })?
+            .map_err(|_| Error::DatabaseError {
+                operation: "find_one",
+                with: "account",
+            })?
             .ok_or(Error::UnknownUser)?;
 
-        Ok(from_document(user).map_err(|_| Error::DatabaseError { operation: "from_document", with: "account" })?)
+        Ok(from_document(user).map_err(|_| Error::DatabaseError {
+            operation: "from_document",
+            with: "account",
+        })?)
     }
 }
 
