@@ -25,10 +25,10 @@ impl Auth {
                     .build(),
             )
             .await
-            .map_err(|_| Error::DatabaseError)?
+            .map_err(|_| Error::DatabaseError { operation: "find_one", with: "account" })?
             .ok_or(Error::UnknownUser)?;
 
-        Ok(from_document(user).map_err(|_| Error::DatabaseError)?)
+        Ok(from_document(user).map_err(|_| Error::DatabaseError { operation: "from_document", with: "account" })?)
     }
 }
 

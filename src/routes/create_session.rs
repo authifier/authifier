@@ -40,25 +40,27 @@ impl Auth {
                     .build(),
             )
             .await
-            .map_err(|_| Error::DatabaseError)?
+            .map_err(|_| Error::DatabaseError { operation: "find_one", with: "account" })?
             .ok_or(Error::UnknownUser)?;
 
         if user
             .get_document("verification")
-            .map_err(|_| Error::DatabaseError)?
+            .map_err(|_| Error::DatabaseError { operation: "get_document(verification)", with: "account" })?
             .get_str("type")
-            .map_err(|_| Error::DatabaseError)? == "Pending"
+            .map_err(|_| Error::DatabaseError { operation: "get_str(type)", with: "account" })? == "Pending"
         {
             return Err(Error::UnverifiedAccount);
         }
 
         let user_id = user
             .get_str("_id")
-            .map_err(|_| Error::DatabaseError)?
+            .map_err(|_| Error::DatabaseError { operation: "get_str(_id)", with: "account" })?
             .to_string();
 
         if !argon2::verify_encoded(
-            user.get_str("password").map_err(|_| Error::DatabaseError)?,
+            user
+                .get_str("password")
+                .map_err(|_| Error::DatabaseError { operation: "get_str(password)", with: "account" })?,
             data.password.as_bytes(),
         )
         .map_err(|_| Error::InternalError)?
@@ -84,7 +86,7 @@ impl Auth {
             None
         )
         .await
-        .map_err(|_| Error::DatabaseError)?;
+        .map_err(|_| Error::DatabaseError { operation: "update_one", with: "account" })?;
 
         Ok(Session {
             id: Some(id),

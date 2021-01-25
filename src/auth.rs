@@ -1,7 +1,10 @@
+use crate::{email::{self, generate_multipart}, options::SMTP};
+
 use super::options::{Options};
 use super::util::{Error, Result};
 
 use argon2::{self, Config};
+use lettre::Message;
 use mongodb::bson::doc;
 use mongodb::options::FindOneOptions;
 use mongodb::Collection;
@@ -59,23 +62,38 @@ impl Auth {
                     .build(),
             )
             .await
-            .map_err(|_| Error::DatabaseError)?
+            .map_err(|_| Error::DatabaseError { operation: "find_one", with: "account" })?
             .ok_or(Error::InvalidSession)?;
 
         session.id = Some(
             doc.get_array("sessions")
-                .map_err(|_| Error::DatabaseError)?
+                .map_err(|_| Error::DatabaseError { operation: "get_array(sessions)", with: "account" })?
                 .iter()
                 .next()
-                .ok_or(Error::DatabaseError)?
+                .ok_or(Error::DatabaseError { operation: "next()", with: "array(sessions)" })?
                 .as_document()
-                .ok_or(Error::DatabaseError)?
+                .ok_or(Error::DatabaseError { operation: "as_document()", with: "array(sessions)" })?
                 .get_str("id")
-                .map_err(|_| Error::DatabaseError)?
+                .map_err(|_| Error::DatabaseError { operation: "get_str(id)", with: "array(sessions)" })?
                 .to_string(),
         );
 
         Ok(session)
+    }
+
+    pub fn email_send_verification(&self, smtp: &SMTP, email: &String, code: &String) -> Result<()> {
+        let url = format!("{}/verify/{}", self.options.base_url, code);
+        let email = Message::builder()
+            .from(smtp.from.parse().unwrap())
+            .to(email.parse().unwrap())
+            .subject("Verify your email!")
+            .multipart(generate_multipart(
+                &format!("Verify your email here: {}", url),
+                &format!("<a href=\"{}\">Click to verify your email!</a>", url),
+            ))
+            .unwrap();
+
+        email::send(&smtp, email)
     }
 }
 

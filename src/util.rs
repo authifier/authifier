@@ -13,7 +13,7 @@ pub enum Error {
     #[snafu(display("Failed to validate fields."))]
     FailedValidation { error: ValidationErrors },
     #[snafu(display("Encountered a database error."))]
-    DatabaseError,
+    DatabaseError { operation: &'static str, with: &'static str },
     #[snafu(display("Encountered an internal error."))]
     InternalError,
     #[snafu(display("Operation did not succeed."))]
@@ -28,6 +28,8 @@ pub enum Error {
     UnknownUser,
     #[snafu(display("Email is use."))]
     EmailInUse,
+    #[snafu(display("Email failed to send."))]
+    EmailFailed,
     #[snafu(display("Wrong password."))]
     WrongPassword,
 }

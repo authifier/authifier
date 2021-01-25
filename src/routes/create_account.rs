@@ -41,7 +41,7 @@ impl Auth {
                 None,
             )
             .await
-            .map_err(|_| Error::DatabaseError)?
+            .map_err(|_| Error::DatabaseError { operation: "find_one", with: "account" })?
             .is_some()
         {
             return Err(Error::EmailInUse);
@@ -54,14 +54,15 @@ impl Auth {
         )
         .map_err(|_| Error::InternalError)?;
 
-        let verification = if let EmailVerification::Enabled { verification_expiry, verification_ratelimit, .. } = self.options.email_verification {
+        let verification = if let EmailVerification::Enabled { smtp, verification_expiry, verification_ratelimit, .. } = &self.options.email_verification {
             let token = nanoid!(32);
+            self.email_send_verification(&smtp, &data.email, &token)?;
 
             doc! {
                 "type": "Pending",
                 "token": token,
-                "expiry": Bson::DateTime(Utc::now() + verification_expiry),
-                "rate_limit": Bson::DateTime(Utc::now() + verification_ratelimit)
+                "expiry": Bson::DateTime(Utc::now() + *verification_expiry),
+                "rate_limit": Bson::DateTime(Utc::now() + *verification_ratelimit)
             }
         } else {
             doc! {
@@ -83,7 +84,7 @@ impl Auth {
                 None,
             )
             .await
-            .map_err(|_| Error::DatabaseError)?;
+            .map_err(|_| Error::DatabaseError { operation: "insert_one", with: "account" })?;
 
         Ok(user_id)
     }

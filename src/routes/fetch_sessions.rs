@@ -24,13 +24,13 @@ impl Auth {
                     .build(),
             )
             .await
-            .map_err(|_| Error::DatabaseError)?
+            .map_err(|_| Error::DatabaseError { operation: "find_one", with: "account" })?
             .ok_or(Error::InvalidSession)?;
 
         user.get_array("sessions")
-            .map_err(|_| Error::DatabaseError)?
+            .map_err(|_| Error::DatabaseError { operation: "get_array(sessions)", with: "account" })?
             .iter()
-            .map(|x| mongodb::bson::from_bson(x.clone()).map_err(|_| Error::InternalError))
+            .map(|x| mongodb::bson::from_bson(x.clone()).map_err(|_| Error::DatabaseError { operation: "from_bson", with: "array(sessions)" }))
             .collect()
     }
 }

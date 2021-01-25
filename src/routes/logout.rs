@@ -23,7 +23,7 @@ impl Auth {
                 None,
             )
             .await
-            .map_err(|_| Error::DatabaseError)?
+            .map_err(|_| Error::DatabaseError { operation: "update_one", with: "account" })?
             .modified_count
             == 0
         {

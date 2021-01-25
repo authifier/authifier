@@ -2,9 +2,10 @@ use lettre::message::{header, MultiPart, SinglePart};
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::{Message, SmtpTransport, Transport};
 
+use crate::util::{Error, Result};
 use crate::options::SMTP;
 
-fn send(smtp: &SMTP, message: Message) -> Result<(), String> {
+pub fn send(smtp: &SMTP, message: Message) -> Result<()> {
     SmtpTransport::relay(&smtp.host)
         .unwrap()
         .credentials(Credentials::new(
@@ -13,12 +14,12 @@ fn send(smtp: &SMTP, message: Message) -> Result<(), String> {
         ))
         .build()
         .send(&message)
-        .map_err(|err| format!("Failed to send email! {}", err.to_string()))?;
+        .map_err(|_| Error::EmailFailed)?;
 
     Ok(())
 }
 
-fn generate_multipart(text: &str, html: &str) -> MultiPart {
+pub fn generate_multipart(text: &str, html: &str) -> MultiPart {
     MultiPart::mixed().multipart(
         MultiPart::alternative()
             .singlepart(
