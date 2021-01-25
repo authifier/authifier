@@ -1,5 +1,5 @@
-use super::options::Options;
 use super::db::AccountShort;
+use super::options::Options;
 use super::util::{Error, Result};
 
 use argon2::{self, Config};
@@ -15,7 +15,7 @@ use validator::Validate;
 
 pub struct Auth {
     collection: Collection,
-    pub options: Options
+    pub options: Options,
 }
 
 lazy_static! {
@@ -64,7 +64,10 @@ pub struct Login {
 
 impl Auth {
     pub fn new(collection: Collection, options: Options) -> Auth {
-        Auth { collection, options }
+        Auth {
+            collection,
+            options,
+        }
     }
 
     pub async fn create_account(&self, data: Create) -> Result<String> {
@@ -83,7 +86,7 @@ impl Auth {
             .map_err(|_| Error::DatabaseError)?
             .is_some()
         {
-            Err(Error::EmailInUse)?
+            return Err(Error::EmailInUse);
         }
 
         let hash = argon2::hash_encoded(
@@ -155,7 +158,7 @@ impl Auth {
             .get_bool("verified")
             .map_err(|_| Error::DatabaseError)?
         {
-            Err(Error::UnverifiedAccount)?
+            return Err(Error::UnverifiedAccount);
         }
 
         let user_id = user
@@ -169,7 +172,7 @@ impl Auth {
         )
         .map_err(|_| Error::InternalError)?
         {
-            Err(Error::WrongPassword)?
+            return Err(Error::WrongPassword);
         }
 
         let id = Ulid::new().to_string();
@@ -258,7 +261,7 @@ impl Auth {
         session.id = Some(
             doc.get_array("sessions")
                 .map_err(|_| Error::DatabaseError)?
-                .into_iter()
+                .iter()
                 .next()
                 .ok_or(Error::DatabaseError)?
                 .as_document()
@@ -292,7 +295,7 @@ impl Auth {
 
         user.get_array("sessions")
             .map_err(|_| Error::DatabaseError)?
-            .into_iter()
+            .iter()
             .map(|x| mongodb::bson::from_bson(x.clone()).map_err(|_| Error::InternalError))
             .collect()
     }
@@ -319,7 +322,7 @@ impl Auth {
             .modified_count
             == 0
         {
-            Err(Error::OperationFailed)?
+            return Err(Error::OperationFailed);
         }
 
         Ok(())
