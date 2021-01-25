@@ -50,7 +50,6 @@ impl Auth {
 
         let verification: AccountVerification =
             from_document(document.clone())
-                .unwrap()
                 .map_err(|_| Error::DatabaseError {
                     operation: "from_document(verification)",
                     with: "account",
