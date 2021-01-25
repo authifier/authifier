@@ -12,7 +12,9 @@ async fn main() {
     let options = rauth::options::Options::new();
 
     let auth = rauth::auth::Auth::new(col, options);
-    rauth::routes::mount(rocket::ignite(), "/", auth)
+    rocket::ignite()
+        .manage(auth)
+        .mount("/", rauth::routes::routes())
         .launch()
         .await
         .unwrap();
