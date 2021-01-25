@@ -1,9 +1,9 @@
 use super::db::AccountShort;
-use super::options::Options;
-use super::util::{Error, Result};
+use super::options::{Options, EmailVerification};
+use super::util::{Error, Result, normalise_email};
 
 use argon2::{self, Config};
-use mongodb::bson::doc;
+use mongodb::bson::{Bson, doc, from_document};
 use mongodb::options::FindOneOptions;
 use mongodb::Collection;
 use nanoid::nanoid;
@@ -12,6 +12,7 @@ use rocket::request::{self, FromRequest, Outcome, Request};
 use serde::{Deserialize, Serialize};
 use ulid::Ulid;
 use validator::Validate;
+use chrono::Utc;
 
 pub struct Auth {
     collection: Collection,
@@ -74,11 +75,13 @@ impl Auth {
         data.validate()
             .map_err(|error| Error::FailedValidation { error })?;
 
+        let normalised = normalise_email(data.email.clone());
+
         if self
             .collection
             .find_one(
                 doc! {
-                    "email": &data.email
+                    "email_normalised": &normalised
                 },
                 None,
             )
@@ -96,16 +99,30 @@ impl Auth {
         )
         .map_err(|_| Error::InternalError)?;
 
+        let verification = if let EmailVerification::Enabled { verification_expiry, verification_ratelimit, .. } = self.options.email_verification {
+            let token = nanoid!(32);
+
+            doc! {
+                "type": "Pending",
+                "token": token,
+                "expiry": Bson::DateTime(Utc::now() + verification_expiry),
+                "rate_limit": Bson::DateTime(Utc::now() + verification_ratelimit)
+            }
+        } else {
+            doc! {
+                "type": "Verified"
+            }
+        };
+        
         let user_id = Ulid::new().to_string();
         self.collection
             .insert_one(
                 doc! {
                     "_id": &user_id,
-                    "email": data.email,
+                    "email": &data.email,
+                    "email_normalised": normalised,
                     "password": hash,
-                    "verification": {
-                        "verified": true
-                    },
+                    "verification": verification,
                     "sessions": []
                 },
                 None,
@@ -144,7 +161,7 @@ impl Auth {
                     .projection(doc! {
                         "_id": 1,
                         "password": 1,
-                        "verification.verified": 1
+                        "verification": 1
                     })
                     .build(),
             )
@@ -152,11 +169,11 @@ impl Auth {
             .map_err(|_| Error::DatabaseError)?
             .ok_or(Error::UnknownUser)?;
 
-        if !user
+        if user
             .get_document("verification")
             .map_err(|_| Error::DatabaseError)?
-            .get_bool("verified")
-            .map_err(|_| Error::DatabaseError)?
+            .get_str("type")
+            .map_err(|_| Error::DatabaseError)? == "Pending"
         {
             return Err(Error::UnverifiedAccount);
         }
@@ -214,7 +231,7 @@ impl Auth {
                     .projection(doc! {
                         "_id": 1,
                         "email": 1,
-                        "verification.verified": 1
+                        "verification": 1
                     })
                     .build(),
             )
@@ -222,21 +239,7 @@ impl Auth {
             .map_err(|_| Error::DatabaseError)?
             .ok_or(Error::UnknownUser)?;
 
-        Ok(AccountShort {
-            id: user
-                .get_str("_id")
-                .map_err(|_| Error::DatabaseError)?
-                .to_string(),
-            email: user
-                .get_str("email")
-                .map_err(|_| Error::DatabaseError)?
-                .to_string(),
-            verified: user
-                .get_document("verification")
-                .map_err(|_| Error::DatabaseError)?
-                .get_bool("verified")
-                .map_err(|_| Error::DatabaseError)?,
-        })
+        Ok(from_document(user).map_err(|_| Error::DatabaseError)?)
     }
 
     pub async fn verify_session(&self, mut session: Session) -> Result<Session> {

@@ -1,5 +1,21 @@
+use chrono::Duration;
+
+pub enum EmailVerification {
+    Disabled,
+    Enabled {
+        success_redirect_uri: String,
+        verification_expiry: Duration,
+        verification_ratelimit: Duration,
+
+        smtp_from: String,
+        smtp_host: String,
+        smtp_username: String,
+        smtp_password: String
+    }
+}
+
 pub struct Options {
-    pub verified_uri: String,
+    pub email_verification: EmailVerification,
     pub base_url: String,
 }
 
@@ -12,14 +28,14 @@ impl Default for Options {
 impl Options {
     pub fn new() -> Options {
         Options {
-            verified_uri: "https://example.com".to_string(),
+            email_verification: EmailVerification::Disabled,
             base_url: "https://example.com".to_string(),
         }
     }
 
-    pub fn verified_uri(self, verified_uri: String) -> Options {
+    pub fn email_verification(self, email_verification: EmailVerification) -> Options {
         Options {
-            verified_uri,
+            email_verification,
             ..self
         }
     }

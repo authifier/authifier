@@ -5,6 +5,7 @@ use serde::Serialize;
 use snafu::Snafu;
 use std::io::Cursor;
 use validator::ValidationErrors;
+use regex::Regex;
 
 #[derive(Serialize, Debug, Snafu)]
 #[serde(tag = "type")]
@@ -46,4 +47,17 @@ impl<'r> Responder<'r, 'static> for Error {
             .status(Status::UnprocessableEntity)
             .ok()
     }
+}
+
+pub fn normalise_email(original: String) -> String {
+    lazy_static! {
+        static ref SPLIT: Regex = Regex::new("([^@]+)(@.+)").unwrap();
+        static ref SYMBOL_RE: Regex = Regex::new("\\+.+|\\.").unwrap();
+    }
+
+    let split = SPLIT.captures(&original).unwrap();
+    let mut clean = SYMBOL_RE.replace_all(split.get(1).unwrap().as_str(), "").to_string();
+    clean.push_str(split.get(2).unwrap().as_str());
+
+    clean
 }
