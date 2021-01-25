@@ -1,13 +1,13 @@
 use rocket::Route;
 
-mod check_session;
-mod create_account;
-mod create_session;
-mod delete_session;
-mod fetch_account;
-mod fetch_sessions;
-mod logout;
-mod verify_account;
+pub mod check_session;
+pub mod create_account;
+pub mod create_session;
+pub mod delete_session;
+pub mod fetch_account;
+pub mod fetch_sessions;
+pub mod logout;
+pub mod verify_account;
 
 pub fn routes() -> Vec<Route> {
     routes![
