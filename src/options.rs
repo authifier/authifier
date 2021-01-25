@@ -1,5 +1,12 @@
 use chrono::Duration;
 
+pub struct SMTP {
+    pub from: String,
+    pub host: String,
+    pub username: String,
+    pub password: String
+}
+
 pub enum EmailVerification {
     Disabled,
     Enabled {
@@ -7,10 +14,7 @@ pub enum EmailVerification {
         verification_expiry: Duration,
         verification_ratelimit: Duration,
 
-        smtp_from: String,
-        smtp_host: String,
-        smtp_username: String,
-        smtp_password: String
+        smtp: SMTP
     }
 }
 
