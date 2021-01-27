@@ -52,9 +52,9 @@ impl Auth {
                 operation: "get_document(verification)",
                 with: "account",
             })?
-            .get_str("type")
+            .get_str("status")
             .map_err(|_| Error::DatabaseError {
-                operation: "get_str(type)",
+                operation: "get_str(status)",
                 with: "account",
             })?
             == "Pending"
