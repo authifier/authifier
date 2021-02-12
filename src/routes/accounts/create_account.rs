@@ -1,9 +1,9 @@
+use crate::ARGON_CONFIG;
 use crate::auth::Auth;
 use crate::options::EmailVerification;
 use crate::util::normalise_email;
 use crate::util::{Error, Result};
 
-use argon2::Config;
 use chrono::Utc;
 use mongodb::bson::{doc, Bson};
 use nanoid::nanoid;
@@ -12,10 +12,6 @@ use rocket_contrib::json::{Json, JsonValue};
 use serde::Deserialize;
 use ulid::Ulid;
 use validator::Validate;
-
-lazy_static! {
-    static ref ARGON_CONFIG: Config<'static> = Config::default();
-}
 
 #[derive(Debug, Validate, Deserialize)]
 pub struct Create {
@@ -52,7 +48,7 @@ impl Auth {
 
         let hash = argon2::hash_encoded(
             data.password.as_bytes(),
-            Ulid::new().to_string().as_bytes(),
+            nanoid!(24).as_bytes(),
             &ARGON_CONFIG,
         )
         .map_err(|_| Error::InternalError)?;
@@ -60,7 +56,6 @@ impl Auth {
         let verification = if let EmailVerification::Enabled {
             smtp,
             verification_expiry,
-            verification_ratelimit,
             ..
         } = &self.options.email_verification
         {
@@ -70,8 +65,7 @@ impl Auth {
             doc! {
                 "status": "Pending",
                 "token": token,
-                "expiry": Bson::DateTime(Utc::now() + *verification_expiry),
-                "rate_limit": Bson::DateTime(Utc::now() + *verification_ratelimit)
+                "expiry": Bson::DateTime(Utc::now() + *verification_expiry)
             }
         } else {
             doc! {

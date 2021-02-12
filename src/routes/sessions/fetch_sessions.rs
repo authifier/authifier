@@ -1,11 +1,17 @@
 use crate::auth::{Auth, Session};
-use crate::db::AccountSessionInfo;
 use crate::util::{Error, Result};
 
 use mongodb::bson::doc;
 use mongodb::options::FindOneOptions;
 use rocket::State;
 use rocket_contrib::json::JsonValue;
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AccountSessionInfo {
+    pub id: String,
+    pub friendly_name: String,
+}
 
 impl Auth {
     pub async fn fetch_all_sessions(&self, session: Session) -> Result<Vec<AccountSessionInfo>> {
@@ -13,8 +19,7 @@ impl Auth {
             .collection
             .find_one(
                 doc! {
-                    "_id": &session.user_id,
-                    "sessions.token": &session.session_token
+                    "_id": &session.user_id
                 },
                 FindOneOptions::builder()
                     .projection(doc! { "sessions": 1 })

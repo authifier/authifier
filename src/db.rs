@@ -8,13 +8,11 @@ pub enum AccountVerification {
     Pending {
         token: String,
         expiry: DateTime,
-        rate_limit: DateTime,
     },
     Moving {
         new_email: String,
         token: String,
         expiry: DateTime,
-        rate_limit: DateTime,
     },
 }
 
@@ -22,12 +20,6 @@ pub enum AccountVerification {
 pub struct AccountSession {
     pub id: String,
     pub token: String,
-    pub friendly_name: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct AccountSessionInfo {
-    pub id: String,
     pub friendly_name: String,
 }
 
@@ -40,12 +32,4 @@ pub struct Account {
     pub password: String,
     pub verification: AccountVerification,
     pub sessions: Vec<AccountSession>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct AccountShort {
-    #[serde(rename = "_id")]
-    pub id: String,
-    pub email: String,
-    pub verification: AccountVerification,
 }

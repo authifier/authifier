@@ -12,7 +12,6 @@ pub enum EmailVerification {
     Enabled {
         success_redirect_uri: String,
         verification_expiry: Duration,
-        verification_ratelimit: Duration,
 
         smtp: SMTP,
     },

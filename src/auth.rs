@@ -35,12 +35,6 @@ pub struct Session {
     pub session_token: String,
 }
 
-/* #[derive(Debug, Validate, Deserialize)]
-pub struct FetchVerification {
-    #[validate(email)]
-    email: String,
-} */
-
 impl Auth {
     pub fn new(collection: Collection, options: Options) -> Auth {
         Auth {
@@ -97,6 +91,48 @@ impl Auth {
         );
 
         Ok(session)
+    }
+
+    pub async fn fetch_password(&self, session: &Session) -> Result<String> {
+        let user = self
+            .collection
+            .find_one(
+                doc! {
+                    "_id": &session.user_id
+                },
+                FindOneOptions::builder()
+                    .projection(doc! {
+                        "_id": 1,
+                        "password": 1
+                    })
+                    .build(),
+            )
+            .await
+            .map_err(|_| Error::DatabaseError {
+                operation: "find_one",
+                with: "account",
+            })?
+            .ok_or(Error::UnknownUser)?;
+
+        Ok(
+            user.get_str("password")
+                .map_err(|_| Error::DatabaseError { operation: "get_str(password)", with: "account" })?
+                .to_string()
+        )
+    }
+
+    pub async fn verify_password(&self, session: &Session, password: String) -> Result<()> {
+        let hash = self.fetch_password(&session).await?;
+
+        if argon2::verify_encoded(
+            &hash,
+            password.as_bytes(),
+        )
+        .map_err(|_| Error::InternalError)? {
+            Ok(())
+        } else {
+            Err(Error::WrongPassword)
+        }
     }
 
     pub fn email_send_verification(

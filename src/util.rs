@@ -33,7 +33,7 @@ pub enum Error {
     EmailInUse,
     #[snafu(display("Email failed to send."))]
     EmailFailed,
-    #[snafu(display("Wrong password."))]
+    #[snafu(display("Wrong password."))] // merge with invalid uname
     WrongPassword,
     #[snafu(display("This token is not valid."))]
     InvalidToken,

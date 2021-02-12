@@ -10,8 +10,7 @@ impl Auth {
             .collection
             .update_one(
                 doc! {
-                    "_id": &session.user_id,
-                    "sessions.token": &session.session_token
+                    "_id": &session.user_id
                 },
                 doc! {
                     "$pull": {
