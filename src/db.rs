@@ -41,3 +41,11 @@ pub struct Account {
     pub sessions: Vec<AccountSession>,
     pub password_reset: Option<PasswordReset>,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Invite {
+    #[serde(rename = "_id")]
+    pub id: String,
+    pub used: Option<bool>,
+    pub claimed_by: Option<String>,
+}

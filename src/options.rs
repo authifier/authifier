@@ -1,4 +1,5 @@
 use chrono::Duration;
+use mongodb::Collection;
 
 pub struct SMTP {
     pub from: String,
@@ -35,6 +36,7 @@ pub enum EmailVerification {
 }
 
 pub struct Options {
+    pub invite_only_collection: Option<Collection>,
     pub email_verification: EmailVerification,
     pub base_url: String,
 }
@@ -48,8 +50,16 @@ impl Default for Options {
 impl Options {
     pub fn new() -> Options {
         Options {
+            invite_only_collection: None,
             email_verification: EmailVerification::Disabled,
             base_url: "https://example.com".to_string(),
+        }
+    }
+
+    pub fn invite_only_collection(self, col: Collection) -> Options {
+        Options {
+            invite_only_collection: Some(col),
+            ..self
         }
     }
 

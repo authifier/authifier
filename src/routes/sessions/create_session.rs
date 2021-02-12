@@ -44,7 +44,7 @@ impl Auth {
                 operation: "find_one",
                 with: "account",
             })?
-            .ok_or(Error::UnknownUser)?;
+            .ok_or(Error::InvalidCredentials)?;
 
         if user
             .get_document("verification")
@@ -79,7 +79,7 @@ impl Auth {
         )
         .map_err(|_| Error::InternalError)?
         {
-            return Err(Error::WrongPassword);
+            return Err(Error::InvalidCredentials);
         }
 
         let id = Ulid::new().to_string();

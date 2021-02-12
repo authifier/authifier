@@ -37,7 +37,7 @@ impl Auth {
                 operation: "find_one",
                 with: "account",
             })?
-            .ok_or(Error::UnknownUser)?;
+            .ok_or(Error::InvalidCredentials)?;
 
         Ok(from_document(user).map_err(|_| Error::DatabaseError {
             operation: "from_document",

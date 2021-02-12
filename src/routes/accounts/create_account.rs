@@ -18,12 +18,39 @@ pub struct Create {
     email: String,
     #[validate(length(min = 8, max = 72))]
     password: String,
+    invite: Option<String>,
 }
 
 impl Auth {
     pub async fn create_account(&self, data: Create) -> Result<String> {
         data.validate()
             .map_err(|error| Error::FailedValidation { error })?;
+
+        if let Some(col) = &self.options.invite_only_collection {
+            if let Some(code) = &data.invite {
+                if col
+                    .find_one(
+                        doc! {
+                            "_id": code,
+                            "used": {
+                                "$ne": true
+                            }
+                        },
+                        None,
+                    )
+                    .await
+                    .map_err(|_| Error::DatabaseError {
+                        operation: "find_one",
+                        with: "invites",
+                    })?
+                    .is_none()
+                {
+                    return Err(Error::InvalidInvite);
+                }
+            } else {
+                return Err(Error::MissingInvite);
+            }
+        }
 
         let normalised = self.check_email_is_use(data.email.clone()).await?;
         let hash = argon2::hash_encoded(
@@ -72,6 +99,28 @@ impl Auth {
                 operation: "insert_one",
                 with: "account",
             })?;
+
+        if let Some(col) = &self.options.invite_only_collection {
+            if let Some(code) = &data.invite {
+                col.update_one(
+                    doc! {
+                        "_id": code
+                    },
+                    doc! {
+                        "$set": {
+                            "used": true,
+                            "claimed_by": &user_id
+                        }
+                    },
+                    None,
+                )
+                .await
+                .map_err(|_| Error::DatabaseError {
+                    operation: "update_one",
+                    with: "invites",
+                })?;
+            }
+        }
 
         Ok(user_id)
     }

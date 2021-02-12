@@ -111,7 +111,7 @@ impl Auth {
                 operation: "find_one",
                 with: "account",
             })?
-            .ok_or(Error::UnknownUser)?;
+            .ok_or(Error::InvalidCredentials)?;
 
         Ok(user
             .get_str("password")
@@ -128,7 +128,7 @@ impl Auth {
         if argon2::verify_encoded(&hash, password.as_bytes()).map_err(|_| Error::InternalError)? {
             Ok(())
         } else {
-            Err(Error::WrongPassword)
+            Err(Error::InvalidCredentials)
         }
     }
 

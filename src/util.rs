@@ -35,10 +35,14 @@ pub enum Error {
     EmailInUse,
     #[snafu(display("Email failed to send."))]
     EmailFailed,
-    #[snafu(display("Wrong password."))] // merge with invalid uname
-    WrongPassword,
+    #[snafu(display("Email or password is incorrect."))]
+    InvalidCredentials,
     #[snafu(display("This token is not valid."))]
     InvalidToken,
+    #[snafu(display("This instance is invite-only, provide invite parameter."))]
+    MissingInvite,
+    #[snafu(display("This invite does not exist."))]
+    InvalidInvite,
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
