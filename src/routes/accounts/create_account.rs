@@ -36,12 +36,13 @@ impl Auth {
 
         let verification = if let EmailVerification::Enabled {
             smtp,
+            templates,
             verification_expiry,
             ..
         } = &self.options.email_verification
         {
             let token = nanoid!(32);
-            self.email_send_verification(&smtp, &data.email, &token)?;
+            self.email_send_verification(&smtp, &templates, &data.email, &token)?;
 
             doc! {
                 "status": "Pending",

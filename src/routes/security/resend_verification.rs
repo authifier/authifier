@@ -62,12 +62,13 @@ pub async fn resend_verification(
     if let AccountVerification::Pending { .. } = verification {
         if let EmailVerification::Enabled {
             smtp,
+            templates,
             verification_expiry,
             ..
         } = &auth.options.email_verification
         {
             let token = nanoid!(32);
-            auth.email_send_verification(&smtp, &data.email, &token)?;
+            auth.email_send_verification(&smtp, &templates, &data.email, &token)?;
 
             auth.collection.update_one(
                 doc! {

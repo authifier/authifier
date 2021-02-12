@@ -35,12 +35,13 @@ pub async fn change_email(
 
     let set = if let EmailVerification::Enabled {
         smtp,
+        templates,
         verification_expiry,
         ..
     } = &auth.options.email_verification
     {
         let token = nanoid!(32);
-        auth.email_send_verification(&smtp, &data.new_email, &token)?;
+        auth.email_send_verification(&smtp, &templates, &data.new_email, &token)?;
 
         doc! {
             "verification": {

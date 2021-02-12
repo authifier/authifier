@@ -1,20 +1,18 @@
-use crate::{
-    email::{self, generate_multipart},
-    options::SMTP,
-    util::normalise_email,
-};
+use crate::email;
+use crate::options::{Templates, SMTP};
+use crate::util::normalise_email;
 
 use super::options::Options;
 use super::util::{Error, Result};
 
 use argon2::{self, Config};
-use lettre::Message;
 use mongodb::bson::doc;
 use mongodb::options::FindOneOptions;
 use mongodb::Collection;
 use rocket::http::Status;
 use rocket::request::{self, FromRequest, Outcome, Request};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use validator::Validate;
 
 pub struct Auth {
@@ -161,20 +159,15 @@ impl Auth {
     pub fn email_send_verification(
         &self,
         smtp: &SMTP,
+        templates: &Templates,
         email: &String,
         code: &String,
     ) -> Result<()> {
         let url = format!("{}/verify/{}", self.options.base_url, code);
-        let email = Message::builder()
-            .from(smtp.from.parse().unwrap())
-            .to(email.parse().unwrap())
-            .subject("Verify your email!")
-            .multipart(generate_multipart(
-                &format!("Verify your email here: {}", url),
-                &format!("<a href=\"{}\">Click to verify your email!</a>", url),
-            ))
-            .unwrap();
-
+        let email =
+            templates
+                .verify_email
+                .generate_email(&smtp.from, email, json!({ "url": url }))?;
         email::send(&smtp, email)
     }
 }

@@ -7,12 +7,25 @@ pub struct SMTP {
     pub password: String,
 }
 
+pub struct Template {
+    pub title: &'static str,
+    pub text: &'static str,
+    pub html: &'static str,
+}
+
+pub struct Templates {
+    pub verify_email: Template,
+    pub reset_password: Template,
+    pub welcome: Option<Template>,
+}
+
 pub enum EmailVerification {
     Disabled,
     Enabled {
         success_redirect_uri: String,
         verification_expiry: Duration,
 
+        templates: Templates,
         smtp: SMTP,
     },
 }

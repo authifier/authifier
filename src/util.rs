@@ -21,6 +21,8 @@ pub enum Error {
     InternalError,
     #[snafu(display("Operation did not succeed."))]
     OperationFailed,
+    #[snafu(display("Failed to render Email template."))]
+    RenderFail,
     #[snafu(display("Missing authentication headers."))]
     MissingHeaders,
     #[snafu(display("Invalid session information."))]
