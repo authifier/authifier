@@ -9,7 +9,8 @@ async fn main() {
         .unwrap();
 
     let col = client.database("rauth").collection("accounts");
-    let options = rauth::options::Options::new();
+    let options = rauth::options::Options::new()
+        .invite_only_collection(client.database("rauth").collection("invites"));
 
     let auth = rauth::auth::Auth::new(col, options);
     rocket::ignite()
