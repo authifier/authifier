@@ -23,7 +23,10 @@ pub enum EmailVerification {
     Disabled,
     Enabled {
         success_redirect_uri: String,
+        password_reset_url: Option<String>,
+        
         verification_expiry: Duration,
+        password_reset_expiry: Duration,
 
         templates: Templates,
         smtp: SMTP,

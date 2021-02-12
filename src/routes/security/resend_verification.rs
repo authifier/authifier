@@ -76,9 +76,13 @@ pub async fn resend_verification(
                         .map_err(|_| Error::DatabaseError { operation: "get_str(_id)", with: "account" })?
                 },
                 doc! {
-                    "status": "Pending",
-                    "token": token,
-                    "expiry": Bson::DateTime(Utc::now() + *verification_expiry)
+                    "$set": {
+                        "verification": {
+                            "status": "Pending",
+                            "token": token,
+                            "expiry": Bson::DateTime(Utc::now() + *verification_expiry)
+                        }
+                    }
                 },
                 None
             )

@@ -1,6 +1,5 @@
 use crate::auth::Auth;
 use crate::options::EmailVerification;
-use crate::util::normalise_email;
 use crate::util::{Error, Result};
 use crate::ARGON_CONFIG;
 

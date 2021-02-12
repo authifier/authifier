@@ -170,6 +170,26 @@ impl Auth {
                 .generate_email(&smtp.from, email, json!({ "url": url }))?;
         email::send(&smtp, email)
     }
+
+    pub fn email_send_password_reset(
+        &self,
+        smtp: &SMTP,
+        templates: &Templates,
+        redirect: &Option<String>,
+        email: &String,
+        code: &String,
+    ) -> Result<()> {
+        let url = redirect
+            .clone()
+            .unwrap_or_else(|| format!("{}/reset/{}", self.options.base_url, code));
+        
+        let email =
+            templates
+                .reset_password
+                .generate_email(&smtp.from, email, json!({ "url": url }))?;
+        
+        email::send(&smtp, email)
+    }
 }
 
 #[rocket::async_trait]
