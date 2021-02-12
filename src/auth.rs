@@ -179,9 +179,13 @@ impl Auth {
         email: &String,
         code: &String,
     ) -> Result<()> {
-        let url = redirect
-            .clone()
-            .unwrap_or_else(|| format!("{}/reset/{}", self.options.base_url, code));
+        let url = format!(
+            "{}/{}",
+            redirect
+                .clone()
+                .unwrap_or_else(|| format!("{}/reset", self.options.base_url)),
+            code
+        );
 
         let email =
             templates
