@@ -1,13 +1,16 @@
-use crate::{auth::{Auth, Session}, options::EmailVerification};
 use crate::util::Error;
+use crate::{
+    auth::{Auth, Session},
+    options::EmailVerification,
+};
 
-use mongodb::bson::{Bson, doc};
+use chrono::Utc;
+use mongodb::bson::{doc, Bson};
 use nanoid::nanoid;
 use rocket::State;
 use rocket_contrib::json::Json;
-use validator::Validate;
 use serde::Deserialize;
-use chrono::Utc;
+use validator::Validate;
 
 #[derive(Debug, Validate, Deserialize)]
 pub struct ChangeEmail {
@@ -25,8 +28,9 @@ pub async fn change_email(
 ) -> crate::util::Result<()> {
     data.validate()
         .map_err(|error| Error::FailedValidation { error })?;
-    
-    auth.verify_password(&session, data.password.clone()).await?;
+
+    auth.verify_password(&session, data.password.clone())
+        .await?;
     let normalised = auth.check_email_is_use(data.new_email.clone()).await?;
 
     let set = if let EmailVerification::Enabled {
@@ -64,10 +68,13 @@ pub async fn change_email(
             doc! {
                 "$set": set
             },
-            None
+            None,
         )
         .await
-        .map_err(|_| Error::DatabaseError { operation: "update_one", with: "accounts" })?;
+        .map_err(|_| Error::DatabaseError {
+            operation: "update_one",
+            with: "accounts",
+        })?;
 
     Ok(())
 }

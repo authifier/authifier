@@ -1,12 +1,12 @@
 use crate::auth::{Auth, Session};
-use crate::util::{Error, Result};
 use crate::db::AccountVerification;
+use crate::util::{Error, Result};
 
 use mongodb::bson::{doc, from_document};
 use mongodb::options::FindOneOptions;
 use rocket::State;
 use rocket_contrib::json::JsonValue;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AccountShort {

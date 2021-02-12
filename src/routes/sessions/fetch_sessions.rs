@@ -5,7 +5,7 @@ use mongodb::bson::doc;
 use mongodb::options::FindOneOptions;
 use rocket::State;
 use rocket_contrib::json::JsonValue;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AccountSessionInfo {

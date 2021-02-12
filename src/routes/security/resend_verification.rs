@@ -1,10 +1,13 @@
-use crate::db::AccountVerification;
 use crate::auth::Auth;
+use crate::db::AccountVerification;
 use crate::options::EmailVerification;
 use crate::util::Error;
 
 use chrono::Utc;
-use mongodb::{bson::{Bson, doc, from_document}, options::FindOneOptions};
+use mongodb::{
+    bson::{doc, from_document, Bson},
+    options::FindOneOptions,
+};
 use nanoid::nanoid;
 use rocket::State;
 use rocket_contrib::json::Json;
@@ -51,18 +54,18 @@ pub async fn resend_verification(
         })?;
 
     let verification: AccountVerification =
-        from_document(document.clone())
-        .map_err(|_| Error::DatabaseError {
+        from_document(document.clone()).map_err(|_| Error::DatabaseError {
             operation: "from_document(verification)",
             with: "account",
         })?;
-    
+
     if let AccountVerification::Pending { .. } = verification {
         if let EmailVerification::Enabled {
             smtp,
             verification_expiry,
             ..
-        } = &auth.options.email_verification {
+        } = &auth.options.email_verification
+        {
             let token = nanoid!(32);
             auth.email_send_verification(&smtp, &data.email, &token)?;
 

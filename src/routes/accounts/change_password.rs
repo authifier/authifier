@@ -1,13 +1,13 @@
-use crate::ARGON_CONFIG;
 use crate::auth::{Auth, Session};
 use crate::util::Error;
+use crate::ARGON_CONFIG;
 
 use mongodb::bson::doc;
+use nanoid::nanoid;
 use rocket::State;
 use rocket_contrib::json::Json;
-use validator::Validate;
 use serde::Deserialize;
-use nanoid::nanoid;
+use validator::Validate;
 
 #[derive(Debug, Validate, Deserialize)]
 pub struct ChangePassword {
@@ -25,8 +25,9 @@ pub async fn change_password(
 ) -> crate::util::Result<()> {
     data.validate()
         .map_err(|error| Error::FailedValidation { error })?;
-    
-    auth.verify_password(&session, data.password.clone()).await?;
+
+    auth.verify_password(&session, data.password.clone())
+        .await?;
 
     let hash = argon2::hash_encoded(
         data.new_password.as_bytes(),
@@ -45,10 +46,13 @@ pub async fn change_password(
                     "password": &hash
                 }
             },
-            None
+            None,
         )
         .await
-        .map_err(|_| Error::DatabaseError { operation: "update_one", with: "accounts" })?;
+        .map_err(|_| Error::DatabaseError {
+            operation: "update_one",
+            with: "accounts",
+        })?;
 
     Ok(())
 }

@@ -49,11 +49,10 @@ impl Auth {
             })?;
 
         let verification: AccountVerification =
-            from_document(document.clone())
-                .map_err(|_| Error::DatabaseError {
-                    operation: "from_document(verification)",
-                    with: "account",
-                })?;
+            from_document(document.clone()).map_err(|_| Error::DatabaseError {
+                operation: "from_document(verification)",
+                with: "account",
+            })?;
 
         let update = match verification {
             AccountVerification::Verified => unreachable!(),

@@ -1,4 +1,8 @@
-use crate::{email::{self, generate_multipart}, options::SMTP, util::normalise_email};
+use crate::{
+    email::{self, generate_multipart},
+    options::SMTP,
+    util::normalise_email,
+};
 
 use super::options::Options;
 use super::util::{Error, Result};
@@ -111,21 +115,19 @@ impl Auth {
             })?
             .ok_or(Error::UnknownUser)?;
 
-        Ok(
-            user.get_str("password")
-                .map_err(|_| Error::DatabaseError { operation: "get_str(password)", with: "account" })?
-                .to_string()
-        )
+        Ok(user
+            .get_str("password")
+            .map_err(|_| Error::DatabaseError {
+                operation: "get_str(password)",
+                with: "account",
+            })?
+            .to_string())
     }
 
     pub async fn verify_password(&self, session: &Session, password: String) -> Result<()> {
         let hash = self.fetch_password(&session).await?;
 
-        if argon2::verify_encoded(
-            &hash,
-            password.as_bytes(),
-        )
-        .map_err(|_| Error::InternalError)? {
+        if argon2::verify_encoded(&hash, password.as_bytes()).map_err(|_| Error::InternalError)? {
             Ok(())
         } else {
             Err(Error::WrongPassword)
