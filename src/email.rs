@@ -29,19 +29,19 @@ pub fn generate_multipart(text: &str, html: &str) -> MultiPart {
     MultiPart::mixed().multipart(
         MultiPart::alternative()
             .singlepart(
-                SinglePart::quoted_printable()
+                SinglePart::builder()
                     .header(header::ContentType(
                         "text/plain; charset=utf8".parse().unwrap(),
                     ))
-                    .body(text),
+                    .body(text.to_string()),
             )
             .multipart(
                 MultiPart::related().singlepart(
-                    SinglePart::eight_bit()
+                    SinglePart::builder()
                         .header(header::ContentType(
                             "text/html; charset=utf8".parse().unwrap(),
                         ))
-                        .body(html),
+                        .body(html.to_string()),
                 ),
             ),
     )
