@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Reset Password</title>
+    </head>
+    <body>
+        <form method="POST">
+            <h4>rAuth password reset</h4>
+            <input type="hidden" name="token" id="token" />
+            <input type="password" name="password" placeholder="Enter new password." minlength="8" maxlength="72" />
+            <input type="submit" value="Change" />
+        </form>
+    </body>
+    <script>
+        document.getElementById('token').value = window.location.pathname.split('/').pop();
+    </script>
+</html>

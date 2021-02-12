@@ -2,12 +2,13 @@ use crate::options::EmailVerification;
 use crate::util::{Error, Result};
 use crate::{auth::Auth, db::AccountVerification, util::normalise_email};
 
-use mongodb::bson::doc;
+use mongodb::bson::{Bson, doc};
 use mongodb::{bson::from_document, options::FindOneOptions};
 use rocket::response::Redirect;
 use rocket::State;
 use serde::Deserialize;
 use validator::Validate;
+use chrono::Utc;
 
 #[derive(Debug, Validate, Deserialize)]
 pub struct Verify {
@@ -24,7 +25,10 @@ impl Auth {
             .collection
             .find_one(
                 doc! {
-                    "verification.token": &data.code
+                    "verification.token": &data.code,
+                    "verification.expiry": {
+                        "$gte": Bson::DateTime(Utc::now())
+                    }
                 },
                 FindOneOptions::builder()
                     .projection(doc! {
@@ -103,11 +107,11 @@ pub async fn verify_account(auth: State<'_, Auth>, code: String) -> crate::util:
     auth.inner().verify_account(Verify { code }).await?;
 
     if let EmailVerification::Enabled {
-        success_redirect_uri,
+        welcome_redirect_uri,
         ..
     } = &auth.options.email_verification
     {
-        Ok(Redirect::to(success_redirect_uri.clone()))
+        Ok(Redirect::to(welcome_redirect_uri.clone()))
     } else {
         unreachable!()
     }

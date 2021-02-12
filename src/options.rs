@@ -22,6 +22,7 @@ pub struct Templates {
 pub enum EmailVerification {
     Disabled,
     Enabled {
+        welcome_redirect_uri: String,
         success_redirect_uri: String,
         password_reset_url: Option<String>,
         

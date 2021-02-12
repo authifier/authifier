@@ -13,6 +13,8 @@ pub fn routes() -> Vec<Route> {
         accounts::verify_account::verify_account,
         security::resend_verification::resend_verification,
         security::send_password_reset::send_password_reset,
+        security::reset_password_form::reset_password_form,
+        security::reset_password::reset_password,
         sessions::check_session::check_session,
         sessions::create_session::create_session,
         sessions::delete_session::delete_session,

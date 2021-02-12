@@ -19,7 +19,7 @@ pub struct ResetPassword {
     email: String,
 }
 
-#[post("/reset", data = "<data>")]
+#[post("/send_reset", data = "<data>")]
 pub async fn send_password_reset(
     auth: State<'_, Auth>,
     data: Json<ResetPassword>,
