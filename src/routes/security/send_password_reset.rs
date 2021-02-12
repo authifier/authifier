@@ -43,8 +43,8 @@ pub async fn send_password_reset(
         .map_err(|_| Error::DatabaseError {
             operation: "find_one",
             with: "account",
-        })
-    ? {
+        })?
+    {
         if let EmailVerification::Enabled {
             smtp,
             templates,
@@ -54,7 +54,13 @@ pub async fn send_password_reset(
         } = &auth.options.email_verification
         {
             let token = nanoid!(32);
-            auth.email_send_password_reset(&smtp, &templates, password_reset_url, &data.email, &token)?;
+            auth.email_send_password_reset(
+                &smtp,
+                &templates,
+                password_reset_url,
+                &data.email,
+                &token,
+            )?;
 
             auth.collection.update_one(
                 doc! {

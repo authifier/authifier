@@ -2,13 +2,13 @@ use crate::options::EmailVerification;
 use crate::util::{Error, Result};
 use crate::{auth::Auth, db::AccountVerification, util::normalise_email};
 
-use mongodb::bson::{Bson, doc};
+use chrono::Utc;
+use mongodb::bson::{doc, Bson};
 use mongodb::{bson::from_document, options::FindOneOptions};
 use rocket::response::Redirect;
 use rocket::State;
 use serde::Deserialize;
 use validator::Validate;
-use chrono::Utc;
 
 #[derive(Debug, Validate, Deserialize)]
 pub struct Verify {

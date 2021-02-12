@@ -25,7 +25,7 @@ pub enum EmailVerification {
         welcome_redirect_uri: String,
         success_redirect_uri: String,
         password_reset_url: Option<String>,
-        
+
         verification_expiry: Duration,
         password_reset_expiry: Duration,
 

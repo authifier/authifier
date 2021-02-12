@@ -182,12 +182,12 @@ impl Auth {
         let url = redirect
             .clone()
             .unwrap_or_else(|| format!("{}/reset/{}", self.options.base_url, code));
-        
+
         let email =
             templates
                 .reset_password
                 .generate_email(&smtp.from, email, json!({ "url": url }))?;
-        
+
         email::send(&smtp, email)
     }
 }

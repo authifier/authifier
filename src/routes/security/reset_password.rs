@@ -1,14 +1,14 @@
-use crate::{ARGON_CONFIG, options::EmailVerification};
 use crate::auth::Auth;
 use crate::util::Error;
+use crate::{options::EmailVerification, ARGON_CONFIG};
 
+use chrono::Utc;
+use mongodb::bson::{doc, Bson};
 use nanoid::nanoid;
-use mongodb::bson::{Bson, doc};
-use rocket::{State, response::Redirect};
+use rocket::{response::Redirect, State};
 use rocket_contrib::json::Json;
 use serde::Deserialize;
 use validator::Validate;
-use chrono::Utc;
 
 #[derive(Debug, Validate, Deserialize)]
 pub struct ResetPassword {
@@ -26,7 +26,8 @@ pub async fn reset_password(
     data.validate()
         .map_err(|error| Error::FailedValidation { error })?;
 
-    if auth.collection
+    if auth
+        .collection
         .find_one(
             doc! {
                 "password_reset.token": &data.token,
@@ -34,11 +35,15 @@ pub async fn reset_password(
                     "$gte": Bson::DateTime(Utc::now())
                 }
             },
-            None
+            None,
         )
         .await
-        .map_err(|_| Error::DatabaseError { operation: "find_one", with: "account" })?
-        .is_none() {
+        .map_err(|_| Error::DatabaseError {
+            operation: "find_one",
+            with: "account",
+        })?
+        .is_none()
+    {
         return Err(Error::InvalidToken);
     }
 

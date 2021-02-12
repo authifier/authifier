@@ -19,7 +19,7 @@ pub enum AccountVerification {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PasswordReset {
     token: String,
-    expiry: DateTime
+    expiry: DateTime,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -39,5 +39,5 @@ pub struct Account {
 
     pub verification: AccountVerification,
     pub sessions: Vec<AccountSession>,
-    pub password_reset: Option<PasswordReset>
+    pub password_reset: Option<PasswordReset>,
 }
