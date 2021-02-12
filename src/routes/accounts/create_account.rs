@@ -26,26 +26,7 @@ impl Auth {
         data.validate()
             .map_err(|error| Error::FailedValidation { error })?;
 
-        let normalised = normalise_email(data.email.clone());
-
-        if self
-            .collection
-            .find_one(
-                doc! {
-                    "email_normalised": &normalised
-                },
-                None,
-            )
-            .await
-            .map_err(|_| Error::DatabaseError {
-                operation: "find_one",
-                with: "account",
-            })?
-            .is_some()
-        {
-            return Err(Error::EmailInUse);
-        }
-
+        let normalised = self.check_email_is_use(data.email.clone()).await?;
         let hash = argon2::hash_encoded(
             data.password.as_bytes(),
             nanoid!(24).as_bytes(),

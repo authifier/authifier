@@ -1,7 +1,4 @@
-use crate::{
-    email::{self, generate_multipart},
-    options::SMTP,
-};
+use crate::{email::{self, generate_multipart}, options::SMTP, util::normalise_email};
 
 use super::options::Options;
 use super::util::{Error, Result};
@@ -132,6 +129,30 @@ impl Auth {
             Ok(())
         } else {
             Err(Error::WrongPassword)
+        }
+    }
+
+    pub async fn check_email_is_use(&self, email: String) -> Result<String> {
+        let normalised = normalise_email(email);
+
+        if self
+            .collection
+            .find_one(
+                doc! {
+                    "email_normalised": &normalised
+                },
+                None,
+            )
+            .await
+            .map_err(|_| Error::DatabaseError {
+                operation: "find_one",
+                with: "account",
+            })?
+            .is_some()
+        {
+            Err(Error::EmailInUse)
+        } else {
+            Ok(normalised)
         }
     }
 

@@ -6,10 +6,11 @@ pub mod sessions;
 
 pub fn routes() -> Vec<Route> {
     routes![
-        accounts::fetch_account::fetch_account,
-        accounts::create_account::create_account,
-        accounts::verify_account::verify_account,
+        accounts::change_email::change_email,
         accounts::change_password::change_password,
+        accounts::create_account::create_account,
+        accounts::fetch_account::fetch_account,
+        accounts::verify_account::verify_account,
         
         sessions::check_session::check_session,
         sessions::create_session::create_session,
