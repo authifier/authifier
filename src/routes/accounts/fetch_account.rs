@@ -12,8 +12,7 @@ use serde::{Deserialize, Serialize};
 pub struct AccountShort {
     #[serde(rename = "_id")]
     pub id: String,
-    pub email: String,
-    pub verification: AccountVerification,
+    pub email: String
 }
 
 impl Auth {
@@ -27,8 +26,7 @@ impl Auth {
                 FindOneOptions::builder()
                     .projection(doc! {
                         "_id": 1,
-                        "email": 1,
-                        "verification": 1
+                        "email": 1
                     })
                     .build(),
             )
