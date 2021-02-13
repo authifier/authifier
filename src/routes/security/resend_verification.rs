@@ -18,6 +18,7 @@ use validator::Validate;
 pub struct ResendVerification {
     #[validate(email)]
     email: String,
+    captcha: Option<String>,
 }
 
 #[post("/resend", data = "<data>")]
@@ -25,6 +26,8 @@ pub async fn resend_verification(
     auth: State<'_, Auth>,
     data: Json<ResendVerification>,
 ) -> crate::util::Result<()> {
+    auth.verify_captcha(&data.captcha).await?;
+
     let doc = auth
         .collection
         .find_one(

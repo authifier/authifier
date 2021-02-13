@@ -18,12 +18,15 @@ pub struct Login {
     password: String,
     #[validate(length(min = 0, max = 72))]
     device_name: Option<String>,
+    captcha: Option<String>,
 }
 
 impl Auth {
     pub async fn login(&self, data: Login) -> Result<Session> {
         data.validate()
             .map_err(|error| Error::FailedValidation { error })?;
+
+        self.verify_captcha(&data.captcha).await?;
 
         let user = self
             .collection

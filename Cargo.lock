@@ -844,6 +844,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "hyper-tls"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d979acc56dcb5b8dddba3917601745e877576475aa046df3226eabdecef78eed"
+dependencies = [
+ "bytes 0.5.6",
+ "hyper",
+ "native-tls",
+ "tokio",
+ "tokio-tls",
+]
+
+[[package]]
 name = "hyperx"
 version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1848,7 +1861,7 @@ dependencies = [
 
 [[package]]
 name = "rauth"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "chrono",
  "handlebars",
@@ -1858,6 +1871,7 @@ dependencies = [
  "mongodb",
  "nanoid",
  "regex",
+ "reqwest",
  "rocket",
  "rocket_contrib",
  "rust-argon2",
@@ -1955,12 +1969,14 @@ dependencies = [
  "http-body",
  "hyper",
  "hyper-rustls",
+ "hyper-tls",
  "ipnet",
  "js-sys",
  "lazy_static",
  "log",
  "mime",
  "mime_guess",
+ "native-tls",
  "percent-encoding",
  "pin-project-lite 0.2.4",
  "rustls 0.18.1",
@@ -1969,6 +1985,7 @@ dependencies = [
  "serde_urlencoded",
  "tokio",
  "tokio-rustls 0.14.1",
+ "tokio-tls",
  "url",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -2683,6 +2700,16 @@ dependencies = [
  "rustls 0.18.1",
  "tokio",
  "webpki",
+]
+
+[[package]]
+name = "tokio-tls"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9a70f4fcd7b3b24fb194f837560168208f669ca8cb70d0c4b862944452396343"
+dependencies = [
+ "native-tls",
+ "tokio",
 ]
 
 [[package]]

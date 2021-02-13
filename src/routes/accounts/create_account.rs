@@ -19,12 +19,15 @@ pub struct Create {
     #[validate(length(min = 8, max = 72))]
     password: String,
     invite: Option<String>,
+    captcha: Option<String>,
 }
 
 impl Auth {
     pub async fn create_account(&self, data: Create) -> Result<String> {
         data.validate()
             .map_err(|error| Error::FailedValidation { error })?;
+
+        self.verify_captcha(&data.captcha).await?;
 
         if let Some(col) = &self.options.invite_only_collection {
             if let Some(code) = &data.invite {

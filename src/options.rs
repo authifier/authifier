@@ -38,6 +38,7 @@ pub enum EmailVerification {
 pub struct Options {
     pub invite_only_collection: Option<Collection>,
     pub email_verification: EmailVerification,
+    pub hcaptcha_secret: Option<String>,
     pub base_url: String,
 }
 
@@ -52,6 +53,7 @@ impl Options {
         Options {
             invite_only_collection: None,
             email_verification: EmailVerification::Disabled,
+            hcaptcha_secret: None,
             base_url: "https://example.com".to_string(),
         }
     }
@@ -66,6 +68,13 @@ impl Options {
     pub fn email_verification(self, email_verification: EmailVerification) -> Options {
         Options {
             email_verification,
+            ..self
+        }
+    }
+
+    pub fn hcaptcha_secret(self, secret: String) -> Options {
+        Options {
+            hcaptcha_secret: Some(secret),
             ..self
         }
     }

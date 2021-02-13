@@ -17,6 +17,7 @@ use validator::Validate;
 pub struct ResetPassword {
     #[validate(email)]
     email: String,
+    captcha: Option<String>,
 }
 
 #[post("/send_reset", data = "<data>")]
@@ -24,6 +25,8 @@ pub async fn send_password_reset(
     auth: State<'_, Auth>,
     data: Json<ResetPassword>,
 ) -> crate::util::Result<()> {
+    auth.verify_captcha(&data.captcha).await?;
+
     if let Some(doc) = auth
         .collection
         .find_one(

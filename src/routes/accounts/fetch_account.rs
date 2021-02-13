@@ -1,5 +1,4 @@
 use crate::auth::{Auth, Session};
-use crate::db::AccountVerification;
 use crate::util::{Error, Result};
 
 use mongodb::bson::{doc, from_document};
@@ -12,7 +11,7 @@ use serde::{Deserialize, Serialize};
 pub struct AccountShort {
     #[serde(rename = "_id")]
     pub id: String,
-    pub email: String
+    pub email: String,
 }
 
 impl Auth {

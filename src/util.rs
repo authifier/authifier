@@ -25,6 +25,8 @@ pub enum Error {
     RenderFail,
     #[snafu(display("Missing authentication headers."))]
     MissingHeaders,
+    #[snafu(display("Captcha verification failed."))]
+    CaptchaFailed,
     #[snafu(display("Invalid session information."))]
     InvalidSession,
     #[snafu(display("User account has not been verified."))]

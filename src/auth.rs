@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::email;
 use crate::options::{Templates, SMTP};
 use crate::util::normalise_email;
@@ -32,6 +34,11 @@ pub struct Session {
     pub user_id: String,
     #[validate(length(min = 64, max = 64))]
     pub session_token: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct CaptchaResponse {
+    success: bool,
 }
 
 impl Auth {
@@ -193,6 +200,39 @@ impl Auth {
                 .generate_email(&smtp.from, email, json!({ "url": url }))?;
 
         email::send(&smtp, email)
+    }
+
+    pub async fn verify_captcha(&self, user_token: &Option<String>) -> Result<()> {
+        if let Some(key) = &self.options.hcaptcha_secret {
+            if let Some(token) = user_token {
+                let mut map = HashMap::new();
+                map.insert("secret", key.clone());
+                map.insert("response", token.to_string());
+
+                let client = reqwest::Client::new();
+                if let Ok(response) = client
+                    .post("https://hcaptcha.com/siteverify")
+                    .form(&map)
+                    .send()
+                    .await
+                {
+                    let result: CaptchaResponse =
+                        response.json().await.map_err(|_| Error::CaptchaFailed)?;
+
+                    if result.success {
+                        Ok(())
+                    } else {
+                        Err(Error::CaptchaFailed)
+                    }
+                } else {
+                    Err(Error::CaptchaFailed)
+                }
+            } else {
+                Err(Error::CaptchaFailed)
+            }
+        } else {
+            Ok(())
+        }
     }
 }
 
