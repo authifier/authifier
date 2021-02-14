@@ -4,10 +4,7 @@ use crate::options::EmailVerification;
 use crate::util::Error;
 
 use chrono::Utc;
-use mongodb::{
-    bson::{doc, from_document, Bson},
-    options::FindOneOptions,
-};
+use mongodb::{bson::{doc, from_document, Bson}, options::{Collation, FindOneOptions}};
 use nanoid::nanoid;
 use rocket::State;
 use rocket_contrib::json::Json;
@@ -40,6 +37,7 @@ pub async fn resend_verification(
                     "_id": 1,
                     "verification": 1
                 })
+                .collation(Collation::builder().locale("en").strength(2).build())
                 .build(),
         )
         .await

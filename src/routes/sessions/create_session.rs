@@ -1,7 +1,7 @@
 use crate::auth::{Auth, Session};
 use crate::util::{Error, Result};
 
-use mongodb::bson::doc;
+use mongodb::{bson::doc, options::Collation};
 use mongodb::options::FindOneOptions;
 use nanoid::nanoid;
 use rocket::State;
@@ -40,6 +40,7 @@ impl Auth {
                         "password": 1,
                         "verification": 1
                     })
+                    .collation(Collation::builder().locale("en").strength(2).build())
                     .build(),
             )
             .await

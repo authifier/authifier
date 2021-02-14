@@ -8,7 +8,7 @@ use super::options::Options;
 use super::util::{Error, Result};
 
 use argon2::{self, Config};
-use mongodb::bson::doc;
+use mongodb::{bson::doc, options::Collation};
 use mongodb::options::FindOneOptions;
 use mongodb::Collection;
 use rocket::http::Status;
@@ -148,7 +148,9 @@ impl Auth {
                 doc! {
                     "email_normalised": &normalised
                 },
-                None,
+                FindOneOptions::builder()
+                    .collation(Collation::builder().locale("en").strength(2).build())
+                    .build(),
             )
             .await
             .map_err(|_| Error::DatabaseError {

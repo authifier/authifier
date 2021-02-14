@@ -3,10 +3,7 @@ use crate::options::EmailVerification;
 use crate::util::Error;
 
 use chrono::Utc;
-use mongodb::{
-    bson::{doc, Bson},
-    options::FindOneOptions,
-};
+use mongodb::{bson::{doc, Bson}, options::{Collation, FindOneOptions}};
 use nanoid::nanoid;
 use rocket::State;
 use rocket_contrib::json::Json;
@@ -40,6 +37,7 @@ pub async fn send_password_reset(
                 .projection(doc! {
                     "_id": 1
                 })
+                .collation(Collation::builder().locale("en").strength(2).build())
                 .build(),
         )
         .await
