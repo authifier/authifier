@@ -7,7 +7,6 @@ use crate::util::normalise_email;
 use super::options::Options;
 use super::util::{Error, Result};
 
-use argon2::{self, Config};
 use mongodb::{bson::doc, options::Collation};
 use mongodb::options::FindOneOptions;
 use mongodb::Collection;
@@ -16,14 +15,11 @@ use rocket::request::{self, FromRequest, Outcome, Request};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use validator::Validate;
+use nanoid::nanoid;
 
 pub struct Auth {
     pub collection: Collection,
     pub options: Options,
-}
-
-lazy_static! {
-    static ref ARGON_CONFIG: Config<'static> = Config::default();
 }
 
 #[derive(Debug, Clone, Validate, Serialize, Deserialize)]
@@ -137,6 +133,15 @@ impl Auth {
         } else {
             Err(Error::InvalidCredentials)
         }
+    }
+
+    pub async fn hash_password(&self, password: String) -> Result<String> {
+        Ok(argon2::hash_encoded(
+            password.as_bytes(),
+            nanoid!(24).as_bytes(),
+            &crate::ARGON_CONFIG,
+        )
+        .map_err(|_| Error::InternalError)?)
     }
 
     pub async fn check_email_is_use(&self, email: String) -> Result<String> {

@@ -3,47 +3,30 @@ use rocket::http::{ContentType, Status};
 use rocket::request::Request;
 use rocket::response::{self, Responder, Response};
 use serde::Serialize;
-use snafu::Snafu;
 use std::io::Cursor;
 use validator::ValidationErrors;
 
-#[derive(Serialize, Debug, Snafu)]
+#[derive(Serialize, Debug)]
 #[serde(tag = "type")]
 pub enum Error {
-    #[snafu(display("Failed to validate fields."))]
     FailedValidation { error: ValidationErrors },
-    #[snafu(display("Encountered a database error."))]
     DatabaseError {
         operation: &'static str,
         with: &'static str,
     },
-    #[snafu(display("Encountered an internal error."))]
     InternalError,
-    #[snafu(display("Operation did not succeed."))]
     OperationFailed,
-    #[snafu(display("Failed to render Email template."))]
     RenderFail,
-    #[snafu(display("Missing authentication headers."))]
     MissingHeaders,
-    #[snafu(display("Captcha verification failed."))]
     CaptchaFailed,
-    #[snafu(display("Invalid session information."))]
     InvalidSession,
-    #[snafu(display("User account has not been verified."))]
     UnverifiedAccount,
-    #[snafu(display("This user does not exist!"))]
     UnknownUser,
-    #[snafu(display("Email is use."))]
     EmailInUse,
-    #[snafu(display("Email failed to send."))]
     EmailFailed,
-    #[snafu(display("Email or password is incorrect."))]
     InvalidCredentials,
-    #[snafu(display("This token is not valid."))]
     InvalidToken,
-    #[snafu(display("This instance is invite-only, provide invite parameter."))]
     MissingInvite,
-    #[snafu(display("This invite does not exist."))]
     InvalidInvite,
 }
 
@@ -52,6 +35,25 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 /// HTTP response builder for Error enum
 impl<'r> Responder<'r, 'static> for Error {
     fn respond_to(self, _: &'r Request<'_>) -> response::Result<'static> {
+        let status = match self {
+            Error::FailedValidation { .. } => Status::BadRequest,
+            Error::DatabaseError { .. } => Status::InternalServerError,
+            Error::InternalError => Status::InternalServerError,
+            Error::OperationFailed => Status::InternalServerError,
+            Error::RenderFail => Status::InternalServerError,
+            Error::MissingHeaders => Status::BadRequest,
+            Error::CaptchaFailed => Status::BadRequest,
+            Error::InvalidSession => Status::Forbidden,
+            Error::UnverifiedAccount => Status::BadRequest,
+            Error::UnknownUser => Status::NotFound,
+            Error::EmailInUse => Status::Conflict,
+            Error::EmailFailed => Status::InternalServerError,
+            Error::InvalidCredentials => Status::Forbidden,
+            Error::InvalidToken => Status::Forbidden,
+            Error::MissingInvite => Status::BadRequest,
+            Error::InvalidInvite => Status::BadRequest,
+        };
+
         // Serialize the error data structure into JSON.
         let string = json!(self).to_string();
 
@@ -59,7 +61,7 @@ impl<'r> Responder<'r, 'static> for Error {
         Response::build()
             .sized_body(string.len(), Cursor::new(string))
             .header(ContentType::new("application", "json"))
-            .status(Status::UnprocessableEntity)
+            .status(status)
             .ok()
     }
 }

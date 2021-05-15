@@ -1,7 +1,6 @@
 use crate::auth::Auth;
 use crate::options::EmailVerification;
 use crate::util::{Error, Result};
-use crate::ARGON_CONFIG;
 
 use chrono::Utc;
 use mongodb::bson::{doc, Bson};
@@ -16,7 +15,7 @@ use validator::Validate;
 pub struct Create {
     #[validate(email)]
     email: String,
-    #[validate(length(min = 8, max = 72))]
+    #[validate(length(min = 8, max = 1024))]
     password: String,
     invite: Option<String>,
     captcha: Option<String>,
@@ -56,12 +55,7 @@ impl Auth {
         }
 
         let normalised = self.check_email_is_use(data.email.clone()).await?;
-        let hash = argon2::hash_encoded(
-            data.password.as_bytes(),
-            nanoid!(24).as_bytes(),
-            &ARGON_CONFIG,
-        )
-        .map_err(|_| Error::InternalError)?;
+        let hash = self.hash_password(data.password.clone()).await?;
 
         let verification = if let EmailVerification::Enabled {
             smtp,

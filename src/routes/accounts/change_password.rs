@@ -1,9 +1,7 @@
 use crate::auth::{Auth, Session};
 use crate::util::Error;
-use crate::ARGON_CONFIG;
 
 use mongodb::bson::doc;
-use nanoid::nanoid;
 use rocket::State;
 use rocket_contrib::json::Json;
 use serde::Deserialize;
@@ -11,9 +9,9 @@ use validator::Validate;
 
 #[derive(Debug, Validate, Deserialize)]
 pub struct ChangePassword {
-    #[validate(length(min = 8, max = 72))]
+    #[validate(length(min = 8, max = 1024))]
     password: String,
-    #[validate(length(min = 8, max = 72))]
+    #[validate(length(min = 8, max = 1024))]
     new_password: String,
 }
 
@@ -29,13 +27,7 @@ pub async fn change_password(
     auth.verify_password(&session, data.password.clone())
         .await?;
 
-    let hash = argon2::hash_encoded(
-        data.new_password.as_bytes(),
-        nanoid!(24).as_bytes(),
-        &ARGON_CONFIG,
-    )
-    .map_err(|_| Error::InternalError)?;
-
+    let hash = auth.hash_password(data.new_password.clone()).await?;
     auth.collection
         .update_one(
             doc! {
