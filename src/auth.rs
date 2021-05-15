@@ -136,6 +136,10 @@ impl Auth {
     }
 
     pub async fn hash_password(&self, password: String) -> Result<String> {
+        if crate::COMPROMISED_PASSWORDS.iter().any(|v| v == &password) {
+            return Err(Error::CompromisedPassword)
+        }
+
         Ok(argon2::hash_encoded(
             password.as_bytes(),
             nanoid!(24).as_bytes(),

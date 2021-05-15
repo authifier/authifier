@@ -28,6 +28,7 @@ pub enum Error {
     InvalidToken,
     MissingInvite,
     InvalidInvite,
+    CompromisedPassword
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -52,6 +53,7 @@ impl<'r> Responder<'r, 'static> for Error {
             Error::InvalidToken => Status::Forbidden,
             Error::MissingInvite => Status::BadRequest,
             Error::InvalidInvite => Status::BadRequest,
+            Error::CompromisedPassword => Status::BadRequest,
         };
 
         // Serialize the error data structure into JSON.
