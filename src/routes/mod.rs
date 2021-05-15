@@ -19,6 +19,7 @@ pub fn routes() -> Vec<Route> {
         sessions::create_session::create_session,
         sessions::delete_session::delete_session,
         sessions::fetch_sessions::fetch_sessions,
+        sessions::rename_session::rename_session,
         sessions::logout::logout
     ]
 }
