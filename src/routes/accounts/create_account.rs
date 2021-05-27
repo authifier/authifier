@@ -57,19 +57,15 @@ impl Auth {
         let normalised = self.check_email_is_use(data.email.clone()).await?;
         let hash = self.hash_password(data.password.clone()).await?;
 
+        let verification_token = nanoid!(32);
         let verification = if let EmailVerification::Enabled {
-            smtp,
-            templates,
             verification_expiry,
             ..
         } = &self.options.email_verification
         {
-            let token = nanoid!(32);
-            self.email_send_verification(&smtp, &templates, &data.email, &token)?;
-
             doc! {
                 "status": "Pending",
-                "token": token,
+                "token": &verification_token,
                 "expiry": Bson::DateTime(Utc::now() + *verification_expiry)
             }
         } else {
@@ -117,6 +113,16 @@ impl Auth {
                     with: "invites",
                 })?;
             }
+        }
+        
+        if let EmailVerification::Enabled {
+            smtp,
+            templates,
+            ..
+        } = &self.options.email_verification
+        {
+            self.email_send_verification(&smtp, &templates, &data.email, &verification_token).ok();
+            eprintln!("Failed to send an email to {}", &data.email);
         }
 
         Ok(user_id)
