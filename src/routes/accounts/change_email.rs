@@ -14,7 +14,7 @@ use validator::Validate;
 
 #[derive(Debug, Validate, Deserialize)]
 pub struct ChangeEmail {
-    #[validate(length(min = 8, max = 72))]
+    #[validate(length(min = 8, max = 1024))]
     password: String,
     #[validate(email)]
     new_email: String,

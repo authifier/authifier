@@ -14,7 +14,7 @@ use validator::Validate;
 pub struct ResetPassword {
     #[validate(length(min = 32, max = 32))]
     token: String,
-    #[validate(length(min = 8, max = 72))]
+    #[validate(length(min = 8, max = 1024))]
     password: String,
 }
 

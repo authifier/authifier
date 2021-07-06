@@ -14,7 +14,7 @@ use validator::Validate;
 pub struct Login {
     #[validate(email)]
     email: String,
-    #[validate(length(min = 8, max = 72))]
+    #[validate(length(min = 8, max = 1024))]
     password: String,
     #[validate(length(min = 0, max = 72))]
     device_name: Option<String>,
