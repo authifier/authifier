@@ -30,17 +30,13 @@ pub fn generate_multipart(text: &str, html: &str) -> MultiPart {
         MultiPart::alternative()
             .singlepart(
                 SinglePart::builder()
-                    .header(header::ContentType(
-                        "text/plain; charset=utf8".parse().unwrap(),
-                    ))
+                    .header("text/plain; charset=utf8".parse::<header::ContentType>().unwrap())
                     .body(text.to_string()),
             )
             .multipart(
                 MultiPart::related().singlepart(
                     SinglePart::builder()
-                        .header(header::ContentType(
-                            "text/html; charset=utf8".parse().unwrap(),
-                        ))
+                        .header("text/html; charset=utf8".parse::<header::ContentType>().unwrap())
                         .body(html.to_string()),
                 ),
             ),
