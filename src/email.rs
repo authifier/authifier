@@ -25,22 +25,31 @@ pub fn send(smtp: &SMTP, message: Message) -> Result<()> {
     Ok(())
 }
 
-pub fn generate_multipart(text: &str, html: &str) -> MultiPart {
-    MultiPart::mixed().multipart(
-        MultiPart::alternative()
-            .singlepart(
-                SinglePart::builder()
-                    .header("text/plain; charset=utf8".parse::<header::ContentType>().unwrap())
-                    .body(text.to_string()),
-            )
-            .multipart(
-                MultiPart::related().singlepart(
+pub fn generate_multipart(text: String, html: Option<String>) -> MultiPart {
+    if let Some(html) = html {
+        MultiPart::mixed().multipart(
+            MultiPart::alternative()
+                .singlepart(
                     SinglePart::builder()
-                        .header("text/html; charset=utf8".parse::<header::ContentType>().unwrap())
-                        .body(html.to_string()),
-                ),
-            ),
-    )
+                        .header("text/plain; charset=utf8".parse::<header::ContentType>().unwrap())
+                        .body(text.to_string()),
+                )
+                .multipart(
+                    MultiPart::related().singlepart(
+                        SinglePart::builder()
+                            .header("text/html; charset=utf8".parse::<header::ContentType>().unwrap())
+                            .body(html.to_string()),
+                    ),
+                )
+            )
+    } else {
+        MultiPart::mixed()
+            .singlepart(
+            SinglePart::builder()
+                .header("text/html; charset=utf8".parse::<header::ContentType>().unwrap())
+                .body(text.to_string()),
+        )
+    }
 }
 
 impl Template {
@@ -50,12 +59,12 @@ impl Template {
             .to(to.parse().unwrap())
             .subject(self.title)
             .multipart(generate_multipart(
-                &HANDLEBARS
+                HANDLEBARS
                     .render_template(self.text, &variables)
-                    .map_err(|_| Error::RenderFail)?,
-                &HANDLEBARS
-                    .render_template(self.html, &variables)
-                    .map_err(|_| Error::RenderFail)?,
+                    .map_err(|_| Error::RenderFail)?.to_string(),
+                if let Some(html) = self.html { Some(HANDLEBARS
+                    .render_template(html, &variables)
+                    .map_err(|_| Error::RenderFail)?.to_string()) } else { None },
             ))
             .map_err(|_| Error::InternalError)
     }

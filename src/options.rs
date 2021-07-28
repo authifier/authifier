@@ -11,7 +11,7 @@ pub struct SMTP {
 pub struct Template {
     pub title: &'static str,
     pub text: &'static str,
-    pub html: &'static str,
+    pub html: Option<&'static str>,
 }
 
 pub struct Templates {
