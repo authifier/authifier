@@ -4,7 +4,7 @@ use crate::util::{Error, Result};
 use mongodb::bson::{doc, from_document};
 use mongodb::options::FindOneOptions;
 use rocket::State;
-use rocket_contrib::json::JsonValue;
+use rocket::serde::json::{Value, json};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -45,8 +45,8 @@ impl Auth {
 
 #[get("/user")]
 pub async fn fetch_account(
-    auth: State<'_, Auth>,
+    auth: &State<Auth>,
     session: Session,
-) -> crate::util::Result<JsonValue> {
+) -> crate::util::Result<Value> {
     Ok(json!(auth.get_account(session).await?))
 }

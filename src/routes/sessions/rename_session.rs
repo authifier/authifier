@@ -3,7 +3,7 @@ use crate::util::{Error, Result};
 
 use mongodb::bson::doc;
 use rocket::State;
-use rocket_contrib::json::Json;
+use rocket::serde::json::Json;
 use serde::Deserialize;
 use validator::Validate;
 
@@ -39,7 +39,7 @@ impl Auth {
 
 #[post("/rename_session", data = "<data>")]
 pub async fn rename_session(
-    auth: State<'_, Auth>,
+    auth: &State<Auth>,
     session: Session,
     data: Json<Data>,
 ) -> crate::util::Result<()> {

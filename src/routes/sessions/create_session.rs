@@ -5,7 +5,7 @@ use mongodb::{bson::doc, options::Collation};
 use mongodb::options::FindOneOptions;
 use nanoid::nanoid;
 use rocket::State;
-use rocket_contrib::json::{Json, JsonValue};
+use rocket::serde::json::{Json, Value, json};
 use serde::Deserialize;
 use ulid::Ulid;
 use validator::Validate;
@@ -116,8 +116,8 @@ impl Auth {
 
 #[post("/login", data = "<data>")]
 pub async fn create_session(
-    auth: State<'_, Auth>,
+    auth: &State<Auth>,
     data: Json<Login>,
-) -> crate::util::Result<JsonValue> {
+) -> crate::util::Result<Value> {
     Ok(json!(auth.inner().login(data.into_inner()).await?))
 }

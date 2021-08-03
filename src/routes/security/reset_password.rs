@@ -6,7 +6,7 @@ use chrono::Utc;
 use mongodb::bson::{doc, Bson};
 use nanoid::nanoid;
 use rocket::{response::Redirect, State};
-use rocket_contrib::json::Json;
+use rocket::serde::json::Json;
 use serde::Deserialize;
 use validator::Validate;
 
@@ -20,7 +20,7 @@ pub struct ResetPassword {
 
 #[post("/reset", data = "<data>")]
 pub async fn reset_password(
-    auth: State<'_, Auth>,
+    auth: &State<Auth>,
     data: Json<ResetPassword>,
 ) -> crate::util::Result<Redirect> {
     data.validate()

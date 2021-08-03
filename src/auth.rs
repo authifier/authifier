@@ -248,10 +248,10 @@ impl Auth {
 }
 
 #[rocket::async_trait]
-impl<'a, 'r> FromRequest<'a, 'r> for Session {
+impl<'r> FromRequest<'r> for Session {
     type Error = Error;
 
-    async fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
+    async fn from_request(request: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
         let header_user_id = request
             .headers()
             .get("x-user-id")
@@ -265,7 +265,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for Session {
             .map(|x| x.to_string());
 
         match (
-            request.managed_state::<Auth>(),
+            request.rocket().state::<Auth>(),
             header_user_id,
             header_session_token,
         ) {

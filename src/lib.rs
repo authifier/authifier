@@ -3,8 +3,6 @@
 extern crate rocket;
 #[macro_use]
 extern crate lazy_static;
-#[macro_use]
-extern crate rocket_contrib;
 
 use argon2::Config;
 

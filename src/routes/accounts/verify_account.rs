@@ -103,7 +103,7 @@ impl Auth {
 }
 
 #[get("/verify/<code>")]
-pub async fn verify_account(auth: State<'_, Auth>, code: String) -> crate::util::Result<Redirect> {
+pub async fn verify_account(auth: &State<Auth>, code: String) -> crate::util::Result<Redirect> {
     auth.inner().verify_account(Verify { code }).await?;
 
     if let EmailVerification::Enabled {

@@ -3,7 +3,7 @@ use crate::util::Error;
 
 use mongodb::bson::doc;
 use rocket::State;
-use rocket_contrib::json::Json;
+use rocket::serde::json::Json;
 use serde::Deserialize;
 use validator::Validate;
 
@@ -17,7 +17,7 @@ pub struct ChangePassword {
 
 #[post("/change/password", data = "<data>")]
 pub async fn change_password(
-    auth: State<'_, Auth>,
+    auth: &State<Auth>,
     session: Session,
     data: Json<ChangePassword>,
 ) -> crate::util::Result<()> {

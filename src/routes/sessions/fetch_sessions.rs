@@ -4,8 +4,9 @@ use crate::util::{Error, Result};
 use mongodb::bson::doc;
 use mongodb::options::FindOneOptions;
 use rocket::State;
-use rocket_contrib::json::JsonValue;
+use rocket::serde::json::Value;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AccountSessionInfo {
@@ -50,8 +51,8 @@ impl Auth {
 
 #[get("/sessions")]
 pub async fn fetch_sessions(
-    auth: State<'_, Auth>,
+    auth: &State<Auth>,
     session: Session,
-) -> crate::util::Result<JsonValue> {
+) -> crate::util::Result<Value> {
     Ok(json!(auth.fetch_all_sessions(session).await?))
 }

@@ -3,6 +3,7 @@ use rocket::http::{ContentType, Status};
 use rocket::request::Request;
 use rocket::response::{self, Responder, Response};
 use serde::Serialize;
+use serde_json::json;
 use std::io::Cursor;
 use validator::ValidationErrors;
 

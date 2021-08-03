@@ -15,7 +15,7 @@ async fn main() {
         .invite_only_collection(client.database("rauth").collection("invites"));
 
     let auth = rauth::auth::Auth::new(col, options);
-    rocket::ignite()
+    rocket::build()
         .manage(auth)
         .mount("/", rauth::routes::routes())
         .launch()

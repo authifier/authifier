@@ -6,7 +6,7 @@ use chrono::Utc;
 use mongodb::bson::{doc, Bson};
 use nanoid::nanoid;
 use rocket::State;
-use rocket_contrib::json::{Json, JsonValue};
+use rocket::serde::json::{Json, Value, json};
 use serde::Deserialize;
 use ulid::Ulid;
 use validator::Validate;
@@ -131,9 +131,9 @@ impl Auth {
 
 #[post("/create", data = "<data>")]
 pub async fn create_account(
-    auth: State<'_, Auth>,
+    auth: &State<Auth>,
     data: Json<Create>,
-) -> crate::util::Result<JsonValue> {
+) -> crate::util::Result<Value> {
     Ok(json!({
         "user_id": auth.inner().create_account(data.into_inner()).await?
     }))

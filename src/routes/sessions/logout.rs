@@ -37,7 +37,7 @@ impl Auth {
 }
 
 #[get("/logout")]
-pub async fn logout(auth: State<'_, Auth>, session: Session) -> crate::util::Result<()> {
+pub async fn logout(auth: &State<Auth>, session: Session) -> crate::util::Result<()> {
     let id = session.id.clone().unwrap();
     auth.deauth_session(session, id).await
 }

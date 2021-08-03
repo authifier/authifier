@@ -10,8 +10,7 @@ edition = "2018"
 async-std-runtime = [ "async-std" ]
 
 [dependencies]
-rocket = { git = "https://github.com/SergioBenitez/Rocket", default-features = false, rev = "031948c1daaa146128d8a435be116476f2adde00" }
-rocket_contrib = { git = "https://github.com/SergioBenitez/Rocket", rev = "031948c1daaa146128d8a435be116476f2adde00" }
+rocket = { version = "0.5.0-rc.1", default-features = false, features = ["json"] }
 serde = { version = "1.0.116", features = [ "derive" ] }
 validator = { version = "0.11", features = ["derive"] }
 lettre = "0.10.0-alpha.4"
@@ -27,4 +26,4 @@ regex = "1.3.9"
 json = "0.12.4"
 ulid = "0.4.1"
 
-async-std = { version = "1.9.0", features = ["tokio02", "attributes"], optional = true }
+async-std = { version = "1.9.0", features = ["tokio1", "attributes"], optional = true }

@@ -8,7 +8,7 @@ use chrono::Utc;
 use mongodb::bson::{doc, Bson};
 use nanoid::nanoid;
 use rocket::State;
-use rocket_contrib::json::Json;
+use rocket::serde::json::Json;
 use serde::Deserialize;
 use validator::Validate;
 
@@ -22,7 +22,7 @@ pub struct ChangeEmail {
 
 #[post("/change/email", data = "<data>")]
 pub async fn change_email(
-    auth: State<'_, Auth>,
+    auth: &State<Auth>,
     session: Session,
     data: Json<ChangeEmail>,
 ) -> crate::util::Result<()> {

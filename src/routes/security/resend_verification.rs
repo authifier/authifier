@@ -7,7 +7,7 @@ use chrono::Utc;
 use mongodb::{bson::{doc, from_document, Bson}, options::{Collation, FindOneOptions}};
 use nanoid::nanoid;
 use rocket::State;
-use rocket_contrib::json::Json;
+use rocket::serde::json::Json;
 use serde::Deserialize;
 use validator::Validate;
 
@@ -20,7 +20,7 @@ pub struct ResendVerification {
 
 #[post("/resend", data = "<data>")]
 pub async fn resend_verification(
-    auth: State<'_, Auth>,
+    auth: &State<Auth>,
     data: Json<ResendVerification>,
 ) -> crate::util::Result<()> {
     auth.verify_captcha(&data.captcha).await?;
