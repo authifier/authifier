@@ -13,12 +13,12 @@ async-std-runtime = [ "async-std" ]
 rocket = { version = "0.5.0-rc.1", default-features = false, features = ["json"] }
 serde = { version = "1.0.116", features = [ "derive" ] }
 validator = { version = "0.11", features = ["derive"] }
+reqwest = { version = "0.11.4", features = ["json"] }
 lettre = "0.10.0-alpha.4"
 serde_json = "1.0.60"
 lazy_static = "1.4.0"
 rust-argon2 = "0.8.2"
 handlebars = "3.5.1"
-reqwest = "0.10.10"
 chrono = "0.4.19"
 mongodb = "1.2.2"
 nanoid = "0.3.0"
