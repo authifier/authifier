@@ -1,5 +1,10 @@
 /// Create a new account
 /// POST /account/create
+use rocket::serde::json::Json;
+use rocket::State;
+
+use crate::logic::Auth;
+use crate::util::{EmptyResponse, Result};
 
 #[derive(Serialize, Deserialize)]
 pub struct Data {
@@ -9,7 +14,352 @@ pub struct Data {
     pub captcha: Option<String>,
 }
 
-/// Responses:
-// 204 for success
-// Must not allow email enumeration.
-// If an email is already registered, send a password reset link and pretend we succeeded.
+#[post("/create", data = "<data>")]
+pub async fn create_account(auth: &State<Auth>, data: Json<Data>) -> Result<EmptyResponse> {
+    let data = data.into_inner();
+
+    auth.check_captcha(data.captcha).await?;
+    auth.validate_email(&data.email).await?;
+    auth.validate_password(&data.password).await?;
+
+    let invite = auth.check_invite(data.invite).await?;
+    let account = auth
+        .create_account(data.email, data.password, true)
+        .await
+        .ok();
+
+    if let Some(account) = account {
+        if let Some(invite) = invite {
+            invite.claim(&auth.db, account.id.unwrap()).await.ok();
+        }
+    }
+
+    Ok(EmptyResponse)
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::test::*;
+
+    #[cfg(feature = "async-std-runtime")]
+    #[async_std::test]
+    async fn success() {
+        let client = bootstrap_rocket(
+            "create_account",
+            "success",
+            routes![crate::web::account::create_account::create_account],
+        )
+        .await;
+
+        let res = client
+            .post("/create")
+            .header(ContentType::JSON)
+            .body(
+                json!({
+                    "email": "example@validemail.com",
+                    "password": "valid password"
+                })
+                .to_string(),
+            )
+            .dispatch()
+            .await;
+
+        assert_eq!(res.status(), Status::NoContent);
+    }
+
+    #[cfg(feature = "async-std-runtime")]
+    #[async_std::test]
+    async fn fail_invalid_email() {
+        let client = bootstrap_rocket(
+            "create_account",
+            "fail_invalid_email",
+            routes![crate::web::account::create_account::create_account],
+        )
+        .await;
+
+        let res = client
+            .post("/create")
+            .header(ContentType::JSON)
+            .body(
+                json!({
+                    "email": "invalid",
+                    "password": "valid password"
+                })
+                .to_string(),
+            )
+            .dispatch()
+            .await;
+
+        assert_eq!(res.status(), Status::BadRequest);
+        assert_eq!(
+            res.into_string().await,
+            Some("{\"type\":\"IncorrectData\",\"with\":\"email\"}".into())
+        );
+    }
+
+    #[cfg(feature = "async-std-runtime")]
+    #[async_std::test]
+    async fn fail_invalid_password() {
+        let client = bootstrap_rocket(
+            "create_account",
+            "fail_invalid_password",
+            routes![crate::web::account::create_account::create_account],
+        )
+        .await;
+
+        let res = client
+            .post("/create")
+            .header(ContentType::JSON)
+            .body(
+                json!({
+                    "email": "example@validemail.com",
+                    "password": "password"
+                })
+                .to_string(),
+            )
+            .dispatch()
+            .await;
+
+        assert_eq!(res.status(), Status::BadRequest);
+        assert_eq!(
+            res.into_string().await,
+            Some("{\"type\":\"CompromisedPassword\"}".into())
+        );
+    }
+
+    #[cfg(feature = "async-std-runtime")]
+    #[async_std::test]
+    async fn fail_invalid_invite() {
+        let config = Config {
+            invite_only: true,
+            ..Default::default()
+        };
+
+        let (_, auth) = for_test_with_config("create_account::fail_invalid_invite", config).await;
+        let client = bootstrap_rocket_with_auth(
+            auth,
+            routes![crate::web::account::create_account::create_account],
+        )
+        .await;
+
+        let res = client
+            .post("/create")
+            .header(ContentType::JSON)
+            .body(
+                json!({
+                    "email": "example@validemail.com",
+                    "password": "valid password",
+                    "invite": "invalid"
+                })
+                .to_string(),
+            )
+            .dispatch()
+            .await;
+
+        assert_eq!(res.status(), Status::BadRequest);
+        assert_eq!(
+            res.into_string().await,
+            Some("{\"type\":\"InvalidInvite\"}".into())
+        );
+    }
+
+    #[cfg(feature = "async-std-runtime")]
+    #[async_std::test]
+    async fn success_valid_invite() {
+        let config = Config {
+            invite_only: true,
+            ..Default::default()
+        };
+
+        let (db, auth) = for_test_with_config("create_account::success_valid_invite", config).await;
+        let client = bootstrap_rocket_with_auth(
+            auth,
+            routes![crate::web::account::create_account::create_account],
+        )
+        .await;
+
+        let mut invite = Invite {
+            id: Some("invite".into()),
+            used: None,
+            claimed_by: None,
+        };
+
+        invite.save(&db, None).await.unwrap();
+
+        let res = client
+            .post("/create")
+            .header(ContentType::JSON)
+            .body(
+                json!({
+                    "email": "example@validemail.com",
+                    "password": "valid password",
+                    "invite": "invite"
+                })
+                .to_string(),
+            )
+            .dispatch()
+            .await;
+
+        assert_eq!(res.status(), Status::NoContent);
+
+        let invite = Invite::find_one(&db, doc! { "_id": "invite" }, None)
+            .await
+            .unwrap()
+            .expect("Invite");
+
+        assert_eq!(invite.used, Some(true));
+    }
+
+    #[cfg(feature = "async-std-runtime")]
+    #[async_std::test]
+    async fn fail_missing_captcha() {
+        use crate::config::Captcha;
+
+        let config = Config {
+            captcha: Captcha::HCaptcha {
+                secret: "0x0000000000000000000000000000000000000000".into(),
+            },
+            ..Default::default()
+        };
+
+        let (_, auth) = for_test_with_config("create_account::fail_missing_captcha", config).await;
+        let client = bootstrap_rocket_with_auth(
+            auth,
+            routes![crate::web::account::create_account::create_account],
+        )
+        .await;
+
+        let res = client
+            .post("/create")
+            .header(ContentType::JSON)
+            .body(
+                json!({
+                    "email": "example@validemail.com",
+                    "password": "valid password",
+                })
+                .to_string(),
+            )
+            .dispatch()
+            .await;
+
+        assert_eq!(res.status(), Status::BadRequest);
+        assert_eq!(
+            res.into_string().await,
+            Some("{\"type\":\"CaptchaFailed\"}".into())
+        );
+    }
+
+    #[cfg(feature = "async-std-runtime")]
+    #[async_std::test]
+    async fn fail_captcha_invalid() {
+        use crate::config::Captcha;
+
+        let config = Config {
+            captcha: Captcha::HCaptcha {
+                secret: "0x0000000000000000000000000000000000000000".into(),
+            },
+            ..Default::default()
+        };
+
+        let (_, auth) = for_test_with_config("create_account::fail_missing_captcha", config).await;
+        let client = bootstrap_rocket_with_auth(
+            auth,
+            routes![crate::web::account::create_account::create_account],
+        )
+        .await;
+
+        let res = client
+            .post("/create")
+            .header(ContentType::JSON)
+            .body(
+                json!({
+                    "email": "example@validemail.com",
+                    "password": "valid password",
+                    "captcha": "00000000-aaaa-bbbb-cccc-000000000000"
+                })
+                .to_string(),
+            )
+            .dispatch()
+            .await;
+
+        assert_eq!(res.status(), Status::BadRequest);
+        assert_eq!(
+            res.into_string().await,
+            Some("{\"type\":\"CaptchaFailed\"}".into())
+        );
+    }
+
+    #[cfg(feature = "async-std-runtime")]
+    #[async_std::test]
+    async fn success_captcha_valid() {
+        use crate::config::Captcha;
+
+        let config = Config {
+            captcha: Captcha::HCaptcha {
+                secret: "0x0000000000000000000000000000000000000000".into(),
+            },
+            ..Default::default()
+        };
+
+        let (_, auth) = for_test_with_config("create_account::fail_missing_captcha", config).await;
+        let client = bootstrap_rocket_with_auth(
+            auth,
+            routes![crate::web::account::create_account::create_account],
+        )
+        .await;
+
+        let res = client
+            .post("/create")
+            .header(ContentType::JSON)
+            .body(
+                json!({
+                    "email": "example@validemail.com",
+                    "password": "valid password",
+                    "captcha": "20000000-aaaa-bbbb-cccc-000000000002"
+                })
+                .to_string(),
+            )
+            .dispatch()
+            .await;
+
+        assert_eq!(res.status(), Status::NoContent);
+    }
+
+    #[cfg(feature = "async-std-runtime")]
+    #[async_std::test]
+    async fn success_smtp_sent() {
+        dotenv::dotenv().ok();
+
+        use crate::config::Captcha;
+
+        let config = Config {
+            captcha: Captcha::HCaptcha {
+                secret: "0x0000000000000000000000000000000000000000".into(),
+            },
+            ..Default::default()
+        };
+
+        let (_, auth) = for_test_with_config("create_account::fail_missing_captcha", config).await;
+        let client = bootstrap_rocket_with_auth(
+            auth,
+            routes![crate::web::account::create_account::create_account],
+        )
+        .await;
+
+        let res = client
+            .post("/create")
+            .header(ContentType::JSON)
+            .body(
+                json!({
+                    "email": "example@validemail.com",
+                    "password": "valid password",
+                    "captcha": "20000000-aaaa-bbbb-cccc-000000000002"
+                })
+                .to_string(),
+            )
+            .dispatch()
+            .await;
+
+        assert_eq!(res.status(), Status::NoContent);
+    }
+}

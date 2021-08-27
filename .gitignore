@@ -1,5 +1,4 @@
 /target
 /examples/smtp_test.rs
 
-/.mongo
-/src_old
+/.data

@@ -1,6 +1,6 @@
 use mongodb::bson::DateTime;
-use wither::prelude::*;
 use wither::bson::doc;
+use wither::prelude::*;
 
 use super::MFATicket;
 
@@ -27,9 +27,9 @@ pub struct PasswordReset {
 
 fn is_false(t: &bool) -> bool {
     !t
-} 
+}
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Default, Debug, Serialize, Deserialize)]
 pub struct MultiFactorAuthentication {
     /// Allow password-less email OTP login
     #[serde(skip_serializing_if = "is_false", default)]
@@ -52,11 +52,17 @@ pub struct MultiFactorAuthentication {
     security_key_token: Option<String>,
 
     /// Recovery codes
-    recovery_codes: Vec<String>
+    recovery_codes: Vec<String>,
 }
 
 #[derive(Debug, Model, Serialize, Deserialize)]
-#[model(collection_name = "accounts")]
+#[model(
+    collection_name = "accounts",
+    index(
+        keys = r#"doc!{"email_normalised": 1}"#,
+        options = r#"doc!{"unique": true}"#
+    )
+)]
 pub struct Account {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
@@ -67,19 +73,20 @@ pub struct Account {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub disabled: Option<bool>,
-    
+
     pub verification: AccountVerification,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub password_reset: Option<PasswordReset>,
 
     pub mfa: MultiFactorAuthentication,
 }
 
 impl Account {
-    pub fn generate_ticket(method: ()) -> MFATicket {
+    pub fn generate_ticket(_method: ()) -> MFATicket {
         // determine if we can generate an MFA ticket
         // return it if we can
         // otherwise throw error
-            
+
         unimplemented!()
     }
 }
