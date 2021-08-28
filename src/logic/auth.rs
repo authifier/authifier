@@ -1,7 +1,10 @@
 use std::collections::{HashMap, HashSet};
+use std::convert::TryInto;
 
+use chrono::{Duration, Utc};
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::SmtpTransport;
+use mongodb::bson::DateTime;
 use mongodb::Database;
 use nanoid::nanoid;
 
@@ -34,15 +37,21 @@ impl Auth {
         Auth {
             db,
             smtp_transport: match &config.email_verification {
-                EmailVerification::Enabled { smtp, .. } => Some(
-                    SmtpTransport::relay(&smtp.host)
-                        .unwrap()
+                EmailVerification::Enabled { smtp, .. } => {
+                    let relay = SmtpTransport::relay(&smtp.host).unwrap();
+                    Some(
+                        if let Some(port) = smtp.port {
+                            relay.port(port.try_into().unwrap())
+                        } else {
+                            relay
+                        }
                         .credentials(Credentials::new(
                             smtp.username.clone(),
                             smtp.password.clone(),
                         ))
                         .build(),
-                ),
+                    )
+                }
                 EmailVerification::Disabled => None,
             },
             compromised_passwords: match &config.password_scanning {
@@ -196,8 +205,28 @@ impl Auth {
 
         // Send email verification.
         let verification = if verify_email {
-            if let EmailVerification::Enabled { templates, .. } = self.config.email_verification {
-                unimplemented!()
+            if let EmailVerification::Enabled {
+                templates, expiry, ..
+            } = &self.config.email_verification
+            {
+                let token = nanoid!(32);
+                let url = format!(
+                    "{}{}",
+                    templates.verify.url,
+                    token
+                );
+
+                self.send_email(email.clone(), &templates.verify, json!({ "url": url }))
+                    .ok();
+
+                AccountVerification::Pending {
+                    token,
+                    expiry: DateTime(
+                        Utc::now()
+                            .checked_add_signed(Duration::seconds(expiry.expire_verification))
+                            .unwrap(),
+                    ),
+                }
             } else {
                 AccountVerification::Verified
             }
@@ -236,7 +265,7 @@ impl Auth {
     pub fn send_email(
         &self,
         to: String,
-        template: Template,
+        template: &Template,
         variables: handlebars::JsonValue,
     ) -> Result<()> {
         if let Some(sender) = &self.smtp_transport {
@@ -244,7 +273,7 @@ impl Auth {
                 let m = lettre::Message::builder()
                     .from(smtp.from.parse().map_err(|_| Error::EmailFailed)?)
                     .to(to.parse().map_err(|_| Error::EmailFailed)?)
-                    .subject(template.title);
+                    .subject(template.title.clone());
 
                 let m = if let Some(reply_to) = &smtp.reply_to {
                     m.reply_to(reply_to.parse().map_err(|_| Error::EmailFailed)?)
@@ -253,7 +282,7 @@ impl Auth {
                 };
 
                 let text = self.render_template(&template.text, &variables)?;
-                let m = if let Some(html) = template.html {
+                let m = if let Some(html) = &template.html {
                     m.multipart(lettre::message::MultiPart::alternative_plain_html(
                         text,
                         self.render_template(&html, &variables)?,
@@ -264,7 +293,10 @@ impl Auth {
                 .map_err(|_| Error::EmailFailed)?;
 
                 use lettre::Transport;
-                sender.send(&m).map_err(|_| Error::EmailFailed)?;
+                if let Err(error) = sender.send(&m) {
+                    eprintln!("Failed to send email to {}!\nlettre error: {}", to, error);
+                    return Err(Error::EmailFailed);
+                }
 
                 Ok(())
             } else {

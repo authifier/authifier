@@ -330,16 +330,45 @@ mod tests {
     async fn success_smtp_sent() {
         dotenv::dotenv().ok();
 
-        use crate::config::Captcha;
+        use crate::config::{EmailVerification, SMTPSettings, Template, Templates};
+        use std::env::var;
+
+        let from = var("SMTP_FROM").expect("`SMTP_FROM` environment variable");
+        let host = var("SMTP_HOST").expect("`SMTP_HOST` environment variable");
+        let username = var("SMTP_USER").expect("`SMTP_USER` environment variable");
+        let password = var("SMTP_PASS").expect("`SMTP_PASS` environment variable");
 
         let config = Config {
-            captcha: Captcha::HCaptcha {
-                secret: "0x0000000000000000000000000000000000000000".into(),
+            email_verification: EmailVerification::Enabled {
+                smtp: SMTPSettings {
+                    from,
+                    reply_to: Some("support@revolt.chat".into()),
+                    host,
+                    port: None,
+                    username,
+                    password,
+                },
+                expiry: Default::default(),
+                templates: Templates {
+                    verify: Template {
+                        title: "Verify your email!".into(),
+                        text: "Verify your email here: {{url}}".into(),
+                        url: "https://example.com".into(),
+                        html: None,
+                    },
+                    reset: Template {
+                        title: "Reset your password!".into(),
+                        text: "Reset your password here: {{url}}".into(),
+                        url: "https://example.com".into(),
+                        html: None,
+                    },
+                    welcome: None,
+                },
             },
             ..Default::default()
         };
 
-        let (_, auth) = for_test_with_config("create_account::fail_missing_captcha", config).await;
+        let (_, auth) = for_test_with_config("create_account::success_smtp_sent", config).await;
         let client = bootstrap_rocket_with_auth(
             auth,
             routes![crate::web::account::create_account::create_account],
@@ -351,9 +380,8 @@ mod tests {
             .header(ContentType::JSON)
             .body(
                 json!({
-                    "email": "example@validemail.com",
+                    "email": "me@insrt.uk",
                     "password": "valid password",
-                    "captcha": "20000000-aaaa-bbbb-cccc-000000000002"
                 })
                 .to_string(),
             )

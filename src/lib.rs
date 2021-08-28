@@ -4,7 +4,6 @@ extern crate serde;
 extern crate lazy_static;
 #[macro_use]
 extern crate rocket;
-#[cfg(test)]
 #[macro_use]
 extern crate serde_json;
 

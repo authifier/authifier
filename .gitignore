@@ -2,3 +2,4 @@
 /examples/smtp_test.rs
 
 /.data
+.env

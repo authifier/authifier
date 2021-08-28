@@ -51,6 +51,7 @@ pub struct SMTPSettings {
     pub from: String,
     pub reply_to: Option<String>,
     pub host: String,
+    pub port: Option<i32>,
     pub username: String,
     pub password: String,
 }
@@ -70,7 +71,7 @@ pub struct Template {
     /// Any given URL will be suffixed with a unique token if applicable.
     ///
     /// e.g. `https://example.com?t=` becomes `https://example.com?t=UNIQUE_CODE`
-    pub url: Option<String>,
+    pub url: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -88,9 +89,9 @@ pub struct Templates {
 #[derive(Serialize, Deserialize)]
 pub struct EmailExpiry {
     /// How long email verification codes should last for (in seconds)
-    expire_verification: i64,
+    pub expire_verification: i64,
     /// How long password reset codes should last for (in seconds)
-    expire_password_reset: i64,
+    pub expire_password_reset: i64,
 }
 
 impl Default for EmailExpiry {
