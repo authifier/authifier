@@ -34,6 +34,7 @@ pub enum Error {
     InvalidCredentials,
 
     CompromisedPassword,
+    DisabledAccount,
     Blacklisted,
 }
 
@@ -54,11 +55,12 @@ impl<'r> Responder<'r, 'static> for Error {
             Error::UnverifiedAccount => Status::BadRequest,
             Error::UnknownUser => Status::NotFound,
             Error::EmailFailed => Status::InternalServerError,
-            Error::InvalidCredentials => Status::Forbidden,
+            Error::InvalidCredentials => Status::Unauthorized,
             Error::InvalidToken => Status::Unauthorized,
             Error::MissingInvite => Status::BadRequest,
             Error::InvalidInvite => Status::BadRequest,
             Error::CompromisedPassword => Status::BadRequest,
+            Error::DisabledAccount => Status::Unauthorized,
             Error::Blacklisted => {
                 // Silently fail blacklisted email addresses.
                 return Response::build().status(Status::NoContent).ok();

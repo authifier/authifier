@@ -1,5 +1,5 @@
 /// Change account email.
-/// PATCH /account/change_email
+/// PATCH /account/email
 
 #[derive(Serialize, Deserialize)]
 pub struct Data {

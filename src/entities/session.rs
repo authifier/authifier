@@ -9,7 +9,7 @@ use wither::prelude::*;
 pub struct Session {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
+    pub user_id: String,
     pub token: String,
-
     pub name: String,
 }

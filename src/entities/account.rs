@@ -61,7 +61,8 @@ pub struct MultiFactorAuthentication {
     index(
         keys = r#"doc!{"email_normalised": 1}"#,
         options = r#"doc!{"unique": true}"#
-    )
+    ),
+    index(keys = r#"doc!{"email": 1}"#, options = r#"doc!{"unique": true}"#)
 )]
 pub struct Account {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]

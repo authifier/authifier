@@ -18,16 +18,21 @@ pub struct Data {
 pub async fn create_account(auth: &State<Auth>, data: Json<Data>) -> Result<EmptyResponse> {
     let data = data.into_inner();
 
+    // Perform validation on given data.
     auth.check_captcha(data.captcha).await?;
     auth.validate_email(&data.email).await?;
     auth.validate_password(&data.password).await?;
 
+    // Make sure the user has a valid invite if required.
     let invite = auth.check_invite(data.invite).await?;
+
+    // Create an account but quietly fail any errors.
     let account = auth
         .create_account(data.email, data.password, true)
         .await
         .ok();
 
+    // Make sure to use up the invite.
     if let Some(account) = account {
         if let Some(invite) = invite {
             invite.claim(&auth.db, account.id.unwrap()).await.ok();

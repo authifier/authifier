@@ -1,5 +1,5 @@
 /// Change account password.
-/// PATCH /account/change_password
+/// PATCH /account/password
 
 #[derive(Serialize, Deserialize)]
 pub struct Data {

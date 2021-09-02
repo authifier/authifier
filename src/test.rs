@@ -26,8 +26,8 @@ pub async fn for_test_with_config(test: &str, config: Config) -> (Database, Auth
     (db, auth)
 }
 
-pub async fn for_test(test: &str) -> Auth {
-    for_test_with_config(test, Config::default()).await.1
+pub async fn for_test(test: &str) -> (Database, Auth) {
+    for_test_with_config(test, Config::default()).await
 }
 
 pub async fn bootstrap_rocket_with_auth(
@@ -47,6 +47,6 @@ pub async fn bootstrap_rocket(
     test: &str,
     routes: Vec<Route>,
 ) -> rocket::local::asynchronous::Client {
-    let auth = for_test(&format!("{}::{}", route, test)).await;
+    let (_, auth) = for_test(&format!("{}::{}", route, test)).await;
     bootstrap_rocket_with_auth(auth, routes).await
 }

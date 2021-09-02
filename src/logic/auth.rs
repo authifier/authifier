@@ -154,6 +154,7 @@ impl Auth {
         if let Some(list) = &self.email_block_list {
             if let Some(domain) = email.split('@').last() {
                 if list.contains(domain) {
+                    // This secretly fails on response handler.
                     return Err(Error::Blacklisted);
                 }
             }
@@ -210,11 +211,7 @@ impl Auth {
             } = &self.config.email_verification
             {
                 let token = nanoid!(32);
-                let url = format!(
-                    "{}{}",
-                    templates.verify.url,
-                    token
-                );
+                let url = format!("{}{}", templates.verify.url, token);
 
                 self.send_email(email.clone(), &templates.verify, json!({ "url": url }))
                     .ok();
@@ -224,7 +221,7 @@ impl Auth {
                     expiry: DateTime(
                         Utc::now()
                             .checked_add_signed(Duration::seconds(expiry.expire_verification))
-                            .unwrap(),
+                            .expect("failed to checked_add_signed"),
                     ),
                 }
             } else {
@@ -258,6 +255,34 @@ impl Auth {
             })?;
 
         Ok(account)
+    }
+
+    /// Create a new session / login to an account.
+    pub async fn create_session(&self, account: &Account, name: String) -> Result<Session> {
+        // Check if the account is disabled.
+        if let Some(true) = account.disabled {
+            return Err(Error::DisabledAccount);
+        }
+
+        // Construct new Session.
+        let mut session = Session {
+            id: None,
+            token: nanoid!(64),
+
+            user_id: account.id.clone().unwrap(),
+            name,
+        };
+
+        // Commit to database.
+        session
+            .save(&self.db, None)
+            .await
+            .map_err(|_| Error::DatabaseError {
+                operation: "save",
+                with: "session",
+            })?;
+
+        Ok(session)
     }
     // #endregion
 
