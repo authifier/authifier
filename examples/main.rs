@@ -1,12 +1,11 @@
 /// Run example with `cargo run --example main --features async-std-runtime`
-
 use mongodb::Client;
 use rauth;
 use rocket;
 
 #[async_std::main]
 async fn main() {
-    let client = Client::with_uri_str("mongodb://localhost:27017/")
+    /*let client = Client::with_uri_str("mongodb://localhost:27017/")
         .await
         .unwrap();
 
@@ -20,5 +19,5 @@ async fn main() {
         .mount("/", rauth::routes::routes())
         .launch()
         .await
-        .unwrap();
+        .unwrap();*/
 }

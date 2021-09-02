@@ -5,31 +5,37 @@ use rocket::response::{self, Responder, Response};
 use serde::Serialize;
 use serde_json::json;
 use std::io::Cursor;
-use validator::ValidationErrors;
 
 #[derive(Serialize, Debug)]
 #[serde(tag = "type")]
 pub enum Error {
-    FailedValidation { error: ValidationErrors },
+    IncorrectData {
+        with: &'static str,
+    },
     DatabaseError {
         operation: &'static str,
         with: &'static str,
     },
     InternalError,
     OperationFailed,
+
     RenderFail,
     MissingHeaders,
     CaptchaFailed,
+
     InvalidSession,
     UnverifiedAccount,
     UnknownUser,
-    EmailInUse,
+
     EmailFailed,
-    InvalidCredentials,
     InvalidToken,
     MissingInvite,
     InvalidInvite,
-    CompromisedPassword
+    InvalidCredentials,
+
+    CompromisedPassword,
+    DisabledAccount,
+    Blacklisted,
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -38,23 +44,27 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 impl<'r> Responder<'r, 'static> for Error {
     fn respond_to(self, _: &'r Request<'_>) -> response::Result<'static> {
         let status = match self {
-            Error::FailedValidation { .. } => Status::BadRequest,
+            Error::IncorrectData { .. } => Status::BadRequest,
             Error::DatabaseError { .. } => Status::InternalServerError,
             Error::InternalError => Status::InternalServerError,
             Error::OperationFailed => Status::InternalServerError,
             Error::RenderFail => Status::InternalServerError,
             Error::MissingHeaders => Status::BadRequest,
             Error::CaptchaFailed => Status::BadRequest,
-            Error::InvalidSession => Status::Forbidden,
+            Error::InvalidSession => Status::Unauthorized,
             Error::UnverifiedAccount => Status::BadRequest,
             Error::UnknownUser => Status::NotFound,
-            Error::EmailInUse => Status::Conflict,
             Error::EmailFailed => Status::InternalServerError,
-            Error::InvalidCredentials => Status::Forbidden,
-            Error::InvalidToken => Status::Forbidden,
+            Error::InvalidCredentials => Status::Unauthorized,
+            Error::InvalidToken => Status::Unauthorized,
             Error::MissingInvite => Status::BadRequest,
             Error::InvalidInvite => Status::BadRequest,
             Error::CompromisedPassword => Status::BadRequest,
+            Error::DisabledAccount => Status::Unauthorized,
+            Error::Blacklisted => {
+                // Silently fail blacklisted email addresses.
+                return Response::build().status(Status::NoContent).ok();
+            }
         };
 
         // Serialize the error data structure into JSON.
@@ -65,6 +75,15 @@ impl<'r> Responder<'r, 'static> for Error {
             .sized_body(string.len(), Cursor::new(string))
             .header(ContentType::new("application", "json"))
             .status(status)
+            .ok()
+    }
+}
+pub struct EmptyResponse;
+
+impl<'r> Responder<'r, 'static> for EmptyResponse {
+    fn respond_to(self, _: &'r Request<'_>) -> response::Result<'static> {
+        Response::build()
+            .status(rocket::http::Status { code: 204 })
             .ok()
     }
 }

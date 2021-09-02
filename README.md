@@ -1,5 +1,11 @@
 ![rAuth](./banner.png)
 
+## Goals
+
+- Prevent user enumeration.
+  All routes should be protected against user enumeration, for now we should at least protect against basic enumeration based on responses.
+- Prevent phishing attacks.
+
 ## Usage
 
 Getting started is very simple, create a new instance of the Auth struct and mount it on to Rocket.
