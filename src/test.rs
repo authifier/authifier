@@ -72,6 +72,22 @@ pub async fn for_test(test: &str) -> (Database, Auth) {
     for_test_with_config(test, Config::default()).await
 }
 
+pub async fn for_test_authenticated(test: &str) -> (Database, Auth, Session, Account) {
+    let (db, auth) = for_test_with_config(test, Config::default()).await;
+
+    let account = auth
+        .create_account("email@example.com".into(), "password".into(), false)
+        .await
+        .unwrap();
+
+    let session = auth
+        .create_session(&account, "my session".into())
+        .await
+        .unwrap();
+
+    (db, auth, session, account)
+}
+
 pub async fn bootstrap_rocket_with_auth(
     auth: Auth,
     routes: Vec<Route>,

@@ -27,18 +27,7 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (_, auth) = for_test("logout::success").await;
-
-        let account = auth
-            .create_account("email@example.com".into(), "password".into(), false)
-            .await
-            .unwrap();
-
-        let session = auth
-            .create_session(&account, "my session".into())
-            .await
-            .unwrap();
-
+        let (_, auth, session, _) = for_test_authenticated("logout::success").await;
         let client =
             bootstrap_rocket_with_auth(auth, routes![crate::web::session::logout::logout]).await;
 

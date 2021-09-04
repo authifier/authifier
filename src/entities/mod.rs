@@ -10,6 +10,9 @@ pub use ticket::*;
 
 pub use wither::bson::doc;
 pub use wither::prelude::*;
+pub use wither::Model;
+
+pub use futures::StreamExt;
 
 pub async fn sync_models(db: &mongodb::Database) {
     Account::sync(&db).await.expect("Account model");

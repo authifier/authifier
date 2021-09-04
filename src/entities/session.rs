@@ -12,7 +12,8 @@ use crate::util::Error;
 #[derive(Debug, Model, Serialize, Deserialize)]
 #[model(
     collection_name = "sessions",
-    index(keys = r#"doc!{"token": 1}"#, options = r#"doc!{"unique": true}"#)
+    index(keys = r#"doc!{"token": 1}"#, options = r#"doc!{"unique": true}"#),
+    index(keys = r#"doc!{"user_id": 1}"#)
 )]
 pub struct Session {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
@@ -20,6 +21,21 @@ pub struct Session {
     pub user_id: String,
     pub token: String,
     pub name: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct SessionInfo {
+    pub id: String,
+    pub name: String,
+}
+
+impl From<Session> for SessionInfo {
+    fn from(item: Session) -> Self {
+        SessionInfo {
+            id: item.id.expect("`id` present"),
+            name: item.name,
+        }
+    }
 }
 
 #[rocket::async_trait]
