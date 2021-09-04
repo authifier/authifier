@@ -100,7 +100,10 @@ mod tests {
         .await;
         let client = bootstrap_rocket_with_auth(
             auth,
-            routes![crate::web::account::change_email::change_email],
+            routes![
+                crate::web::account::change_email::change_email,
+                crate::web::account::verify_email::verify_email
+            ],
         )
         .await;
 
@@ -110,11 +113,19 @@ mod tests {
             .header(Header::new("X-Session-Token", session.token.clone()))
             .body(
                 json!({
-                    "email": "validexample@valid.com",
+                    "email": "change_email@smtp.test",
                     "current_password": "password"
                 })
                 .to_string(),
             )
+            .dispatch()
+            .await;
+
+        assert_eq!(res.status(), Status::NoContent);
+
+        let mail = assert_email_sendria("change_email@smtp.test".into()).await;
+        let res = client
+            .post(format!("/verify/{}", mail.code.expect("`code`")))
             .dispatch()
             .await;
 
@@ -125,6 +136,6 @@ mod tests {
             .unwrap()
             .unwrap();
 
-        assert_ne!(account.email, "validexample@valid.com");
+        assert_eq!(account.email, "change_email@smtp.test");
     }
 }

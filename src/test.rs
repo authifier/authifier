@@ -16,51 +16,85 @@ pub async fn connect_db() -> Client {
 }
 
 pub async fn test_smtp_config() -> Config {
-    dotenv::dotenv().ok();
-
     use crate::config::{EmailVerification, SMTPSettings, Template, Templates};
-    use std::env::var;
-
-    let from = var("SMTP_FROM").unwrap_or("noreply@example.com".into());
-    let host = var("SMTP_HOST").unwrap_or("localhost".into());
-    let username = var("SMTP_USER").unwrap_or("noreply@example.com".into());
-    let password = var("SMTP_PASS").unwrap_or("password".into());
-    let use_tls = Some(var("SMTP_USE_TLS").unwrap_or("0".into()) == "0");
 
     Config {
         email_verification: EmailVerification::Enabled {
             smtp: SMTPSettings {
-                from,
+                from: "noreply@example.com".into(),
                 reply_to: Some("support@revolt.chat".into()),
-                host,
-                port: if var("SMTP_HOST").is_err() {
-                    Some(1025)
-                } else {
-                    None
-                },
-                username,
-                password,
-                use_tls,
+                host: "127.0.0.1".into(),
+                port: Some(1025),
+                username: "noreply@example.com".into(),
+                password: "password".into(),
+                use_tls: Some(false),
             },
             expiry: Default::default(),
             templates: Templates {
                 verify: Template {
-                    title: "Verify your email!".into(),
-                    text: "Verify your email here: {{url}}".into(),
-                    url: "https://example.com".into(),
+                    title: "verify".into(),
+                    text: "[[{{url}}]]".into(),
+                    url: "".into(),
                     html: None,
                 },
                 reset: Template {
-                    title: "Reset your password!".into(),
-                    text: "Reset your password here: {{url}}".into(),
-                    url: "https://example.com".into(),
+                    title: "reset".into(),
+                    text: "[[{{url}}]]".into(),
+                    url: "".into(),
                     html: None,
                 },
-                welcome: None,
+                welcome: Some(Template {
+                    title: "welcome".into(),
+                    text: "[[dummy]]".into(),
+                    url: "".into(),
+                    html: None,
+                }),
             },
         },
         ..Default::default()
     }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Mail {
+    id: usize,
+    recipients_envelope: Vec<String>,
+    subject: String,
+    source: String,
+    pub code: Option<String>,
+}
+
+pub async fn assert_email_sendria(mailbox: String) -> Mail {
+    let client = reqwest::Client::new();
+    let resp = client
+        .get("http://localhost:1080/api/messages/")
+        .send()
+        .await
+        .unwrap();
+
+    #[derive(Serialize, Deserialize)]
+    struct SendriaResponse {
+        data: Vec<Mail>,
+    }
+
+    let result: SendriaResponse = resp.json().await.unwrap();
+    let mut found = None;
+    for mut entry in result.data {
+        if entry.recipients_envelope[0] == mailbox {
+            client
+                .delete(format!("http://localhost:1080/api/messages/{}", &entry.id))
+                .send()
+                .await
+                .unwrap();
+
+            let re = regex::Regex::new(r"\[\[([A-Za-z0-9_-]*)\]\]").unwrap();
+            entry.code = Some(re.captures_iter(&entry.source).next().unwrap()[1].to_string());
+
+            found = Some(entry);
+        }
+    }
+
+    found.unwrap()
 }
 
 pub async fn for_test_with_config(test: &str, config: Config) -> (Database, Auth) {

@@ -340,7 +340,10 @@ mod tests {
         .await;
         let client = bootstrap_rocket_with_auth(
             auth,
-            routes![crate::web::account::create_account::create_account],
+            routes![
+                crate::web::account::create_account::create_account,
+                crate::web::account::verify_email::verify_email
+            ],
         )
         .await;
 
@@ -349,11 +352,19 @@ mod tests {
             .header(ContentType::JSON)
             .body(
                 json!({
-                    "email": "smtptest1@insrt.uk",
+                    "email": "create_account@smtp.test",
                     "password": "valid password",
                 })
                 .to_string(),
             )
+            .dispatch()
+            .await;
+
+        assert_eq!(res.status(), Status::NoContent);
+
+        let mail = assert_email_sendria("create_account@smtp.test".into()).await;
+        let res = client
+            .post(format!("/verify/{}", mail.code.expect("`code`")))
             .dispatch()
             .await;
 

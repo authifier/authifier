@@ -47,9 +47,9 @@ impl Auth {
                     };
 
                     let relay = if let Some(false) = smtp.use_tls {
-                        relay
-                    } else {
                         relay.tls(Tls::None)
+                    } else {
+                        relay
                     };
 
                     Some(
@@ -277,6 +277,28 @@ impl Auth {
             })?;
 
         Ok(session)
+    }
+
+    /// Verify an account using a token.
+    pub async fn verify_account(&self, mut account: &mut Account) -> Result<()> {
+        match &account.verification {
+            AccountVerification::Pending { .. } => {}
+            AccountVerification::Moving { new_email, .. } => {
+                account.email = new_email.clone();
+                account.email_normalised = util::normalise_email(new_email.clone());
+            }
+            _ => unreachable!(),
+        }
+
+        account.verification = AccountVerification::Verified;
+        account
+            .save(&self.db, None)
+            .await
+            .map(|_| ())
+            .map_err(|_| Error::DatabaseError {
+                operation: "save",
+                with: "account",
+            })
     }
 
     /// Send or resend email verification.

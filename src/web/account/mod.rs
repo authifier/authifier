@@ -5,6 +5,7 @@ mod change_password;
 mod create_account;
 mod fetch_account;
 mod resend_verification;
+mod verify_email;
 
 pub fn routes() -> Vec<Route> {
     routes![
@@ -12,6 +13,7 @@ pub fn routes() -> Vec<Route> {
         resend_verification::resend_verification,
         fetch_account::fetch_account,
         change_password::change_password,
-        change_email::change_email
+        change_email::change_email,
+        verify_email::verify_email
     ]
 }
