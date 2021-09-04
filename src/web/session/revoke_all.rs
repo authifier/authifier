@@ -53,7 +53,8 @@ mod tests {
         }
 
         let client =
-            bootstrap_rocket_with_auth(auth, routes![crate::web::session::revoke_all::revoke_all]).await;
+            bootstrap_rocket_with_auth(auth, routes![crate::web::session::revoke_all::revoke_all])
+                .await;
 
         let res = client
             .delete("/all?revoke_self=true")
@@ -75,7 +76,8 @@ mod tests {
     async fn success_not_including_self() {
         use rocket::http::Header;
 
-        let (db, auth, session, account) = for_test_authenticated("revoke_all::success_not_including_self").await;
+        let (db, auth, session, account) =
+            for_test_authenticated("revoke_all::success_not_including_self").await;
 
         for i in 1..=3 {
             auth.create_session(&account, format!("session{}", i))
@@ -84,7 +86,8 @@ mod tests {
         }
 
         let client =
-            bootstrap_rocket_with_auth(auth, routes![crate::web::session::revoke_all::revoke_all]).await;
+            bootstrap_rocket_with_auth(auth, routes![crate::web::session::revoke_all::revoke_all])
+                .await;
 
         let res = client
             .delete("/all?revoke_self=false")
@@ -93,13 +96,15 @@ mod tests {
             .await;
 
         assert_eq!(res.status(), Status::NoContent);
-        
-        assert!(
-            Session::find_one(&db, doc! { "_id": { "$ne": session.id.as_ref().unwrap() }, "user_id": session.user_id }, None)
-                .await
-                .unwrap()
-                .is_none()
-        );
+
+        assert!(Session::find_one(
+            &db,
+            doc! { "_id": { "$ne": session.id.as_ref().unwrap() }, "user_id": session.user_id },
+            None
+        )
+        .await
+        .unwrap()
+        .is_none());
 
         assert!(
             Session::find_one(&db, doc! { "_id": session.id.as_ref().unwrap() }, None)

@@ -6,14 +6,6 @@ use rocket::State;
 use crate::entities::*;
 use crate::logic::Auth;
 use crate::util::{Error, Result};
-
-/* #[derive(Serialize, Deserialize, Debug)]
-pub enum LoginType {
-    Email,
-    Password { password: String },
-    SecurityKey { challenge: String },
-} */
-
 #[derive(Serialize, Deserialize)]
 pub struct Data {
     pub email: String,
@@ -21,9 +13,6 @@ pub struct Data {
     pub password: Option<String>,
     pub challenge: Option<String>,
 
-    // * Can't get this to work :(
-    // #[serde(flatten)]
-    // pub login_type: LoginType,
     pub friendly_name: Option<String>,
     pub captcha: Option<String>,
 }
