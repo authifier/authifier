@@ -175,6 +175,16 @@ impl Auth {
             Ok(())
         }
     }
+
+    /// Hash a password using argon2
+    pub fn hash_password(&self, plaintext_password: String) -> Result<String> {
+        argon2::hash_encoded(
+            plaintext_password.as_bytes(),
+            nanoid!(24).as_bytes(),
+            &ARGON_CONFIG,
+        )
+        .map_err(|_| Error::InternalError)
+    }
     // #endregion
 
     // #region Operations
@@ -197,12 +207,7 @@ impl Auth {
         let email_normalised = util::normalise_email(email.clone());
 
         // Hash the user's password.
-        let password = argon2::hash_encoded(
-            plaintext_password.as_bytes(),
-            nanoid!(24).as_bytes(),
-            &ARGON_CONFIG,
-        )
-        .map_err(|_| Error::InternalError)?;
+        let password = self.hash_password(plaintext_password)?;
 
         // Send email verification.
         let verification = if verify_email {

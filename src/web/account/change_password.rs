@@ -1,5 +1,11 @@
 /// Change account password.
 /// PATCH /account/password
+use rocket::serde::json::Json;
+use rocket::State;
+
+use crate::entities::*;
+use crate::logic::Auth;
+use crate::util::{EmptyResponse, Error, Result};
 
 #[derive(Serialize, Deserialize)]
 pub struct Data {
@@ -7,5 +13,76 @@ pub struct Data {
     pub current_password: String,
 }
 
-/// Responses:
-// 204 for success
+#[patch("/password", data = "<data>")]
+pub async fn change_password(
+    auth: &State<Auth>,
+    mut account: Account,
+    data: Json<Data>,
+) -> Result<EmptyResponse> {
+    let data = data.into_inner();
+
+    // Perform validation on given data.
+    auth.validate_password(&data.password).await?;
+    account.verify_password(&data.current_password)?;
+
+    // Hash and replace password.
+    account.password = auth.hash_password(data.password)?;
+
+    // Commit to database.
+    account
+        .save(&auth.db, None)
+        .await
+        .map_err(|_| Error::DatabaseError {
+            operation: "save",
+            with: "account",
+        })?;
+
+    Ok(EmptyResponse)
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::test::*;
+
+    #[cfg(feature = "async-std-runtime")]
+    #[async_std::test]
+    async fn success() {
+        use rocket::http::Header;
+
+        let (_, auth, session, _) = for_test_authenticated("change_password::success").await;
+        let client =
+            bootstrap_rocket_with_auth(auth, routes![crate::web::account::change_password::change_password]).await;
+
+        let res = client
+            .patch("/password")
+            .header(ContentType::JSON)
+            .header(Header::new("X-Session-Token", session.token.clone()))
+            .body(
+                json!({
+                    "password": "new password",
+                    "current_password": "password"
+                })
+                .to_string(),
+            )
+            .dispatch()
+            .await;
+
+        assert_eq!(res.status(), Status::NoContent);
+
+        let res = client
+            .patch("/password")
+            .header(ContentType::JSON)
+            .header(Header::new("X-Session-Token", session.token))
+            .body(
+                json!({
+                    "password": "sussy password",
+                    "current_password": "new password"
+                })
+                .to_string(),
+            )
+            .dispatch()
+            .await;
+
+        assert_eq!(res.status(), Status::NoContent);
+    }
+}

@@ -20,8 +20,11 @@ mod tests {
         use rocket::http::Header;
 
         let (_, auth, session, _) = for_test_authenticated("fetch_account::success").await;
-        let client =
-            bootstrap_rocket_with_auth(auth, routes![crate::web::account::fetch_account::fetch_account]).await;
+        let client = bootstrap_rocket_with_auth(
+            auth,
+            routes![crate::web::account::fetch_account::fetch_account],
+        )
+        .await;
 
         let res = client
             .get("/")

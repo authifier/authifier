@@ -8,9 +8,8 @@ use wither::bson::doc;
 use wither::prelude::*;
 
 use crate::logic::Auth;
-use crate::util::Error;
+use crate::util::{Error, Result};
 
-use super::MFATicket;
 use super::Session;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -108,12 +107,18 @@ impl From<Account> for AccountInfo {
 }
 
 impl Account {
-    pub fn generate_ticket(_method: ()) -> MFATicket {
-        // determine if we can generate an MFA ticket
-        // return it if we can
-        // otherwise throw error
-
-        unimplemented!()
+    pub fn verify_password(&self, password: &str) -> Result<()> {
+        argon2::verify_encoded(&self.password, password.as_bytes())
+            .map(|v| {
+                if v {
+                    Ok(())
+                } else {
+                    Err(Error::InvalidCredentials)
+                }
+            })
+            // To prevent user enumeration, we should ignore
+            // the error and pretend the password is wrong.
+            .map_err(|_| Error::InvalidCredentials)?
     }
 }
 

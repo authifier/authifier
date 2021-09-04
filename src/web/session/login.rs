@@ -56,14 +56,10 @@ pub async fn login(auth: &State<Auth>, data: Json<Data>) -> Result<Json<Response
     {
         // Figure out whether we are doing password, 1FA key or email 1FA OTP.
         if let Some(password) = data.password {
-            if !argon2::verify_encoded(&account.password, password.as_bytes())
-                // To prevent user enumeration, we should ignore
-                // the error and pretend the password is wrong.
-                .map_err(|_| Error::InvalidCredentials)?
-            {
-                return Err(Error::InvalidCredentials);
-            }
+            // Verify the password is correct.
+            account.verify_password(&password)?;
 
+            // Prevent disabled accounts from logging in.
             if account.disabled.unwrap_or(false) {
                 return Err(Error::DisabledAccount);
             }
