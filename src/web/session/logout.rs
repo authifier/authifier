@@ -27,7 +27,7 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (_, auth, session, _) = for_test_authenticated("logout::success").await;
+        let (db, auth, session, _) = for_test_authenticated("logout::success").await;
         let client =
             bootstrap_rocket_with_auth(auth, routes![crate::web::session::logout::logout]).await;
 
@@ -38,6 +38,12 @@ mod tests {
             .await;
 
         assert_eq!(res.status(), Status::NoContent);
+        assert!(
+            Session::find_one(&db, doc! { "_id": session.id.unwrap() }, None)
+                .await
+                .unwrap()
+                .is_none()
+        );
     }
 
     #[cfg(feature = "async-std-runtime")]

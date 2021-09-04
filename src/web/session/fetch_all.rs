@@ -44,7 +44,8 @@ mod tests {
         }
 
         let client =
-            bootstrap_rocket_with_auth(auth, routes![crate::web::session::fetch_all::fetch_all]).await;
+            bootstrap_rocket_with_auth(auth, routes![crate::web::session::fetch_all::fetch_all])
+                .await;
 
         let res = client
             .get("/all")
