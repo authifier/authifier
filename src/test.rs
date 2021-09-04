@@ -15,6 +15,48 @@ pub async fn connect_db() -> Client {
         .unwrap()
 }
 
+pub async fn test_smtp_config() -> Config {
+    dotenv::dotenv().ok();
+
+    use crate::config::{EmailVerification, SMTPSettings, Template, Templates};
+    use std::env::var;
+
+    let from = var("SMTP_FROM").expect("`SMTP_FROM` environment variable");
+    let host = var("SMTP_HOST").expect("`SMTP_HOST` environment variable");
+    let username = var("SMTP_USER").expect("`SMTP_USER` environment variable");
+    let password = var("SMTP_PASS").expect("`SMTP_PASS` environment variable");
+
+    Config {
+        email_verification: EmailVerification::Enabled {
+            smtp: SMTPSettings {
+                from,
+                reply_to: Some("support@revolt.chat".into()),
+                host,
+                port: None,
+                username,
+                password,
+            },
+            expiry: Default::default(),
+            templates: Templates {
+                verify: Template {
+                    title: "Verify your email!".into(),
+                    text: "Verify your email here: {{url}}".into(),
+                    url: "https://example.com".into(),
+                    html: None,
+                },
+                reset: Template {
+                    title: "Reset your password!".into(),
+                    text: "Reset your password here: {{url}}".into(),
+                    url: "https://example.com".into(),
+                    html: None,
+                },
+                welcome: None,
+            },
+        },
+        ..Default::default()
+    }
+}
+
 pub async fn for_test_with_config(test: &str, config: Config) -> (Database, Auth) {
     let client = connect_db().await;
     let db = client.database(&format!("test::{}", test));

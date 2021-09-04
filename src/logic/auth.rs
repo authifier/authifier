@@ -206,27 +206,7 @@ impl Auth {
 
         // Send email verification.
         let verification = if verify_email {
-            if let EmailVerification::Enabled {
-                templates, expiry, ..
-            } = &self.config.email_verification
-            {
-                let token = nanoid!(32);
-                let url = format!("{}{}", templates.verify.url, token);
-
-                self.send_email(email.clone(), &templates.verify, json!({ "url": url }))
-                    .ok();
-
-                AccountVerification::Pending {
-                    token,
-                    expiry: DateTime(
-                        Utc::now()
-                            .checked_add_signed(Duration::seconds(expiry.expire_verification))
-                            .expect("failed to checked_add_signed"),
-                    ),
-                }
-            } else {
-                AccountVerification::Verified
-            }
+            self.generate_email_verification(email.clone()).await
         } else {
             AccountVerification::Verified
         };
@@ -284,6 +264,33 @@ impl Auth {
 
         Ok(session)
     }
+
+    /// Send or resend email verification.
+    /// This function generates a new account verification object
+    /// which needs to be manually applied to the account object.
+    pub async fn generate_email_verification(&self, email: String) -> AccountVerification {
+        if let EmailVerification::Enabled {
+            templates, expiry, ..
+        } = &self.config.email_verification
+        {
+            let token = nanoid!(32);
+            let url = format!("{}{}", templates.verify.url, token);
+
+            self.send_email(email, &templates.verify, json!({ "url": url }))
+                .ok();
+
+            AccountVerification::Pending {
+                token,
+                expiry: DateTime(
+                    Utc::now()
+                        .checked_add_signed(Duration::seconds(expiry.expire_verification))
+                        .expect("failed to checked_add_signed"),
+                ),
+            }
+        } else {
+            AccountVerification::Verified
+        }
+    }
     // #endregion
 
     // #region Email Utilities
@@ -296,26 +303,26 @@ impl Auth {
         if let Some(sender) = &self.smtp_transport {
             if let EmailVerification::Enabled { smtp, .. } = &self.config.email_verification {
                 let m = lettre::Message::builder()
-                    .from(smtp.from.parse().map_err(|_| Error::EmailFailed)?)
-                    .to(to.parse().map_err(|_| Error::EmailFailed)?)
+                    .from(smtp.from.parse().expect("valid `smtp_from`"))
+                    .to(to.parse().expect("valid `smtp_to`"))
                     .subject(template.title.clone());
 
                 let m = if let Some(reply_to) = &smtp.reply_to {
-                    m.reply_to(reply_to.parse().map_err(|_| Error::EmailFailed)?)
+                    m.reply_to(reply_to.parse().expect("valid `smtp_reply_to`"))
                 } else {
                     m
                 };
 
-                let text = self.render_template(&template.text, &variables)?;
+                let text = self.render_template(&template.text, &variables).expect("valid `template`");
                 let m = if let Some(html) = &template.html {
                     m.multipart(lettre::message::MultiPart::alternative_plain_html(
                         text,
-                        self.render_template(&html, &variables)?,
+                        self.render_template(&html, &variables).expect("valid `template`"),
                     ))
                 } else {
                     m.body(text)
                 }
-                .map_err(|_| Error::EmailFailed)?;
+                .expect("valid `message`");
 
                 use lettre::Transport;
                 if let Err(error) = sender.send(&m) {
