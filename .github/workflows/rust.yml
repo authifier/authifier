@@ -23,7 +23,7 @@ jobs:
     - name: Start mock SMTP server
       uses: upgundecha/start-sendria-github-action@v1.0.0
       with:
-        smtp-port: 25
+        smtp-port: 1025
         http-port: 1080
     - name: Start MongoDB
       uses: supercharge/mongodb-github-action@1.6.0
