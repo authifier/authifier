@@ -50,8 +50,11 @@ mod tests {
         use rocket::http::Header;
 
         let (_, auth, session, _) = for_test_authenticated("change_password::success").await;
-        let client =
-            bootstrap_rocket_with_auth(auth, routes![crate::web::account::change_password::change_password]).await;
+        let client = bootstrap_rocket_with_auth(
+            auth,
+            routes![crate::web::account::change_password::change_password],
+        )
+        .await;
 
         let res = client
             .patch("/password")

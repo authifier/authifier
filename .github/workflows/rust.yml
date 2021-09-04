@@ -31,8 +31,3 @@ jobs:
         mongodb-version: ${{ matrix.mongodb-version }}
     - name: Run tests
       run: cargo test --verbose
-      env:
-        SMTP_HOST: localhost
-        SMTP_FROM: noreply@example.com
-        SMTP_USER: noreply@example.com
-        SMTP_PASS: password

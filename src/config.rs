@@ -54,6 +54,7 @@ pub struct SMTPSettings {
     pub port: Option<i32>,
     pub username: String,
     pub password: String,
+    pub use_tls: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize)]

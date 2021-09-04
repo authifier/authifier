@@ -2,5 +2,7 @@
 /examples/smtp_test.rs
 
 /.data
+*.sqlite
+
 .env
 env.fish

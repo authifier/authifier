@@ -1,10 +1,9 @@
 use rocket::{routes, Route};
 
-mod login;
-mod logout;
-
 mod edit;
 mod fetch_all;
+mod login;
+mod logout;
 mod revoke;
 mod revoke_all;
 

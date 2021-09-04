@@ -21,10 +21,11 @@ pub async fn test_smtp_config() -> Config {
     use crate::config::{EmailVerification, SMTPSettings, Template, Templates};
     use std::env::var;
 
-    let from = var("SMTP_FROM").expect("`SMTP_FROM` environment variable");
-    let host = var("SMTP_HOST").expect("`SMTP_HOST` environment variable");
-    let username = var("SMTP_USER").expect("`SMTP_USER` environment variable");
-    let password = var("SMTP_PASS").expect("`SMTP_PASS` environment variable");
+    let from = var("SMTP_FROM").unwrap_or("noreply@example.com".into());
+    let host = var("SMTP_HOST").unwrap_or("localhost".into());
+    let username = var("SMTP_USER").unwrap_or("noreply@example.com".into());
+    let password = var("SMTP_PASS").unwrap_or("password".into());
+    let use_tls = Some(var("SMTP_USE_TLS").unwrap_or("0".into()) == "0");
 
     Config {
         email_verification: EmailVerification::Enabled {
@@ -32,9 +33,14 @@ pub async fn test_smtp_config() -> Config {
                 from,
                 reply_to: Some("support@revolt.chat".into()),
                 host,
-                port: None,
+                port: if var("SMTP_HOST").is_err() {
+                    Some(1025)
+                } else {
+                    None
+                },
                 username,
                 password,
+                use_tls,
             },
             expiry: Default::default(),
             templates: Templates {
@@ -72,8 +78,11 @@ pub async fn for_test(test: &str) -> (Database, Auth) {
     for_test_with_config(test, Config::default()).await
 }
 
-pub async fn for_test_authenticated(test: &str) -> (Database, Auth, Session, Account) {
-    let (db, auth) = for_test_with_config(test, Config::default()).await;
+pub async fn for_test_authenticated_with_config(
+    test: &str,
+    config: Config,
+) -> (Database, Auth, Session, Account) {
+    let (db, auth) = for_test_with_config(test, config).await;
 
     let account = auth
         .create_account("email@example.com".into(), "password".into(), false)
@@ -86,6 +95,10 @@ pub async fn for_test_authenticated(test: &str) -> (Database, Auth, Session, Acc
         .unwrap();
 
     (db, auth, session, account)
+}
+
+pub async fn for_test_authenticated(test: &str) -> (Database, Auth, Session, Account) {
+    for_test_authenticated_with_config(test, Config::default()).await
 }
 
 pub async fn bootstrap_rocket_with_auth(

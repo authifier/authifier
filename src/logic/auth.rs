@@ -3,6 +3,7 @@ use std::convert::TryInto;
 
 use chrono::{Duration, Utc};
 use lettre::transport::smtp::authentication::Credentials;
+use lettre::transport::smtp::client::Tls;
 use lettre::SmtpTransport;
 use mongodb::bson::DateTime;
 use mongodb::Database;
@@ -39,17 +40,25 @@ impl Auth {
             smtp_transport: match &config.email_verification {
                 EmailVerification::Enabled { smtp, .. } => {
                     let relay = SmtpTransport::relay(&smtp.host).unwrap();
+                    let relay = if let Some(port) = smtp.port {
+                        relay.port(port.try_into().unwrap())
+                    } else {
+                        relay
+                    };
+
+                    let relay = if let Some(false) = smtp.use_tls {
+                        relay
+                    } else {
+                        relay.tls(Tls::None)
+                    };
+
                     Some(
-                        if let Some(port) = smtp.port {
-                            relay.port(port.try_into().unwrap())
-                        } else {
-                            relay
-                        }
-                        .credentials(Credentials::new(
-                            smtp.username.clone(),
-                            smtp.password.clone(),
-                        ))
-                        .build(),
+                        relay
+                            .credentials(Credentials::new(
+                                smtp.username.clone(),
+                                smtp.password.clone(),
+                            ))
+                            .build(),
                     )
                 }
                 EmailVerification::Disabled => None,
@@ -285,6 +294,32 @@ impl Auth {
                 .ok();
 
             AccountVerification::Pending {
+                token,
+                expiry: DateTime(
+                    Utc::now()
+                        .checked_add_signed(Duration::seconds(expiry.expire_verification))
+                        .expect("failed to checked_add_signed"),
+                ),
+            }
+        } else {
+            AccountVerification::Verified
+        }
+    }
+
+    /// Send email verification moving to another email address.
+    pub async fn generate_email_move_verification(&self, new_email: String) -> AccountVerification {
+        if let EmailVerification::Enabled {
+            templates, expiry, ..
+        } = &self.config.email_verification
+        {
+            let token = nanoid!(32);
+            let url = format!("{}{}", templates.verify.url, token);
+
+            self.send_email(new_email.clone(), &templates.verify, json!({ "url": url }))
+                .ok();
+
+            AccountVerification::Moving {
+                new_email,
                 token,
                 expiry: DateTime(
                     Utc::now()
