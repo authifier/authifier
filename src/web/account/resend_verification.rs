@@ -65,15 +65,17 @@ mod tests {
         use chrono::Utc;
         use mongodb::bson::DateTime;
 
-        let (db, auth) = for_test_with_config("resend_verification::success", test_smtp_config().await).await;
+        let (db, auth) =
+            for_test_with_config("resend_verification::success", test_smtp_config().await).await;
 
-        let mut account = auth.create_account("smtptest1@insrt.uk".into(), "password".into(), false)
+        let mut account = auth
+            .create_account("smtptest1@insrt.uk".into(), "password".into(), false)
             .await
             .unwrap();
 
         account.verification = AccountVerification::Pending {
             token: "".into(),
-            expiry: DateTime(Utc::now())
+            expiry: DateTime(Utc::now()),
         };
 
         account.save(&db, None).await.unwrap();
@@ -102,7 +104,11 @@ mod tests {
     #[cfg(feature = "async-std-runtime")]
     #[async_std::test]
     async fn success_unknown() {
-        let (_, auth) = for_test_with_config("resend_verification::success_unknown", test_smtp_config().await).await;
+        let (_, auth) = for_test_with_config(
+            "resend_verification::success_unknown",
+            test_smtp_config().await,
+        )
+        .await;
         let client = bootstrap_rocket_with_auth(
             auth,
             routes![crate::web::account::resend_verification::resend_verification],

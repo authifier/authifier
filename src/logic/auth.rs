@@ -313,11 +313,14 @@ impl Auth {
                     m
                 };
 
-                let text = self.render_template(&template.text, &variables).expect("valid `template`");
+                let text = self
+                    .render_template(&template.text, &variables)
+                    .expect("valid `template`");
                 let m = if let Some(html) = &template.html {
                     m.multipart(lettre::message::MultiPart::alternative_plain_html(
                         text,
-                        self.render_template(&html, &variables).expect("valid `template`"),
+                        self.render_template(&html, &variables)
+                            .expect("valid `template`"),
                     ))
                 } else {
                     m.body(text)

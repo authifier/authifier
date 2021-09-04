@@ -333,7 +333,11 @@ mod tests {
     #[cfg(feature = "async-std-runtime")]
     #[async_std::test]
     async fn success_smtp_sent() {
-        let (_, auth) = for_test_with_config("create_account::success_smtp_sent", test_smtp_config().await).await;
+        let (_, auth) = for_test_with_config(
+            "create_account::success_smtp_sent",
+            test_smtp_config().await,
+        )
+        .await;
         let client = bootstrap_rocket_with_auth(
             auth,
             routes![crate::web::account::create_account::create_account],

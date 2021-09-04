@@ -1,5 +1,13 @@
+use rocket::http::Status;
+use rocket::outcome::Outcome;
+use rocket::request::{self, FromRequest};
+use rocket::Request;
+
 use wither::bson::doc;
 use wither::prelude::*;
+
+use crate::logic::Auth;
+use crate::util::Error;
 
 #[derive(Debug, Model, Serialize, Deserialize)]
 #[model(
@@ -12,4 +20,40 @@ pub struct Session {
     pub user_id: String,
     pub token: String,
     pub name: String,
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for Session {
+    type Error = Error;
+
+    async fn from_request(request: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
+        let header_session_token = request
+            .headers()
+            .get("x-session-token")
+            .next()
+            .map(|x| x.to_string());
+
+        match (request.rocket().state::<Auth>(), header_session_token) {
+            (Some(auth), Some(token)) => {
+                if let Ok(session) = Session::find_one(
+                    &auth.db,
+                    doc! {
+                        "token": token
+                    },
+                    None,
+                )
+                .await
+                {
+                    if let Some(session) = session {
+                        Outcome::Success(session)
+                    } else {
+                        Outcome::Failure((Status::Unauthorized, Error::InvalidSession))
+                    }
+                } else {
+                    Outcome::Failure((Status::InternalServerError, Error::InvalidSession))
+                }
+            }
+            (_, _) => Outcome::Failure((Status::BadRequest, Error::MissingHeaders)),
+        }
+    }
 }
