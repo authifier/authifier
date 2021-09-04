@@ -25,6 +25,7 @@ pub struct Session {
 
 #[derive(Serialize, Deserialize)]
 pub struct SessionInfo {
+    #[serde(rename = "_id")]
     pub id: String,
     pub name: String,
 }
@@ -66,10 +67,10 @@ impl<'r> FromRequest<'r> for Session {
                         Outcome::Failure((Status::Unauthorized, Error::InvalidSession))
                     }
                 } else {
-                    Outcome::Failure((Status::InternalServerError, Error::InvalidSession))
+                    Outcome::Failure((Status::Unauthorized, Error::InvalidSession))
                 }
             }
-            (_, _) => Outcome::Failure((Status::BadRequest, Error::MissingHeaders)),
+            (_, _) => Outcome::Failure((Status::Unauthorized, Error::MissingHeaders)),
         }
     }
 }

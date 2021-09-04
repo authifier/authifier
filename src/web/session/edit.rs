@@ -1,6 +1,6 @@
-use rocket::serde::json::Json;
 /// Edit a session
 /// PATCH /session/:id
+use rocket::serde::json::Json;
 use rocket::State;
 
 use crate::entities::*;

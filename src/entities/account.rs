@@ -1,8 +1,17 @@
+use rocket::http::Status;
+use rocket::outcome::Outcome;
+use rocket::request::{self, FromRequest};
+use rocket::Request;
+
 use mongodb::bson::DateTime;
 use wither::bson::doc;
 use wither::prelude::*;
 
+use crate::logic::Auth;
+use crate::util::Error;
+
 use super::MFATicket;
+use super::Session;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "status")]
@@ -82,6 +91,22 @@ pub struct Account {
     pub mfa: MultiFactorAuthentication,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct AccountInfo {
+    #[serde(rename = "_id")]
+    pub id: String,
+    pub email: String,
+}
+
+impl From<Account> for AccountInfo {
+    fn from(item: Account) -> Self {
+        AccountInfo {
+            id: item.id.expect("`id` present"),
+            email: item.email,
+        }
+    }
+}
+
 impl Account {
     pub fn generate_ticket(_method: ()) -> MFATicket {
         // determine if we can generate an MFA ticket
@@ -89,5 +114,28 @@ impl Account {
         // otherwise throw error
 
         unimplemented!()
+    }
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for Account {
+    type Error = Error;
+
+    async fn from_request(request: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
+        match request.guard::<Session>().await {
+            Outcome::Success(session) => {
+                let auth = request.rocket().state::<Auth>().unwrap();
+
+                if let Ok(Some(account)) =
+                    Account::find_one(&auth.db, doc! { "id": session.user_id }, None).await
+                {
+                    Outcome::Success(account)
+                } else {
+                    Outcome::Failure((Status::InternalServerError, Error::InvalidSession))
+                }
+            }
+            Outcome::Forward(_) => unreachable!(),
+            Outcome::Failure(err) => Outcome::Failure(err),
+        }
     }
 }

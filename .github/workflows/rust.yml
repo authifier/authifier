@@ -11,12 +11,28 @@ env:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        mongodb-version: ['4.0']
 
     steps:
     - uses: actions/checkout@v2
     - name: Build
       run: cargo build --verbose
+    - name: Start mock SMTP server
+      uses: upgundecha/start-sendria-github-action@v1.0.0
+      with:
+        smtp-port: 25
+        http-port: 1080
+    - name: Start MongoDB
+      uses: supercharge/mongodb-github-action@1.6.0
+      with:
+        mongodb-version: ${{ matrix.mongodb-version }}
     - name: Run tests
       run: cargo test --verbose
+      env:
+        SMTP_HOST: localhost
+        SMTP_FROM: noreply@example.com
+        SMTP_USER: noreply@example.com
+        SMTP_PASS: password

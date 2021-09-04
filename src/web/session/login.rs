@@ -64,6 +64,10 @@ pub async fn login(auth: &State<Auth>, data: Json<Data>) -> Result<Json<Response
                 return Err(Error::InvalidCredentials);
             }
 
+            if account.disabled.unwrap_or(false) {
+                return Err(Error::DisabledAccount);
+            }
+
             Ok(Json(Response::Success(
                 auth.create_session(&account, name).await?,
             )))
@@ -114,10 +118,10 @@ mod tests {
 
     #[cfg(feature = "async-std-runtime")]
     #[async_std::test]
-    async fn invalid_user() {
+    async fn fail_invalid_user() {
         let client = bootstrap_rocket(
             "create_account",
-            "invalid_user",
+            "fail_invalid_user",
             routes![crate::web::session::login::login],
         )
         .await;
@@ -139,6 +143,42 @@ mod tests {
         assert_eq!(
             res.into_string().await,
             Some("{\"type\":\"InvalidCredentials\"}".into())
+        );
+    }
+
+    #[cfg(feature = "async-std-runtime")]
+    #[async_std::test]
+    async fn fail_disabled_account() {
+        let (db, auth) = for_test("login::fail_disabled_account").await;
+
+        let mut account = auth
+            .create_account("example@validemail.com".into(), "password".into(), false)
+            .await
+            .unwrap();
+
+        account.disabled = Some(true);
+        account.save(&db, None).await.unwrap();
+
+        let client =
+            bootstrap_rocket_with_auth(auth, routes![crate::web::session::login::login]).await;
+
+        let res = client
+            .post("/login")
+            .header(ContentType::JSON)
+            .body(
+                json!({
+                    "email": "example@validemail.com",
+                    "password": "password"
+                })
+                .to_string(),
+            )
+            .dispatch()
+            .await;
+
+        assert_eq!(res.status(), Status::Unauthorized);
+        assert_eq!(
+            res.into_string().await,
+            Some("{\"type\":\"DisabledAccount\"}".into())
         );
     }
 }
