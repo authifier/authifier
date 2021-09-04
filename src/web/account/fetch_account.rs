@@ -1,12 +1,35 @@
 /// Fetch your account
 /// GET /account
+use rocket::serde::json::Json;
+
+use crate::entities::*;
+use crate::util::Result;
 
 #[get("/")]
-pub async fn fetch_account(auth: &State<Auth>, account: Account) -> Result<EmptyResponse> {
-    //let account = Account
+pub async fn fetch_account(account: Account) -> Result<Json<AccountInfo>> {
+    Ok(Json(account.into()))
 }
 
-/// Requires authentication x-session-token or scope user.email
+#[cfg(test)]
+mod tests {
+    use crate::test::*;
 
-/// Responses:
-// { id: String, email: String }
+    #[cfg(feature = "async-std-runtime")]
+    #[async_std::test]
+    async fn success() {
+        use rocket::http::Header;
+
+        let (_, auth, session, _) = for_test_authenticated("fetch_account::success").await;
+        let client =
+            bootstrap_rocket_with_auth(auth, routes![crate::web::account::fetch_account::fetch_account]).await;
+
+        let res = client
+            .get("/")
+            .header(Header::new("X-Session-Token", session.token))
+            .dispatch()
+            .await;
+
+        assert_eq!(res.status(), Status::Ok);
+        assert!(serde_json::from_str::<AccountInfo>(&res.into_string().await.unwrap()).is_ok());
+    }
+}

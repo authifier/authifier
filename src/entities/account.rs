@@ -127,7 +127,7 @@ impl<'r> FromRequest<'r> for Account {
                 let auth = request.rocket().state::<Auth>().unwrap();
 
                 if let Ok(Some(account)) =
-                    Account::find_one(&auth.db, doc! { "id": session.user_id }, None).await
+                    Account::find_one(&auth.db, doc! { "_id": session.user_id }, None).await
                 {
                     Outcome::Success(account)
                 } else {

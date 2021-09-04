@@ -79,6 +79,6 @@ mod tests {
 
         let res = client.post("/logout").dispatch().await;
 
-        assert_eq!(res.status(), Status::BadRequest);
+        assert_eq!(res.status(), Status::Unauthorized);
     }
 }
