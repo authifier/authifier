@@ -1,11 +1,12 @@
 use rocket::{routes, Route};
 
-mod change_email;
-mod change_password;
-mod create_account;
-mod fetch_account;
-mod resend_verification;
-mod verify_email;
+pub mod change_email;
+pub mod change_password;
+pub mod create_account;
+pub mod fetch_account;
+pub mod password_reset;
+pub mod resend_verification;
+pub mod verify_email;
 
 pub fn routes() -> Vec<Route> {
     routes![
@@ -14,6 +15,7 @@ pub fn routes() -> Vec<Route> {
         fetch_account::fetch_account,
         change_password::change_password,
         change_email::change_email,
-        verify_email::verify_email
+        verify_email::verify_email,
+        password_reset::password_reset,
     ]
 }

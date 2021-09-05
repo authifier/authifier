@@ -29,8 +29,8 @@ pub enum AccountVerification {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PasswordReset {
-    token: String,
-    expiry: DateTime,
+    pub token: String,
+    pub expiry: DateTime,
 }
 
 fn is_false(t: &bool) -> bool {

@@ -1,11 +1,11 @@
 use rocket::{routes, Route};
 
-mod edit;
-mod fetch_all;
-mod login;
-mod logout;
-mod revoke;
-mod revoke_all;
+pub mod edit;
+pub mod fetch_all;
+pub mod login;
+pub mod logout;
+pub mod revoke;
+pub mod revoke_all;
 
 pub fn routes() -> Vec<Route> {
     routes![
