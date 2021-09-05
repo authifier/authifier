@@ -353,6 +353,31 @@ impl Auth {
             AccountVerification::Verified
         }
     }
+
+    /// Send email password reset.
+    pub async fn generate_email_password_reset(&self, email: String) -> Option<PasswordReset> {
+        if let EmailVerification::Enabled {
+            templates, expiry, ..
+        } = &self.config.email_verification
+        {
+            let token = nanoid!(32);
+            let url = format!("{}{}", templates.reset.url, token);
+
+            self.send_email(email, &templates.reset, json!({ "url": url }))
+                .ok();
+
+            Some(PasswordReset {
+                token,
+                expiry: DateTime(
+                    Utc::now()
+                        .checked_add_signed(Duration::seconds(expiry.expire_password_reset))
+                        .expect("failed to checked_add_signed"),
+                ),
+            })
+        } else {
+            None
+        }
+    }
     // #endregion
 
     // #region Email Utilities

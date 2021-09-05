@@ -69,7 +69,7 @@ mod tests {
             for_test_with_config("resend_verification::success", test_smtp_config().await).await;
 
         let mut account = auth
-            .create_account("smtptest1@insrt.uk".into(), "password".into(), false)
+            .create_account("resend_verification@smtp.test".into(), "password".into(), false)
             .await
             .unwrap();
 
@@ -82,7 +82,8 @@ mod tests {
 
         let client = bootstrap_rocket_with_auth(
             auth,
-            routes![crate::web::account::resend_verification::resend_verification],
+            routes![crate::web::account::resend_verification::resend_verification,
+            crate::web::account::verify_email::verify_email],
         )
         .await;
 
@@ -91,10 +92,18 @@ mod tests {
             .header(ContentType::JSON)
             .body(
                 json!({
-                    "email": "smtptest1@insrt.uk",
+                    "email": "resend_verification@smtp.test",
                 })
                 .to_string(),
             )
+            .dispatch()
+            .await;
+
+        assert_eq!(res.status(), Status::NoContent);
+
+        let mail = assert_email_sendria("resend_verification@smtp.test".into()).await;
+        let res = client
+            .post(format!("/verify/{}", mail.code.expect("`code`")))
             .dispatch()
             .await;
 
