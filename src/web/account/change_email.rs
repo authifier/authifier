@@ -5,7 +5,7 @@ use rocket::State;
 
 use crate::entities::*;
 use crate::logic::Auth;
-use crate::util::{normalise_email, EmptyResponse, Error, Result};
+use crate::util::{normalise_email, EmptyResponse, Result};
 
 #[derive(Serialize, Deserialize)]
 pub struct Data {
@@ -37,15 +37,7 @@ pub async fn change_email(
     }
 
     // Commit to database.
-    account
-        .save(&auth.db, None)
-        .await
-        .map_err(|_| Error::DatabaseError {
-            operation: "save",
-            with: "account",
-        })?;
-
-    Ok(EmptyResponse)
+    account.save_to_db(&auth.db).await.map(|_| EmptyResponse)
 }
 
 #[cfg(test)]

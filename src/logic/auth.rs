@@ -240,13 +240,7 @@ impl Auth {
         };
 
         // Commit to database.
-        account
-            .save(&self.db, None)
-            .await
-            .map_err(|_| Error::DatabaseError {
-                operation: "save",
-                with: "account",
-            })?;
+        account.save_to_db(&self.db).await?;
 
         Ok(account)
     }
@@ -291,16 +285,11 @@ impl Auth {
         }
 
         account.verification = AccountVerification::Verified;
-        account
-            .save(&self.db, None)
-            .await
-            .map(|_| ())
-            .map_err(|_| Error::DatabaseError {
-                operation: "save",
-                with: "account",
-            })
+        account.save_to_db(&self.db).await
     }
+    // #endregion
 
+    // #region Email Operations
     /// Send or resend email verification.
     /// This function generates a new account verification object
     /// which needs to be manually applied to the account object.
@@ -377,6 +366,23 @@ impl Auth {
         } else {
             None
         }
+    }
+    // #endregion
+
+    // #region MFA Operations
+    // Generate new recovery codes for an account.
+    pub async fn mfa_regenerate_recovery(&self, account: &mut Account) -> Result<()> {
+        let mut codes = vec![];
+        for _ in 1..=10 {
+            static ALPHABET: [char; 32] = [
+                '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'j', 'k', 'm', 'n', 'p', 'q', 'r', 's', 't', 'v', 'w', 'x', 'y', 'z'
+            ];
+            
+            codes.push(format!("{}-{}", nanoid!(5, &ALPHABET), nanoid!(5, &ALPHABET)));
+        }
+
+        account.mfa.recovery_codes = codes;
+        account.save_to_db(&self.db).await
     }
     // #endregion
 

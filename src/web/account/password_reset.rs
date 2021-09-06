@@ -44,14 +44,7 @@ pub async fn password_reset(auth: &State<Auth>, data: Json<Data>) -> Result<Empt
     account.password_reset = None;
 
     // Commit to database.
-    account
-        .save(&auth.db, None)
-        .await
-        .map(|_| EmptyResponse)
-        .map_err(|_| Error::DatabaseError {
-            operation: "save",
-            with: "account",
-        })
+    account.save_to_db(&auth.db).await.map(|_| EmptyResponse)
 }
 
 #[cfg(test)]

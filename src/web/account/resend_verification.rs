@@ -40,13 +40,7 @@ pub async fn resend_verification(auth: &State<Auth>, data: Json<Data>) -> Result
                 .await;
 
             // Commit to database.
-            account
-                .save(&auth.db, None)
-                .await
-                .map_err(|_| Error::DatabaseError {
-                    operation: "save",
-                    with: "account",
-                })?;
+            account.save_to_db(&auth.db).await?;
         }
     }
 

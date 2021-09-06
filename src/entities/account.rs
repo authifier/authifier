@@ -42,30 +42,30 @@ pub struct MultiFactorAuthentication {
     /// Allow password-less email OTP login
     /// (1-Factor)
     #[serde(skip_serializing_if = "is_false", default)]
-    enable_email_otp: bool,
+    pub enable_email_otp: bool,
 
     /// Allow trusted handover
     /// (1-Factor)
     #[serde(skip_serializing_if = "is_false", default)]
-    enable_trusted_handover: bool,
+    pub enable_trusted_handover: bool,
 
     /// Allow email MFA
     /// (2-Factor)
     #[serde(skip_serializing_if = "is_false", default)]
-    enable_email_mfa: bool,
+    pub enable_email_mfa: bool,
 
     /// TOTP MFA token, enabled if present
     /// (2-Factor)
     #[serde(skip_serializing_if = "Option::is_none")]
-    totp_token: Option<String>,
+    pub totp_token: Option<String>,
 
     /// Security Key MFA token, enabled if present
     /// (2-Factor)
     #[serde(skip_serializing_if = "Option::is_none")]
-    security_key_token: Option<String>,
+    pub security_key_token: Option<String>,
 
     /// Recovery codes
-    recovery_codes: Vec<String>,
+    pub recovery_codes: Vec<String>,
 }
 
 impl MultiFactorAuthentication {
@@ -141,6 +141,17 @@ impl From<Account> for AccountInfo {
 }
 
 impl Account {
+    pub async fn save_to_db(&mut self, db: &mongodb::Database) -> Result<()> {
+        self
+            .save(&db, None)
+            .await
+            .map(|_| ())
+            .map_err(|_| Error::DatabaseError {
+                operation: "save",
+                with: "account",
+            })
+    }
+
     pub fn verify_password(&self, password: &str) -> Result<()> {
         argon2::verify_encoded(&self.password, password.as_bytes())
             .map(|v| {
