@@ -6,8 +6,8 @@ pub mod create_account;
 pub mod fetch_account;
 pub mod password_reset;
 pub mod resend_verification;
-pub mod verify_email;
 pub mod send_password_reset;
+pub mod verify_email;
 
 pub fn routes() -> Vec<Route> {
     routes![

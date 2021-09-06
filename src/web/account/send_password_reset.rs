@@ -34,7 +34,9 @@ pub async fn send_password_reset(auth: &State<Auth>, data: Json<Data>) -> Result
         })?
     {
         // Generate password reset email.
-        account.password_reset = auth.generate_email_password_reset(account.email.clone()).await;
+        account.password_reset = auth
+            .generate_email_password_reset(account.email.clone())
+            .await;
 
         // Commit to database.
         account
@@ -79,8 +81,10 @@ mod tests {
         let client = bootstrap_rocket_with_auth(
             auth,
             routes![
-                crate::web::account::password_reset::password_reset,crate::web::account::send_password_reset::send_password_reset,
-                crate::web::session::login::login],
+                crate::web::account::password_reset::password_reset,
+                crate::web::account::send_password_reset::send_password_reset,
+                crate::web::session::login::login
+            ],
         )
         .await;
 

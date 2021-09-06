@@ -69,7 +69,11 @@ mod tests {
             for_test_with_config("resend_verification::success", test_smtp_config().await).await;
 
         let mut account = auth
-            .create_account("resend_verification@smtp.test".into(), "password".into(), false)
+            .create_account(
+                "resend_verification@smtp.test".into(),
+                "password".into(),
+                false,
+            )
             .await
             .unwrap();
 
@@ -82,8 +86,10 @@ mod tests {
 
         let client = bootstrap_rocket_with_auth(
             auth,
-            routes![crate::web::account::resend_verification::resend_verification,
-            crate::web::account::verify_email::verify_email],
+            routes![
+                crate::web::account::resend_verification::resend_verification,
+                crate::web::account::verify_email::verify_email
+            ],
         )
         .await;
 

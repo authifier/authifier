@@ -40,27 +40,61 @@ fn is_false(t: &bool) -> bool {
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct MultiFactorAuthentication {
     /// Allow password-less email OTP login
+    /// (1-Factor)
     #[serde(skip_serializing_if = "is_false", default)]
     enable_email_otp: bool,
 
     /// Allow trusted handover
+    /// (1-Factor)
     #[serde(skip_serializing_if = "is_false", default)]
     enable_trusted_handover: bool,
 
     /// Allow email MFA
+    /// (2-Factor)
     #[serde(skip_serializing_if = "is_false", default)]
     enable_email_mfa: bool,
 
     /// TOTP MFA token, enabled if present
+    /// (2-Factor)
     #[serde(skip_serializing_if = "Option::is_none")]
     totp_token: Option<String>,
 
     /// Security Key MFA token, enabled if present
+    /// (2-Factor)
     #[serde(skip_serializing_if = "Option::is_none")]
     security_key_token: Option<String>,
 
     /// Recovery codes
     recovery_codes: Vec<String>,
+}
+
+impl MultiFactorAuthentication {
+    pub fn is_2fa_enabled(&self) -> bool {
+        self.enable_email_mfa || self.totp_token.is_some() || self.security_key_token.is_some()
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MultiFactorStatus {
+    email_otp: bool,
+    trusted_handover: bool,
+    email_mfa: bool,
+    totp_mfa: bool,
+    security_key_mfa: bool,
+    recovery_active: bool,
+}
+
+impl From<MultiFactorAuthentication> for MultiFactorStatus {
+    fn from(item: MultiFactorAuthentication) -> Self {
+        MultiFactorStatus {
+            email_otp: item.enable_email_otp,
+            trusted_handover: item.enable_trusted_handover,
+            email_mfa: item.enable_email_mfa,
+            totp_mfa: item.totp_token.is_some(),
+            security_key_mfa: item.security_key_token.is_some(),
+            recovery_active: !item.recovery_codes.is_empty(),
+        }
+    }
 }
 
 #[derive(Debug, Model, Serialize, Deserialize)]
