@@ -36,6 +36,8 @@ pub enum Error {
     CompromisedPassword,
     DisabledAccount,
     Blacklisted,
+
+    TotpAlreadyEnabled,
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -65,6 +67,7 @@ impl<'r> Responder<'r, 'static> for Error {
                 // Silently fail blacklisted email addresses.
                 return Response::build().status(Status::NoContent).ok();
             }
+            Error::TotpAlreadyEnabled => Status::BadRequest,
         };
 
         // Serialize the error data structure into JSON.

@@ -12,6 +12,10 @@ use crate::util::{Error, Result};
 
 use super::Session;
 
+fn is_false(t: &bool) -> bool {
+    !t
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "status")]
 pub enum AccountVerification {
@@ -33,8 +37,28 @@ pub struct PasswordReset {
     pub expiry: DateTime,
 }
 
-fn is_false(t: &bool) -> bool {
-    !t
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "status")]
+pub enum Totp {
+    Disabled,
+    Pending { secret: String },
+    Enabled { secret: String },
+}
+
+impl Totp {
+    pub fn is_disabled(&self) -> bool {
+        if let Totp::Disabled = self {
+            true
+        } else {
+            false
+        }
+    }
+}
+
+impl Default for Totp {
+    fn default() -> Totp {
+        Totp::Disabled
+    }
 }
 
 #[derive(Default, Debug, Serialize, Deserialize)]
@@ -56,8 +80,8 @@ pub struct MultiFactorAuthentication {
 
     /// TOTP MFA token, enabled if present
     /// (2-Factor)
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub totp_token: Option<String>,
+    #[serde(skip_serializing_if = "Totp::is_disabled", default)]
+    pub totp_token: Totp,
 
     /// Security Key MFA token, enabled if present
     /// (2-Factor)
@@ -70,7 +94,7 @@ pub struct MultiFactorAuthentication {
 
 impl MultiFactorAuthentication {
     pub fn is_2fa_enabled(&self) -> bool {
-        self.enable_email_mfa || self.totp_token.is_some() || self.security_key_token.is_some()
+        self.enable_email_mfa || !self.totp_token.is_disabled() || self.security_key_token.is_some()
     }
 }
 
@@ -90,7 +114,7 @@ impl From<MultiFactorAuthentication> for MultiFactorStatus {
             email_otp: item.enable_email_otp,
             trusted_handover: item.enable_trusted_handover,
             email_mfa: item.enable_email_mfa,
-            totp_mfa: item.totp_token.is_some(),
+            totp_mfa: !item.totp_token.is_disabled(),
             security_key_mfa: item.security_key_token.is_some(),
             recovery_active: !item.recovery_codes.is_empty(),
         }
@@ -142,8 +166,7 @@ impl From<Account> for AccountInfo {
 
 impl Account {
     pub async fn save_to_db(&mut self, db: &mongodb::Database) -> Result<()> {
-        self
-            .save(&db, None)
+        self.save(&db, None)
             .await
             .map(|_| ())
             .map_err(|_| Error::DatabaseError {

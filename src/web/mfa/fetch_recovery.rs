@@ -26,9 +26,11 @@ mod tests {
         use rocket::http::Header;
 
         let (_, auth, session, _) = for_test_authenticated("fetch_recovery::success").await;
-        let client =
-            bootstrap_rocket_with_auth(auth, routes![crate::web::mfa::fetch_recovery::fetch_recovery])
-                .await;
+        let client = bootstrap_rocket_with_auth(
+            auth,
+            routes![crate::web::mfa::fetch_recovery::fetch_recovery],
+        )
+        .await;
 
         let res = client
             .post("/recovery")
@@ -44,8 +46,6 @@ mod tests {
             .await;
 
         assert_eq!(res.status(), Status::Ok);
-        assert!(
-            serde_json::from_str::<Vec<String>>(&res.into_string().await.unwrap()).is_ok()
-        );
+        assert!(serde_json::from_str::<Vec<String>>(&res.into_string().await.unwrap()).is_ok());
     }
 }

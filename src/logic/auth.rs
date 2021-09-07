@@ -20,6 +20,11 @@ lazy_static! {
     static ref HANDLEBARS: handlebars::Handlebars<'static> = handlebars::Handlebars::new();
 }
 
+static ALPHABET: [char; 32] = [
+    '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'j',
+    'k', 'm', 'n', 'p', 'q', 'r', 's', 't', 'v', 'w', 'x', 'y', 'z',
+];
+
 pub struct Auth {
     pub db: Database,
     pub config: Config,
@@ -374,15 +379,40 @@ impl Auth {
     pub async fn mfa_regenerate_recovery(&self, account: &mut Account) -> Result<()> {
         let mut codes = vec![];
         for _ in 1..=10 {
-            static ALPHABET: [char; 32] = [
-                '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'j', 'k', 'm', 'n', 'p', 'q', 'r', 's', 't', 'v', 'w', 'x', 'y', 'z'
-            ];
-            
-            codes.push(format!("{}-{}", nanoid!(5, &ALPHABET), nanoid!(5, &ALPHABET)));
+            codes.push(format!(
+                "{}-{}",
+                nanoid!(5, &ALPHABET),
+                nanoid!(5, &ALPHABET)
+            ));
         }
 
         account.mfa.recovery_codes = codes;
         account.save_to_db(&self.db).await
+    }
+
+    // Generate new TOTP secret.
+    pub async fn mfa_generate_totp_secret(&self, account: &mut Account) -> Result<String> {
+        if let Totp::Enabled { .. } = account.mfa.totp_token {
+            return Err(Error::Blacklisted);
+        }
+
+        let secret: [u8; 10] = rand::random();
+        let secret = base32::encode(base32::Alphabet::RFC4648 { padding: false }, &secret);
+
+        account.mfa.totp_token = Totp::Pending {
+            secret: secret.clone(),
+        };
+
+        account.save_to_db(&self.db).await.map(|_| secret)
+    }
+
+    // Generate a TOTP code from secret.
+    pub fn mfa_generate_totp_code(secret: &[u8]) -> String {
+        let seconds: u64 = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        totp_lite::totp_custom::<totp_lite::Sha1>(totp_lite::DEFAULT_STEP, 6, &secret, seconds)
     }
     // #endregion
 
