@@ -126,9 +126,9 @@ impl From<MultiFactorAuthentication> for MultiFactorStatus {
     collection_name = "accounts",
     index(
         keys = r#"doc!{"email_normalised": 1}"#,
-        options = r#"doc!{"unique": true}"#
+        options = r#"doc!{ "unique": true, "collation": { "locale": "en", "strength": 2 } }"#
     ),
-    index(keys = r#"doc!{"email": 1}"#, options = r#"doc!{"unique": true}"#)
+    index(keys = r#"doc!{"email": 1}"#, options = r#"doc!{ "unique": true, "collation": { "locale": "en", "strength": 2 } }"#)
 )]
 pub struct Account {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]

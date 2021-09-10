@@ -48,7 +48,7 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (_, auth, session, _) = for_test_authenticated("totp_generate_secret::success").await;
+        let (_, auth, session, _) = for_test_authenticated("totp_enable::success").await;
         let client = bootstrap_rocket_with_auth(
             auth,
             routes![
