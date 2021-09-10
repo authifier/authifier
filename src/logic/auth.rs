@@ -264,6 +264,8 @@ impl Auth {
 
             user_id: account.id.clone().unwrap(),
             name,
+
+            subscription: None
         };
 
         // Commit to database.
