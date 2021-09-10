@@ -9,6 +9,13 @@ use wither::prelude::*;
 use crate::logic::Auth;
 use crate::util::Error;
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct WebPushSubscription {
+    endpoint: String,
+    p256dh: String,
+    auth: String,
+}
+
 #[derive(Debug, Model, Serialize, Deserialize)]
 #[model(
     collection_name = "sessions",
@@ -21,6 +28,9 @@ pub struct Session {
     pub user_id: String,
     pub token: String,
     pub name: String,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subscription: Option<WebPushSubscription>,
 }
 
 #[derive(Serialize, Deserialize)]
