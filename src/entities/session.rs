@@ -11,9 +11,9 @@ use crate::util::Error;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct WebPushSubscription {
-    endpoint: String,
-    p256dh: String,
-    auth: String,
+    pub endpoint: String,
+    pub p256dh: String,
+    pub auth: String,
 }
 
 #[derive(Debug, Model, Serialize, Deserialize)]
