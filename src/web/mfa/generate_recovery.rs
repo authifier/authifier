@@ -1,6 +1,6 @@
-use rocket::serde::json::Json;
 /// Re-generate recovery codes for an account.
 /// PATCH /mfa/recovery
+use rocket::serde::json::Json;
 use rocket::State;
 
 use crate::entities::*;

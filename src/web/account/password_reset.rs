@@ -15,7 +15,7 @@ pub struct Data {
     pub password: String,
 }
 
-#[patch("/account/reset_password", data = "<data>")]
+#[patch("/reset_password", data = "<data>")]
 pub async fn password_reset(auth: &State<Auth>, data: Json<Data>) -> Result<EmptyResponse> {
     let data = data.into_inner();
 
@@ -80,7 +80,7 @@ mod tests {
         .await;
 
         let res = client
-            .patch("/account/reset_password")
+            .patch("/reset_password")
             .header(ContentType::JSON)
             .body(
                 json!({
@@ -123,7 +123,7 @@ mod tests {
         .await;
 
         let res = client
-            .patch("/account/reset_password")
+            .patch("/reset_password")
             .header(ContentType::JSON)
             .body(
                 json!({

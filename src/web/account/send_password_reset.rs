@@ -14,7 +14,7 @@ pub struct Data {
     pub captcha: Option<String>,
 }
 
-#[post("/account/reset_password", data = "<data>")]
+#[post("/reset_password", data = "<data>")]
 pub async fn send_password_reset(auth: &State<Auth>, data: Json<Data>) -> Result<EmptyResponse> {
     let data = data.into_inner();
 
@@ -83,7 +83,7 @@ mod tests {
         .await;
 
         let res = client
-            .post("/account/reset_password")
+            .post("/reset_password")
             .header(ContentType::JSON)
             .body(
                 json!({
@@ -98,7 +98,7 @@ mod tests {
 
         let mail = assert_email_sendria("password_reset@smtp.test".into()).await;
         let res = client
-            .patch("/account/reset_password")
+            .patch("/reset_password")
             .header(ContentType::JSON)
             .body(
                 json!({
