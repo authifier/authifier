@@ -1,5 +1,5 @@
 /// Change account password.
-/// PATCH /account/password
+/// PATCH /account/change/password
 use rocket::serde::json::Json;
 use rocket::State;
 
@@ -13,7 +13,7 @@ pub struct Data {
     pub current_password: String,
 }
 
-#[patch("/password", data = "<data>")]
+#[patch("/change/password", data = "<data>")]
 pub async fn change_password(
     auth: &State<Auth>,
     mut account: Account,

@@ -1,5 +1,5 @@
 /// Change account email.
-/// PATCH /account/email
+/// PATCH /account/change/email
 use rocket::serde::json::Json;
 use rocket::State;
 
@@ -13,7 +13,7 @@ pub struct Data {
     pub current_password: String,
 }
 
-#[patch("/email", data = "<data>")]
+#[patch("/change/email", data = "<data>")]
 pub async fn change_email(
     auth: &State<Auth>,
     mut account: Account,
