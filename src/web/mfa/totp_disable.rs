@@ -25,15 +25,30 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (_, auth, session, _) = for_test_authenticated("totp_disable::success").await;
+        let (db, auth, session, account) = for_test_authenticated("totp_disable::success").await;
         let client = bootstrap_rocket_with_auth(
             auth,
             routes![
-                crate::web::mfa::totp_enable::totp_enable,
+                crate::web::mfa::totp_generate_secret::totp_generate_secret,
                 crate::web::mfa::totp_disable::totp_disable
             ],
         )
         .await;
+
+        let res = client
+            .post("/totp")
+            .header(Header::new("X-Session-Token", session.token.clone()))
+            .dispatch()
+            .await;
+
+        assert_eq!(res.status(), Status::Ok);
+
+        let account = Account::find_one(&db, doc! { "_id": account.id.unwrap() }, None)
+            .await
+            .unwrap()
+            .unwrap();
+
+        assert_ne!(account.mfa.totp_token, Totp::Disabled);
 
         let res = client
             .delete("/totp")
@@ -42,5 +57,12 @@ mod tests {
             .await;
 
         assert_eq!(res.status(), Status::NoContent);
+
+        let account = Account::find_one(&db, doc! { "_id": account.id.unwrap() }, None)
+            .await
+            .unwrap()
+            .unwrap();
+
+        assert_eq!(account.mfa.totp_token, Totp::Disabled);
     }
 }

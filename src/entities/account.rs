@@ -37,7 +37,7 @@ pub struct PasswordReset {
     pub expiry: DateTime,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "status")]
 pub enum Totp {
     Disabled,
