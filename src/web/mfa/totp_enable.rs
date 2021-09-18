@@ -74,7 +74,7 @@ mod tests {
 
         let Response { secret } =
             serde_json::from_str::<Response>(&res.into_string().await.unwrap()).unwrap();
-            
+
         let secret_u8 = base32::decode(base32::Alphabet::RFC4648 { padding: false }, &secret)
             .expect("valid `secret`");
 

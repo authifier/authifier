@@ -1,5 +1,6 @@
 /// Login to an account
 /// POST /session/login
+use mongodb::options::{Collation, FindOneOptions};
 use rocket::serde::json::Json;
 use rocket::State;
 
@@ -47,13 +48,18 @@ pub async fn login(auth: &State<Auth>, data: Json<Data>) -> Result<Json<Response
     // auth.validate_password(&password).await?;
 
     // Try to find the account we want.
-    if let Some(account) = Account::find_one(&auth.db, doc! { "email": data.email }, None)
-        .await
-        .map_err(|_| Error::DatabaseError {
-            operation: "find_one",
-            with: "account",
-        })?
-    {
+    if let Some(account) = Account::find_one(
+        &auth.db,
+        doc! { "email": data.email },
+        FindOneOptions::builder()
+            .collation(Collation::builder().locale("en").strength(2).build())
+            .build(),
+    )
+    .await
+    .map_err(|_| Error::DatabaseError {
+        operation: "find_one",
+        with: "account",
+    })? {
         // Figure out whether we are doing password, 1FA key or email 1FA OTP.
         if let Some(password) = data.password {
             // Verify the password is correct.
@@ -100,7 +106,7 @@ mod tests {
             .header(ContentType::JSON)
             .body(
                 json!({
-                    "email": "example@validemail.com",
+                    "email": "EXAMPLE@validemail.com",
                     "password": "password"
                 })
                 .to_string(),

@@ -1,6 +1,7 @@
 /// Send a password reset email
 /// POST /account/reset_password
 use mongodb::bson::doc;
+use mongodb::options::{Collation, FindOneOptions};
 use rocket::serde::json::Json;
 use rocket::State;
 
@@ -26,13 +27,18 @@ pub async fn send_password_reset(auth: &State<Auth>, data: Json<Data>) -> Result
     // remote client, as this will open us up to user enumeration.
 
     // Try to find the relevant account.
-    if let Some(mut account) = Account::find_one(&auth.db, doc! { "email": data.email }, None)
-        .await
-        .map_err(|_| Error::DatabaseError {
-            operation: "find_one",
-            with: "account",
-        })?
-    {
+    if let Some(mut account) = Account::find_one(
+        &auth.db,
+        doc! { "email": data.email },
+        FindOneOptions::builder()
+            .collation(Collation::builder().locale("en").strength(2).build())
+            .build(),
+    )
+    .await
+    .map_err(|_| Error::DatabaseError {
+        operation: "find_one",
+        with: "account",
+    })? {
         // Generate password reset email.
         account.password_reset = auth
             .generate_email_password_reset(account.email.clone())

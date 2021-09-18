@@ -128,7 +128,10 @@ impl From<MultiFactorAuthentication> for MultiFactorStatus {
         keys = r#"doc!{"email_normalised": 1}"#,
         options = r#"doc!{ "unique": true, "collation": { "locale": "en", "strength": 2 } }"#
     ),
-    index(keys = r#"doc!{"email": 1}"#, options = r#"doc!{ "unique": true, "collation": { "locale": "en", "strength": 2 } }"#)
+    index(
+        keys = r#"doc!{"email": 1}"#,
+        options = r#"doc!{ "unique": true, "collation": { "locale": "en", "strength": 2 } }"#
+    )
 )]
 pub struct Account {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]

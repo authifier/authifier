@@ -49,7 +49,7 @@ mod tests {
         .await;
 
         let res = client
-            .patch("/password")
+            .patch("/change/password")
             .header(ContentType::JSON)
             .header(Header::new("X-Session-Token", session.token.clone()))
             .body(
@@ -65,7 +65,7 @@ mod tests {
         assert_eq!(res.status(), Status::NoContent);
 
         let res = client
-            .patch("/password")
+            .patch("/change/password")
             .header(ContentType::JSON)
             .header(Header::new("X-Session-Token", session.token))
             .body(

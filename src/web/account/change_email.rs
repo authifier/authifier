@@ -57,7 +57,7 @@ mod tests {
         .await;
 
         let res = client
-            .patch("/email")
+            .patch("/change/email")
             .header(ContentType::JSON)
             .header(Header::new("X-Session-Token", session.token.clone()))
             .body(
@@ -100,7 +100,7 @@ mod tests {
         .await;
 
         let res = client
-            .patch("/email")
+            .patch("/change/email")
             .header(ContentType::JSON)
             .header(Header::new("X-Session-Token", session.token.clone()))
             .body(
