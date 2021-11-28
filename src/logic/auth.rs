@@ -281,18 +281,39 @@ impl Auth {
     }
 
     /// Verify an account using a token.
-    pub async fn verify_account(&self, mut account: &mut Account) -> Result<()> {
+    pub async fn verify_account(&self, account: &Account) -> Result<()> {
+        let mut update = doc! {
+            "verification": {
+                "status": "Verified"
+            }
+        };
+
         match &account.verification {
             AccountVerification::Pending { .. } => {}
             AccountVerification::Moving { new_email, .. } => {
-                account.email = new_email.clone();
-                account.email_normalised = util::normalise_email(new_email.clone());
+                update.insert("email", new_email);
+                update.insert("email_normalised", util::normalise_email(new_email.clone()));
             }
             _ => unreachable!(),
         }
 
-        account.verification = AccountVerification::Verified;
-        account.save_to_db(&self.db).await
+        self.db
+            .collection("accounts")
+            .update_one(
+                doc! {
+                    "_id": account.id.as_ref().unwrap().clone()
+                },
+                doc! {
+                    "$set": update
+                },
+                None
+            )
+            .await
+            .map(|_| ())
+            .map_err(|_| Error::DatabaseError {
+                operation: "update",
+                with: "account",
+            })
     }
     // #endregion
 
