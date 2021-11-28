@@ -560,6 +560,8 @@ zomg.info
 #region public emails provided by mail.tm
 ----
 trythe.net
+leadwizzer.com
+metalunits.com
 
 #region sourced from https://github.com/FGRibreau/mailchecker
 ----
@@ -10546,6 +10548,7 @@ emailmynn.com
 emailmysr.com
 emailna.co
 emailna.life
+emailnax.com
 emailno.in
 emailnode.net
 emailnope.com
@@ -12187,14 +12190,12 @@ freelymail.com
 freemail-host.info
 freemail.bid
 freemail.co.pl
-freemail.hu
 freemail.men
 freemail.ms
 freemail.nx.cninfo.net
 freemail.online.tj.cn
 freemail.trade
 freemail.trankery.net
-freemail.tweakly.net
 freemail.waw.pl
 freemail000.pl
 freemail3949.info
@@ -29803,7 +29804,6 @@ tvi72tuyxvd.tk
 tvonlayn2.ru
 twddos.net
 tweakacapun.wwwhost.biz
-tweakly.net
 twelvee.us
 twinklegalaxy.com
 twinsbrand.com
@@ -29845,7 +29845,7 @@ txrsvu8dhhh2znppii.cf
 txrsvu8dhhh2znppii.ga
 txrsvu8dhhh2znppii.gq
 txrsvu8dhhh2znppii.ml
-txrsvu8dhhh2znppii.tk
+txrsvu8dhhh2znppii.tk`
 txt.flu.cc
 txt10xqa7atssvbrf.cf
 txt10xqa7atssvbrf.ga
