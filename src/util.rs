@@ -64,8 +64,13 @@ impl<'r> Responder<'r, 'static> for Error {
             Error::CompromisedPassword => Status::BadRequest,
             Error::DisabledAccount => Status::Unauthorized,
             Error::Blacklisted => {
-                // Silently fail blacklisted email addresses.
-                return Response::build().status(Status::NoContent).ok();
+                // Fail blacklisted email addresses.
+                const RESP: &str = "{\"type\":\"DisallowedContactSupport\", \"email\":\"support@revolt.chat\", \"note\":\"If you see this messages right here, you're probably doing something you shouldn't be.\"}";
+
+                return Response::build()
+                    .status(Status::Unauthorized)
+                    .sized_body(RESP.len(), Cursor::new(RESP))
+                    .ok();
             }
             Error::TotpAlreadyEnabled => Status::BadRequest,
         };
