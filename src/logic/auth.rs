@@ -315,6 +315,13 @@ impl Auth {
                 with: "account",
             })
     }
+
+    pub fn check_is_verified(&self, account: &Account) -> Result<()> {
+        match &account.verification {
+            AccountVerification::Verified { .. } => Ok(()),
+            _ => Err(Error::UnverifiedAccount)
+        }
+    }
     // #endregion
 
     // #region Email Operations

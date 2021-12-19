@@ -39,7 +39,7 @@ pub async fn login(auth: &State<Auth>, data: Json<Data>) -> Result<Json<Response
     // Perform validation on given data.
     auth.check_captcha(data.captcha).await?;
     auth.validate_email(&data.email).await?;
-
+    
     // Generate a session name ahead of time.
     let name = data.friendly_name.unwrap_or_else(|| "Unknown".to_string());
 
@@ -60,6 +60,10 @@ pub async fn login(auth: &State<Auth>, data: Json<Data>) -> Result<Json<Response
         operation: "find_one",
         with: "account",
     })? {
+        
+        // Prevent unverfied accounts from logging in.
+        auth.check_is_verified(&account)?;
+
         // Figure out whether we are doing password, 1FA key or email 1FA OTP.
         if let Some(password) = data.password {
             // Verify the password is correct.
