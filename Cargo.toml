@@ -7,12 +7,12 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-async-std-runtime = [ "async-std" ]
+async-std-runtime = [ "async-std", "mongodb/async-std-runtime" ]
 default = [ "async-std-runtime" ]
 
 [dependencies]
 mongodb = { version = "1.2.2", default-features = false }
-wither = { git = "https://github.com/insertish/wither", branch = "master" }
+wither = { git = "https://github.com/insertish/wither", rev = "25226946ff9a2cafac390968b317df83eaafe31f", default-features = false }
 
 async-std = { version = "1.9.0", features = ["tokio02", "tokio1", "attributes"], optional = true }
 rocket = { version = "0.5.0-rc.1", default-features = false, features = ["json"] }
