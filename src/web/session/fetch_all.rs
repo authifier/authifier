@@ -7,6 +7,10 @@ use crate::entities::*;
 use crate::logic::Auth;
 use crate::util::{Error, Result};
 
+/// # Fetch Sessions
+/// 
+/// Fetch all sessions associated with this account.
+#[openapi(tag = "Session")]
 #[get("/all")]
 pub async fn fetch_all(auth: &State<Auth>, session: Session) -> Result<Json<Vec<SessionInfo>>> {
     let mut cursor = Session::find(&auth.db, doc! { "user_id": session.user_id }, None)

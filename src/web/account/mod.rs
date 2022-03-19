@@ -1,4 +1,5 @@
-use rocket::{routes, Route};
+use rocket::Route;
+use rocket_okapi::okapi::openapi3::OpenApi;
 
 pub mod change_email;
 pub mod change_password;
@@ -9,8 +10,8 @@ pub mod resend_verification;
 pub mod send_password_reset;
 pub mod verify_email;
 
-pub fn routes() -> Vec<Route> {
-    routes![
+pub fn routes() -> (Vec<Route>, OpenApi) {
+    openapi_get_routes_spec![
         create_account::create_account,
         resend_verification::resend_verification,
         fetch_account::fetch_account,

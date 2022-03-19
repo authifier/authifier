@@ -1,12 +1,15 @@
+use okapi::openapi3::{SchemaObject, RefOr};
 use regex::Regex;
 use rocket::http::{ContentType, Status};
 use rocket::request::Request;
 use rocket::response::{self, Responder, Response};
+use rocket_okapi::okapi::openapi3;
+use schemars::schema::Schema;
 use serde::Serialize;
 use serde_json::json;
 use std::io::Cursor;
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, JsonSchema)]
 #[serde(tag = "type")]
 pub enum Error {
     IncorrectData {
@@ -109,4 +112,69 @@ pub fn normalise_email(original: String) -> String {
     clean.push_str(split.get(2).unwrap().as_str());
 
     clean
+}
+
+impl rocket_okapi::response::OpenApiResponderInner for Error {
+    fn responses(
+        gen: &mut rocket_okapi::gen::OpenApiGenerator,
+    ) -> std::result::Result<openapi3::Responses, rocket_okapi::OpenApiError> {
+        let mut content = okapi::Map::new();
+
+        let settings = schemars::gen::SchemaSettings::default().with(|s| {
+            s.option_nullable = true;
+            s.option_add_null_type = false;
+            s.definitions_path = "#/components/schemas/".to_string();
+        });
+
+        let mut schema_generator = settings.into_generator();
+        let schema = schema_generator.root_schema_for::<Error>();
+
+        let definitions = gen.schema_generator().definitions_mut();
+        for (key, value) in schema.definitions {
+            definitions.insert(key, value);
+        }
+
+        definitions.insert("Error".to_string(), Schema::Object(schema.schema));
+
+        content.insert(
+            "application/json".to_string(),
+            openapi3::MediaType {
+                schema: Some(SchemaObject {
+                    reference: Some("#/components/schemas/Error".to_string()),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            },
+        );
+
+        Ok(openapi3::Responses {
+            default: Some(openapi3::RefOr::Object(openapi3::Response {
+                content,
+                description: "An error occurred.".to_string(),
+                ..Default::default()
+            })),
+            ..Default::default()
+        })
+    }
+}
+
+impl rocket_okapi::response::OpenApiResponderInner for EmptyResponse {
+    fn responses(
+        _gen: &mut rocket_okapi::gen::OpenApiGenerator,
+    ) -> std::result::Result<openapi3::Responses, rocket_okapi::OpenApiError> {
+        let mut responses = okapi::Map::new();
+
+        responses.insert(
+            "204".to_string(),
+            RefOr::Object(openapi3::Response {
+                description: "Success".to_string(),
+                ..Default::default()
+            }),
+        );
+
+        Ok(openapi3::Responses {
+            responses,
+            ..Default::default()
+        })
+    }
 }

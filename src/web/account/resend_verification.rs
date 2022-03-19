@@ -9,14 +9,21 @@ use crate::entities::*;
 use crate::logic::Auth;
 use crate::util::{EmptyResponse, Error, Result};
 
-#[derive(Serialize, Deserialize)]
-pub struct Data {
+/// # Resend Information
+#[derive(Serialize, Deserialize, JsonSchema)]
+pub struct DataResendVerification {
+    /// Email associated with the account
     pub email: String,
+    /// Captcha verification code
     pub captcha: Option<String>,
 }
 
+/// # Resend Verification
+/// 
+/// Resend account creation verification email.
+#[openapi(tag = "Account")]
 #[post("/reverify", data = "<data>")]
-pub async fn resend_verification(auth: &State<Auth>, data: Json<Data>) -> Result<EmptyResponse> {
+pub async fn resend_verification(auth: &State<Auth>, data: Json<DataResendVerification>) -> Result<EmptyResponse> {
     let data = data.into_inner();
 
     // Perform validation on given data.

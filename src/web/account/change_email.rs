@@ -7,17 +7,24 @@ use crate::entities::*;
 use crate::logic::Auth;
 use crate::util::{normalise_email, EmptyResponse, Result};
 
-#[derive(Serialize, Deserialize)]
-pub struct Data {
+/// # Change Data
+#[derive(Serialize, Deserialize, JsonSchema)]
+pub struct DataChangeEmail {
+    /// Valid email address
     pub email: String,
+    /// Current password
     pub current_password: String,
 }
 
+/// # Change Email
+/// 
+/// Change the associated account email.
+#[openapi(tag = "Account")]
 #[patch("/change/email", data = "<data>")]
 pub async fn change_email(
     auth: &State<Auth>,
     mut account: Account,
-    data: Json<Data>,
+    data: Json<DataChangeEmail>,
 ) -> Result<EmptyResponse> {
     let data = data.into_inner();
 

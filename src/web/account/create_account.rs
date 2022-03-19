@@ -6,16 +6,25 @@ use rocket::State;
 use crate::logic::Auth;
 use crate::util::{EmptyResponse, Result};
 
-#[derive(Serialize, Deserialize)]
-pub struct Data {
+/// # Account Data
+#[derive(Serialize, Deserialize, JsonSchema)]
+pub struct DataCreateAccount {
+    /// Valid email address
     pub email: String,
+    /// Password
     pub password: String,
+    /// Invite code
     pub invite: Option<String>,
+    /// Captcha verification code
     pub captcha: Option<String>,
 }
 
+/// # Create Account
+/// 
+/// Create a new account.
+#[openapi(tag = "Account")]
 #[post("/create", data = "<data>")]
-pub async fn create_account(auth: &State<Auth>, data: Json<Data>) -> Result<EmptyResponse> {
+pub async fn create_account(auth: &State<Auth>, data: Json<DataCreateAccount>) -> Result<EmptyResponse> {
     let data = data.into_inner();
 
     // Perform validation on given data.

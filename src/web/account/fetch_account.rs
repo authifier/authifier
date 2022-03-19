@@ -5,6 +5,10 @@ use rocket::serde::json::Json;
 use crate::entities::*;
 use crate::util::Result;
 
+/// # Fetch Account
+/// 
+/// Fetch account information from the current session.
+#[openapi(tag = "Account")]
 #[get("/")]
 pub async fn fetch_account(account: Account) -> Result<Json<AccountInfo>> {
     Ok(Json(account.into()))

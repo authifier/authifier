@@ -1,9 +1,12 @@
+use okapi::openapi3::{SecuritySchemeData, SecurityScheme};
 use rocket::http::Status;
 use rocket::outcome::Outcome;
 use rocket::request::{self, FromRequest};
 use rocket::Request;
 
 use mongodb::bson::DateTime;
+use rocket_okapi::gen::OpenApiGenerator;
+use rocket_okapi::request::{RequestHeaderInput, OpenApiFromRequest};
 use wither::bson::doc;
 use wither::prelude::*;
 
@@ -98,7 +101,7 @@ impl MultiFactorAuthentication {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct MultiFactorStatus {
     email_otp: bool,
     trusted_handover: bool,
@@ -151,7 +154,7 @@ pub struct Account {
     pub mfa: MultiFactorAuthentication,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, JsonSchema)]
 pub struct AccountInfo {
     #[serde(rename = "_id")]
     pub id: String,
@@ -213,5 +216,29 @@ impl<'r> FromRequest<'r> for Account {
             Outcome::Forward(_) => unreachable!(),
             Outcome::Failure(err) => Outcome::Failure(err),
         }
+    }
+}
+
+impl<'r> OpenApiFromRequest<'r> for Account {
+    fn from_request_input(
+        _gen: &mut OpenApiGenerator,
+        _name: String,
+        _required: bool,
+    ) -> rocket_okapi::Result<RequestHeaderInput> {
+        let mut requirements = schemars::Map::new();
+        requirements.insert("Api Key".to_owned(), vec![]);
+
+        Ok(RequestHeaderInput::Security(
+            "Api Key".to_owned(),
+            SecurityScheme {
+                data: SecuritySchemeData::ApiKey {
+                    name: "x-session-token".to_owned(),
+                    location: "header".to_owned(),
+                },
+                description: Some("Session Token".to_owned()),
+                extensions: schemars::Map::new(),
+            },
+            requirements,
+        ))
     }
 }

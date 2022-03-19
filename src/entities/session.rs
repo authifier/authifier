@@ -1,22 +1,25 @@
+use okapi::openapi3::{SecurityScheme, SecuritySchemeData};
 use rocket::http::Status;
 use rocket::outcome::Outcome;
 use rocket::request::{self, FromRequest};
 use rocket::Request;
 
+use rocket_okapi::gen::OpenApiGenerator;
+use rocket_okapi::request::{OpenApiFromRequest, RequestHeaderInput};
 use wither::bson::doc;
 use wither::prelude::*;
 
 use crate::logic::Auth;
 use crate::util::Error;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct WebPushSubscription {
     pub endpoint: String,
     pub p256dh: String,
     pub auth: String,
 }
 
-#[derive(Debug, Model, Serialize, Deserialize)]
+#[derive(Debug, Model, Serialize, Deserialize, JsonSchema)]
 #[model(
     collection_name = "sessions",
     index(keys = r#"doc!{"token": 1}"#, options = r#"doc!{"unique": true}"#),
@@ -33,7 +36,7 @@ pub struct Session {
     pub subscription: Option<WebPushSubscription>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, JsonSchema)]
 pub struct SessionInfo {
     #[serde(rename = "_id")]
     pub id: String,
@@ -82,5 +85,29 @@ impl<'r> FromRequest<'r> for Session {
             }
             (_, _) => Outcome::Failure((Status::Unauthorized, Error::MissingHeaders)),
         }
+    }
+}
+
+impl<'r> OpenApiFromRequest<'r> for Session {
+    fn from_request_input(
+        _gen: &mut OpenApiGenerator,
+        _name: String,
+        _required: bool,
+    ) -> rocket_okapi::Result<RequestHeaderInput> {
+        let mut requirements = schemars::Map::new();
+        requirements.insert("Api Key".to_owned(), vec![]);
+
+        Ok(RequestHeaderInput::Security(
+            "Api Key".to_owned(),
+            SecurityScheme {
+                data: SecuritySchemeData::ApiKey {
+                    name: "x-session-token".to_owned(),
+                    location: "header".to_owned(),
+                },
+                description: Some("Session Token".to_owned()),
+                extensions: schemars::Map::new(),
+            },
+            requirements,
+        ))
     }
 }

@@ -37,3 +37,8 @@ ulid = "0.4.1"
 rand = "0.8.4"
 base32 = "0.4.0"
 totp-lite = "1.0.3"
+
+# OpenAPI specification
+schemars = "0.8.8"
+okapi = { git = "https://github.com/insertish/okapi", rev = "dcf0df115596ee07a587a7a543cddf3d7944645b" }
+rocket_okapi = { git = "https://github.com/insertish/okapi", rev = "dcf0df115596ee07a587a7a543cddf3d7944645b", features = [ "swagger" ] }

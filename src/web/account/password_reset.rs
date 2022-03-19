@@ -9,14 +9,21 @@ use crate::entities::*;
 use crate::logic::Auth;
 use crate::util::{EmptyResponse, Error, Result};
 
-#[derive(Serialize, Deserialize)]
-pub struct Data {
+/// # Password Reset
+#[derive(Serialize, Deserialize, JsonSchema)]
+pub struct DataPasswordReset {
+    /// Reset token
     pub token: String,
+    /// New password
     pub password: String,
 }
 
+/// # Password Reset
+/// 
+/// Confirm password reset and change the password.
+#[openapi(tag = "Account")]
 #[patch("/reset_password", data = "<data>")]
-pub async fn password_reset(auth: &State<Auth>, data: Json<Data>) -> Result<EmptyResponse> {
+pub async fn password_reset(auth: &State<Auth>, data: Json<DataPasswordReset>) -> Result<EmptyResponse> {
     let data = data.into_inner();
 
     let mut account = Account::find_one(

@@ -6,6 +6,10 @@ use crate::entities::*;
 use crate::logic::Auth;
 use crate::util::{EmptyResponse, Error, Result};
 
+/// # Delete All Sessions
+/// 
+/// Delete all active sessions, optionally including current one.
+#[openapi(tag = "Session")]
 #[delete("/all?<revoke_self>")]
 pub async fn revoke_all(
     auth: &State<Auth>,

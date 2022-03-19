@@ -7,22 +7,29 @@ use rocket::State;
 use crate::entities::*;
 use crate::logic::Auth;
 use crate::util::{Error, Result};
-#[derive(Serialize, Deserialize)]
-pub struct Data {
+
+/// # Login Data
+#[derive(Serialize, Deserialize, JsonSchema)]
+pub struct DataLogin {
+    /// Email
     pub email: String,
 
+    /// Password
     pub password: Option<String>,
+    /// UN-USED: MFA challenge
     pub challenge: Option<String>,
 
+    /// Friendly name used for the session
     pub friendly_name: Option<String>,
+    /// Captcha verification code
     pub captcha: Option<String>,
 }
 
 // TODO: remove dead_code
 #[allow(dead_code)]
-#[derive(Serialize)]
+#[derive(Serialize, JsonSchema)]
 #[serde(tag = "result")]
-pub enum Response {
+pub enum ResponseLogin {
     Success(Session),
     EmailOTP,
     MFA {
@@ -32,8 +39,12 @@ pub enum Response {
     },
 }
 
+/// # Login
+/// 
+/// Login to an account.
+#[openapi(tag = "Session")]
 #[post("/login", data = "<data>")]
-pub async fn login(auth: &State<Auth>, data: Json<Data>) -> Result<Json<Response>> {
+pub async fn login(auth: &State<Auth>, data: Json<DataLogin>) -> Result<Json<ResponseLogin>> {
     let data = data.into_inner();
 
     // Perform validation on given data.
@@ -70,7 +81,7 @@ pub async fn login(auth: &State<Auth>, data: Json<Data>) -> Result<Json<Response
                 return Err(Error::DisabledAccount);
             }
 
-            Ok(Json(Response::Success(
+            Ok(Json(ResponseLogin::Success(
                 auth.create_session(&account, name).await?,
             )))
         } else if let Some(_challenge) = data.challenge {

@@ -7,17 +7,24 @@ use crate::entities::*;
 use crate::logic::Auth;
 use crate::util::{EmptyResponse, Result};
 
-#[derive(Serialize, Deserialize)]
-pub struct Data {
+/// # Change Data
+#[derive(Serialize, Deserialize, JsonSchema)]
+pub struct DataChangePassword {
+    /// New password
     pub password: String,
+    /// Current password
     pub current_password: String,
 }
 
+/// # Change Password
+/// 
+/// Change the current account password.
+#[openapi(tag = "Account")]
 #[patch("/change/password", data = "<data>")]
 pub async fn change_password(
     auth: &State<Auth>,
     mut account: Account,
-    data: Json<Data>,
+    data: Json<DataChangePassword>,
 ) -> Result<EmptyResponse> {
     let data = data.into_inner();
 

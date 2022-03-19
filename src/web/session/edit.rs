@@ -7,17 +7,23 @@ use crate::entities::*;
 use crate::logic::Auth;
 use crate::util::{Error, Result};
 
-#[derive(Serialize, Deserialize)]
-pub struct Data {
+/// # Edit Data
+#[derive(Serialize, Deserialize, JsonSchema)]
+pub struct DataEditSession {
+    /// Session friendly name
     pub friendly_name: String,
 }
 
+/// # Edit Session
+/// 
+/// Edit current session information.
+#[openapi(tag = "Session")]
 #[patch("/<id>", data = "<data>")]
 pub async fn edit(
     auth: &State<Auth>,
     session: Session,
     id: String,
-    data: Json<Data>,
+    data: Json<DataEditSession>,
 ) -> Result<Json<Session>> {
     let mut session = Session::find_one(
         &auth.db,
