@@ -9,6 +9,8 @@ extern crate serde_json;
 #[macro_use]
 extern crate rocket_okapi;
 
+pub use mongodb;
+
 pub mod config;
 pub mod entities;
 pub mod logic;
