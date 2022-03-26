@@ -1,3 +1,4 @@
+use mongodb::Database;
 use okapi::openapi3::{SecurityScheme, SecuritySchemeData};
 use rocket::http::Status;
 use rocket::outcome::Outcome;
@@ -34,6 +35,24 @@ pub struct Session {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub subscription: Option<WebPushSubscription>,
+}
+
+impl Session {
+    pub async fn get_by_token(db: &Database, token: &str) -> Result<Session, Error> {
+        Session::find_one(
+            &db,
+            doc! {
+                "token": token
+            },
+            None,
+        )
+        .await
+        .map_err(|_| Error::DatabaseError {
+            operation: "find_one",
+            with: "session"
+        })?
+        .ok_or_else(|| Error::InvalidCredentials)
+    }
 }
 
 #[derive(Serialize, Deserialize, JsonSchema)]
