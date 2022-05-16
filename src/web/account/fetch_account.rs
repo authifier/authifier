@@ -6,7 +6,7 @@ use crate::entities::*;
 use crate::util::Result;
 
 /// # Fetch Account
-/// 
+///
 /// Fetch account information from the current session.
 #[openapi(tag = "Account")]
 #[get("/")]

@@ -1,4 +1,4 @@
-use okapi::openapi3::{SecuritySchemeData, SecurityScheme};
+use okapi::openapi3::{SecurityScheme, SecuritySchemeData};
 use rocket::http::Status;
 use rocket::outcome::Outcome;
 use rocket::request::{self, FromRequest};
@@ -6,7 +6,7 @@ use rocket::Request;
 
 use mongodb::bson::DateTime;
 use rocket_okapi::gen::OpenApiGenerator;
-use rocket_okapi::request::{RequestHeaderInput, OpenApiFromRequest};
+use rocket_okapi::request::{OpenApiFromRequest, RequestHeaderInput};
 use wither::bson::doc;
 use wither::prelude::*;
 

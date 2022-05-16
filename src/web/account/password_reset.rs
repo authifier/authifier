@@ -19,11 +19,14 @@ pub struct DataPasswordReset {
 }
 
 /// # Password Reset
-/// 
+///
 /// Confirm password reset and change the password.
 #[openapi(tag = "Account")]
 #[patch("/reset_password", data = "<data>")]
-pub async fn password_reset(auth: &State<Auth>, data: Json<DataPasswordReset>) -> Result<EmptyResponse> {
+pub async fn password_reset(
+    auth: &State<Auth>,
+    data: Json<DataPasswordReset>,
+) -> Result<EmptyResponse> {
     let data = data.into_inner();
 
     let mut account = Account::find_one(

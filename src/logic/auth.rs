@@ -5,7 +5,9 @@ use chrono::{Duration, Utc};
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::transport::smtp::client::Tls;
 use lettre::SmtpTransport;
+
 use mongodb::bson::DateTime;
+use mongodb::options::FindOneOptions;
 use mongodb::Database;
 use nanoid::nanoid;
 
@@ -203,11 +205,6 @@ impl Auth {
 
     // #region Operations
     /// Create a new account without validating fields.
-    ///
-    /// You should NOT handle errors from this function unless
-    /// if you're debugging this library, it can open you up to
-    /// potential attacks such as email enumeration. Although,
-    /// for something like an admin panel, that's fine.
     pub async fn create_account(
         &self,
         email: String,
@@ -223,31 +220,61 @@ impl Auth {
         // Hash the user's password.
         let password = self.hash_password(plaintext_password)?;
 
-        // Send email verification.
-        let verification = if verify_email {
-            self.generate_email_verification(email.clone()).await
+        // Check if the account exists first.
+        if let Some(mut account) = Account::find_one(
+            &self.db,
+            doc! {
+                "email_normalised": &email_normalised
+            },
+            FindOneOptions::builder().build(),
+        )
+        .await
+        .map_err(|_| Error::DatabaseError {
+            operation: "find_one",
+            with: "account",
+        })? {
+            if let AccountVerification::Pending { .. } = &account.verification {
+                account.verification = self
+                    .generate_email_verification(account.email.clone())
+                    .await;
+
+                account.save_to_db(&self.db).await?;
+            } else {
+                account.password_reset = self
+                    .generate_email_password_reset(account.email.clone())
+                    .await;
+        
+                account.save_to_db(&self.db).await?;
+            }
+            
+            Ok(account)
         } else {
-            AccountVerification::Verified
-        };
+            // Send email verification.
+            let verification = if verify_email {
+                self.generate_email_verification(email.clone()).await
+            } else {
+                AccountVerification::Verified
+            };
 
-        // Construct new Account.
-        let mut account = Account {
-            id: None,
+            // Construct new Account.
+            let mut account = Account {
+                id: None,
 
-            email,
-            email_normalised,
-            password,
+                email,
+                email_normalised,
+                password,
 
-            disabled: None,
-            verification,
-            password_reset: None,
-            mfa: MultiFactorAuthentication::default(),
-        };
+                disabled: None,
+                verification,
+                password_reset: None,
+                mfa: MultiFactorAuthentication::default(),
+            };
 
-        // Commit to database.
-        account.save_to_db(&self.db).await?;
+            // Commit to database.
+            account.save_to_db(&self.db).await?;
 
-        Ok(account)
+            Ok(account)
+        }
     }
 
     /// Create a new session / login to an account.
@@ -306,7 +333,7 @@ impl Auth {
                 doc! {
                     "$set": update
                 },
-                None
+                None,
             )
             .await
             .map(|_| ())

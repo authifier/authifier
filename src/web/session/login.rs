@@ -40,7 +40,7 @@ pub enum ResponseLogin {
 }
 
 /// # Login
-/// 
+///
 /// Login to an account.
 #[openapi(tag = "Session")]
 #[post("/login", data = "<data>")]

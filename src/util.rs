@@ -1,4 +1,4 @@
-use okapi::openapi3::{SchemaObject, RefOr};
+use okapi::openapi3::{RefOr, SchemaObject};
 use regex::Regex;
 use rocket::http::{ContentType, Status};
 use rocket::request::Request;

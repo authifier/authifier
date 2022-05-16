@@ -7,7 +7,7 @@ use crate::logic::Auth;
 use crate::util::{EmptyResponse, Error, Result};
 
 /// # Revoke Session
-/// 
+///
 /// Delete a specific active session.
 #[openapi(tag = "Session")]
 #[delete("/<id>")]

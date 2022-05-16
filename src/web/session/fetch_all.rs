@@ -8,7 +8,7 @@ use crate::logic::Auth;
 use crate::util::{Error, Result};
 
 /// # Fetch Sessions
-/// 
+///
 /// Fetch all sessions associated with this account.
 #[openapi(tag = "Session")]
 #[get("/all")]

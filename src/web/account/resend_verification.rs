@@ -19,11 +19,14 @@ pub struct DataResendVerification {
 }
 
 /// # Resend Verification
-/// 
+///
 /// Resend account creation verification email.
 #[openapi(tag = "Account")]
 #[post("/reverify", data = "<data>")]
-pub async fn resend_verification(auth: &State<Auth>, data: Json<DataResendVerification>) -> Result<EmptyResponse> {
+pub async fn resend_verification(
+    auth: &State<Auth>,
+    data: Json<DataResendVerification>,
+) -> Result<EmptyResponse> {
     let data = data.into_inner();
 
     // Perform validation on given data.

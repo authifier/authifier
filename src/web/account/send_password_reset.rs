@@ -19,11 +19,14 @@ pub struct DataSendPasswordReset {
 }
 
 /// # Send Password Reset
-/// 
+///
 /// Send an email to reset account password.
 #[openapi(tag = "Account")]
 #[post("/reset_password", data = "<data>")]
-pub async fn send_password_reset(auth: &State<Auth>, data: Json<DataSendPasswordReset>) -> Result<EmptyResponse> {
+pub async fn send_password_reset(
+    auth: &State<Auth>,
+    data: Json<DataSendPasswordReset>,
+) -> Result<EmptyResponse> {
     let data = data.into_inner();
 
     // Perform validation on given data.

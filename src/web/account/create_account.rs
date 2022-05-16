@@ -20,11 +20,14 @@ pub struct DataCreateAccount {
 }
 
 /// # Create Account
-/// 
+///
 /// Create a new account.
 #[openapi(tag = "Account")]
 #[post("/create", data = "<data>")]
-pub async fn create_account(auth: &State<Auth>, data: Json<DataCreateAccount>) -> Result<EmptyResponse> {
+pub async fn create_account(
+    auth: &State<Auth>,
+    data: Json<DataCreateAccount>,
+) -> Result<EmptyResponse> {
     let data = data.into_inner();
 
     // Perform validation on given data.
@@ -36,16 +39,11 @@ pub async fn create_account(auth: &State<Auth>, data: Json<DataCreateAccount>) -
     let invite = auth.check_invite(data.invite).await?;
 
     // Create an account but quietly fail any errors.
-    let account = auth
-        .create_account(data.email, data.password, true)
-        .await
-        .ok();
+    let account = auth.create_account(data.email, data.password, true).await?;
 
     // Make sure to use up the invite.
-    if let Some(account) = account {
-        if let Some(invite) = invite {
-            invite.claim(&auth.db, account.id.unwrap()).await.ok();
-        }
+    if let Some(invite) = invite {
+        invite.claim(&auth.db, account.id.unwrap()).await.ok();
     }
 
     Ok(EmptyResponse)

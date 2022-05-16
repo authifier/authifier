@@ -15,7 +15,7 @@ pub struct DataEditSession {
 }
 
 /// # Edit Session
-/// 
+///
 /// Edit current session information.
 #[openapi(tag = "Session")]
 #[patch("/<id>", data = "<data>")]

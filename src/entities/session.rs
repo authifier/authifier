@@ -49,7 +49,7 @@ impl Session {
         .await
         .map_err(|_| Error::DatabaseError {
             operation: "find_one",
-            with: "session"
+            with: "session",
         })?
         .ok_or_else(|| Error::InvalidCredentials)
     }

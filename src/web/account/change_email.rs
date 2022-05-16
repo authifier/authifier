@@ -17,7 +17,7 @@ pub struct DataChangeEmail {
 }
 
 /// # Change Email
-/// 
+///
 /// Change the associated account email.
 #[openapi(tag = "Account")]
 #[patch("/change/email", data = "<data>")]

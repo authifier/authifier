@@ -9,7 +9,7 @@ use crate::logic::Auth;
 use crate::util::{EmptyResponse, Error, Result};
 
 /// # Verify Email
-/// 
+///
 /// Verify an email address.
 #[openapi(tag = "Account")]
 #[post("/verify/<code>")]

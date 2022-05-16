@@ -7,7 +7,7 @@ use crate::logic::Auth;
 use crate::util::{EmptyResponse, Error, Result};
 
 /// # Logout
-/// 
+///
 /// Delete current session.
 #[openapi(tag = "Session")]
 #[post("/logout")]
