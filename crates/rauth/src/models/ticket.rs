@@ -1,9 +1,17 @@
+/// Multi-factor auth ticket
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MFATicket {
-    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
-    pub id: Option<String>,
-    pub account: String,
+    /// Unique Id
+    #[serde(rename = "_id")]
+    pub id: String,
+
+    /// Account Id
+    pub account_id: String,
+
+    /// Unique Token
     pub token: String,
+
+    /// ???
     pub method: String,
 }
 
