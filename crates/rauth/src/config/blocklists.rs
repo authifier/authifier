@@ -9,15 +9,25 @@ pub enum EmailBlockList {
     /// Block a custom list of domains
     Custom { domains: HashSet<String> },
     /// Disposable mail list maintained by revolt.chat
+    #[cfg(feature = "revolt_source_list")]
     RevoltSourceList,
 }
 
+#[cfg(feature = "revolt_source_list")]
 impl Default for EmailBlockList {
     fn default() -> EmailBlockList {
         EmailBlockList::RevoltSourceList
     }
 }
 
+#[cfg(not(feature = "revolt_source_list"))]
+impl Default for EmailBlockList {
+    fn default() -> EmailBlockList {
+        EmailBlockList::Disabled
+    }
+}
+
+#[cfg(feature = "revolt_source_list")]
 lazy_static! {
     /// Default email block list
     static ref REVOLT_SOURCE_LIST: HashSet<String> = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/revolt_source_list.txt"))
@@ -32,6 +42,7 @@ impl EmailBlockList {
         match self {
             EmailBlockList::Disabled => None,
             EmailBlockList::Custom { domains } => Some(domains),
+            #[cfg(feature = "revolt_source_list")]
             EmailBlockList::RevoltSourceList => Some(&*REVOLT_SOURCE_LIST),
         }
     }
@@ -58,6 +69,8 @@ impl EmailBlockList {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
     use crate::config::EmailBlockList;
     use crate::Error;
 
@@ -78,7 +91,10 @@ mod tests {
 
     #[test]
     fn it_rejects_blocked_emails() {
-        let list = EmailBlockList::RevoltSourceList;
+        let list = EmailBlockList::Custom {
+            domains: HashSet::from(["example.com".to_string()]),
+        };
+
         assert_eq!(
             list.validate_email("test@example.com"),
             Err(Error::Blacklisted)

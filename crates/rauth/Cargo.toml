@@ -11,9 +11,11 @@ database-mongodb = [ "mongodb" ]
 schemas = [ "schemars" ]
 
 revolt_source_list = []
-hcaptcha = []
+hcaptcha = [ "reqwest" ]
 
 default_inbuilts = [ "revolt_source_list", "hcaptcha" ]
+# default_inbuilts = []
+
 default = [ "async-std-runtime", "mongodb", "schemars", "default_inbuilts" ]
 
 [dependencies]
@@ -36,3 +38,6 @@ schemars = { version = "0.8.8", optional = true }
 
 # Validation
 validator = "0.15.0"
+
+# Web Requests
+reqwest = { version = "0.11.10", features = ["json"], optional = true }
