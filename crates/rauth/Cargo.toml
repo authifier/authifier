@@ -10,9 +10,16 @@ async-std-runtime = [ "async-std", "mongodb/async-std-runtime" ]
 database-mongodb = [ "mongodb" ]
 schemas = [ "schemars" ]
 
-default = [ "async-std-runtime", "mongodb", "schemars" ]
+revolt_source_list = []
+hcaptcha = []
+
+default_inbuilts = [ "revolt_source_list", "hcaptcha" ]
+default = [ "async-std-runtime", "mongodb", "schemars", "default_inbuilts" ]
 
 [dependencies]
+# Lang
+lazy_static = "1.4.0"
+
 # Serde
 iso8601-timestamp = { version = "0.1.10" }
 serde = { version = "1.0.116", features = [ "derive" ] }
@@ -26,3 +33,6 @@ async-std = { version = "1.9.0", features = ["tokio02", "tokio1", "attributes"],
 # Schemas
 # okapi = { git = "https://github.com/insertish/okapi", rev = "dcf0df115596ee07a587a7a543cddf3d7944645b" }
 schemars = { version = "0.8.8", optional = true }
+
+# Validation
+validator = "0.15.0"

@@ -1,5 +1,9 @@
 this is an assorted list of known disposable email providers
 
+#region nobody will ever have an email @example.com so we can safely block it
+----
+example.com
+
 #region list provided by michenriksen at https://gist.github.com/michenriksen/8710649
 ----
 0815.ru
