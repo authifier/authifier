@@ -11,9 +11,11 @@ database-mongodb = [ "mongodb" ]
 schemas = [ "schemars" ]
 
 revolt_source_list = []
+pwned100k = []
+have_i_been_pwned = []
 hcaptcha = [ "reqwest" ]
 
-default_inbuilts = [ "revolt_source_list", "hcaptcha" ]
+default_inbuilts = [ "revolt_source_list", "pwned100k", "hcaptcha" ]
 # default_inbuilts = []
 
 default = [ "async-std-runtime", "mongodb", "schemars", "default_inbuilts" ]
