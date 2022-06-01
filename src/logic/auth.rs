@@ -72,7 +72,7 @@ impl Auth {
             },
             compromised_passwords: match &config.password_scanning {
                 PasswordScanning::None | PasswordScanning::HIBP { .. } => HashSet::new(),
-                PasswordScanning::Custom { passwords } => passwords.into_iter().cloned().collect(),
+                PasswordScanning::Custom { passwords } => passwords.iter().cloned().collect(),
                 PasswordScanning::Top100k => include_str!("../../assets/pwned100k.txt")
                     .split('\n')
                     .skip(4)
@@ -81,7 +81,7 @@ impl Auth {
             },
             email_block_list: match &config.email_block_list {
                 EmailBlockList::Disabled => None,
-                EmailBlockList::Custom { domains } => Some(domains.into_iter().cloned().collect()),
+                EmailBlockList::Custom { domains } => Some(domains.iter().cloned().collect()),
                 EmailBlockList::RevoltSourceList => Some(
                     include_str!("../../assets/revolt_source_list.txt")
                         .split('\n')
@@ -243,10 +243,10 @@ impl Auth {
                 account.password_reset = self
                     .generate_email_password_reset(account.email.clone())
                     .await;
-        
+
                 account.save_to_db(&self.db).await?;
             }
-            
+
             Ok(account)
         } else {
             // Send email verification.
@@ -443,7 +443,7 @@ impl Auth {
     // Generate new TOTP secret.
     pub async fn mfa_generate_totp_secret(&self, account: &mut Account) -> Result<String> {
         if let Totp::Enabled { .. } = account.mfa.totp_token {
-            return Err(Error::Blacklisted);
+            return Err(Error::OperationFailed);
         }
 
         let secret: [u8; 10] = rand::random();
@@ -462,7 +462,7 @@ impl Auth {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_secs();
-        totp_lite::totp_custom::<totp_lite::Sha1>(totp_lite::DEFAULT_STEP, 6, &secret, seconds)
+        totp_lite::totp_custom::<totp_lite::Sha1>(totp_lite::DEFAULT_STEP, 6, secret, seconds)
     }
     // #endregion
 
@@ -492,7 +492,7 @@ impl Auth {
                 let m = if let Some(html) = &template.html {
                     m.multipart(lettre::message::MultiPart::alternative_plain_html(
                         text,
-                        self.render_template(&html, &variables)
+                        self.render_template(html, &variables)
                             .expect("valid `template`"),
                     ))
                 } else {
@@ -516,10 +516,9 @@ impl Auth {
     }
 
     pub fn render_template(&self, text: &str, variables: &handlebars::JsonValue) -> Result<String> {
-        Ok(HANDLEBARS
+        HANDLEBARS
             .render_template(text, variables)
-            .map_err(|_| Error::RenderFail)?
-            .to_string())
+            .map_err(|_| Error::RenderFail)
     }
     // #endregion
 }

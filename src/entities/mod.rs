@@ -15,8 +15,8 @@ pub use wither::Model;
 pub use futures::StreamExt;
 
 pub async fn sync_models(db: &mongodb::Database) {
-    Account::sync(&db).await.expect("Account model");
-    Invite::sync(&db).await.expect("Invite model");
-    Session::sync(&db).await.expect("Session model");
-    MFATicket::sync(&db).await.expect("MFATicket model");
+    Account::sync(db).await.expect("`Account` model");
+    Invite::sync(db).await.expect("`Invite` model");
+    Session::sync(db).await.expect("`Session` model");
+    MFATicket::sync(db).await.expect("`MFATicket` model");
 }

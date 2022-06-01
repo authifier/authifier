@@ -3,7 +3,10 @@
 ## Goals
 
 - Prevent user enumeration.
-  All routes should be protected against user enumeration, for now we should at least protect against basic enumeration based on responses.
+
+  All routes should be protected against user enumeration.
+
+- Always confirm any change to security settings using two-factor method if available.
 - Prevent phishing attacks.
 
 ## Usage
@@ -42,14 +45,17 @@ async fn main() {
 ## How does rAuth work?
 
 rAuth uses email / password combinations to authenticate users and nothing else, this might not be what you're looking for but I personally prefer this format.
+
 - If you need usernames, you need to handle this on your end.
 
 When a user signs in, a new session is created, every single device a user logs in on has a unique session.
+
 - This means a user can then log themselves out of old sessions or otherwise see where they are logged in.
 
 ![Example from Revolt App](https://img.insrt.uk/xexu7/daLinuSa38.png/raw)
 
 Internally rAuth stores emails with and without special characters, `+.`.
+
 - This means we can support plus signing without allowing the same email to sign up multiple times.
   - For example, `inbox+a@example.com` and `inbox+b@example.com` are treated as equal.
   - But since we are still storing the original email, we still send them marked with the user's sign.
@@ -57,7 +63,7 @@ Internally rAuth stores emails with and without special characters, `+.`.
   - Generally, we treat all emails with dots as their non-dot counterpart when checking if an email exists.
   - This may inconvenience some users but I would rather avoid situations like above or duplicate accounts.
 - When logging in, the email given is checked against the original email and nothing else.
-  
+
 ## Database Migrations
 
 You need to manage the database migrations yourself.

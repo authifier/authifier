@@ -9,9 +9,9 @@ pub mod totp_generate_secret;
 pub fn routes() -> Vec<Route> {
     routes![
         fetch_status::fetch_status,
-        fetch_recovery::fetch_recovery,
-        generate_recovery::generate_recovery,
-        totp_generate_secret::totp_generate_secret,
-        totp_enable::totp_enable,
+        // fetch_recovery::fetch_recovery,
+        // generate_recovery::generate_recovery,
+        // totp_generate_secret::totp_generate_secret,
+        // totp_enable::totp_enable,
     ]
 }

@@ -105,6 +105,7 @@ impl Default for EmailExpiry {
 }
 
 #[derive(Serialize, Deserialize)]
+#[allow(clippy::large_enum_variant)]
 pub enum EmailVerification {
     /// Don't require email verification
     Disabled,

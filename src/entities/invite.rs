@@ -19,7 +19,7 @@ impl Invite {
     pub async fn claim(mut self, db: &Database, id: String) -> Result<()> {
         self.used = Some(true);
         self.claimed_by = Some(id);
-        self.save(&db, None)
+        self.save(db, None)
             .await
             .map(|_| ())
             .map_err(|_| Error::DatabaseError {

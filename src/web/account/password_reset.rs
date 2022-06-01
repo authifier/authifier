@@ -44,7 +44,7 @@ pub async fn password_reset(
         operation: "find_one",
         with: "account",
     })?
-    .ok_or_else(|| Error::InvalidToken)?;
+    .ok_or(Error::InvalidToken)?;
 
     // Verify password can be used.
     auth.validate_password(&data.password).await?;

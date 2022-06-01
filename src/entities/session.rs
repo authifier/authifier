@@ -40,7 +40,7 @@ pub struct Session {
 impl Session {
     pub async fn get_by_token(db: &Database, token: &str) -> Result<Session, Error> {
         Session::find_one(
-            &db,
+            db,
             doc! {
                 "token": token
             },
@@ -51,7 +51,7 @@ impl Session {
             operation: "find_one",
             with: "session",
         })?
-        .ok_or_else(|| Error::InvalidCredentials)
+        .ok_or(Error::InvalidCredentials)
     }
 }
 
@@ -75,6 +75,7 @@ impl From<Session> for SessionInfo {
 impl<'r> FromRequest<'r> for Session {
     type Error = Error;
 
+    #[allow(clippy::collapsible_match)]
     async fn from_request(request: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
         let header_session_token = request
             .headers()

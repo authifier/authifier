@@ -14,7 +14,7 @@ use crate::util::{EmptyResponse, Error, Result};
 #[openapi(tag = "Account")]
 #[post("/verify/<code>")]
 pub async fn verify_email(auth: &State<Auth>, code: String) -> Result<EmptyResponse> {
-    let mut account = Account::find_one(
+    let account = Account::find_one(
         &auth.db,
         doc! {
             "verification.token": &code,
@@ -29,11 +29,9 @@ pub async fn verify_email(auth: &State<Auth>, code: String) -> Result<EmptyRespo
         operation: "find_one",
         with: "account",
     })?
-    .ok_or_else(|| Error::InvalidToken)?;
+    .ok_or(Error::InvalidToken)?;
 
-    auth.verify_account(&mut account)
-        .await
-        .map(|_| EmptyResponse)
+    auth.verify_account(&account).await.map(|_| EmptyResponse)
 }
 
 #[cfg(test)]

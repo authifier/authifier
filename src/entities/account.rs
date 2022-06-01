@@ -50,11 +50,7 @@ pub enum Totp {
 
 impl Totp {
     pub fn is_disabled(&self) -> bool {
-        if let Totp::Disabled = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, Totp::Disabled)
     }
 }
 
@@ -172,7 +168,7 @@ impl From<Account> for AccountInfo {
 
 impl Account {
     pub async fn save_to_db(&mut self, db: &mongodb::Database) -> Result<()> {
-        self.save(&db, None)
+        self.save(db, None)
             .await
             .map(|_| ())
             .map_err(|_| Error::DatabaseError {

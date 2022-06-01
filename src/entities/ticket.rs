@@ -23,7 +23,7 @@ impl MFATicket {
         unimplemented!()
     }
 
-    pub fn claim(self, _token: &str) -> () {
+    pub fn claim(self, _token: &str) {
         // check if token is correct
         // remove from db
         // check if expired

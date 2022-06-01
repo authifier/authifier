@@ -35,7 +35,7 @@ pub async fn edit(
         operation: "find_one",
         with: "session",
     })?
-    .ok_or_else(|| Error::InvalidSession)?;
+    .ok_or(Error::InvalidSession)?;
 
     session.name = data.into_inner().friendly_name;
     session
