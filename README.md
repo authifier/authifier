@@ -1,6 +1,6 @@
-<center>
+<p align="center">
   <img src="banner.png" height="180px" />
-</center>
+</p>
 
 ## Goals
 
