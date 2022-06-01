@@ -1,0 +1,28 @@
+[package]
+name = "rauth"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+async-std-runtime = [ "async-std", "mongodb/async-std-runtime" ]
+database-mongodb = [ "mongodb" ]
+schemas = [ "schemars" ]
+
+default = [ "async-std-runtime", "mongodb", "schemars" ]
+
+[dependencies]
+# Serde
+iso8601-timestamp = { version = "0.1.10" }
+serde = { version = "1.0.116", features = [ "derive" ] }
+
+# MongoDB
+mongodb = { version = "2.2.1", default-features = false, optional = true }
+
+# Async runtime
+async-std = { version = "1.9.0", features = ["tokio02", "tokio1", "attributes"], optional = true }
+
+# Schemas
+# okapi = { git = "https://github.com/insertish/okapi", rev = "dcf0df115596ee07a587a7a543cddf3d7944645b" }
+schemars = { version = "0.8.8", optional = true }
