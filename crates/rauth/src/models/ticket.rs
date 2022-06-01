@@ -1,11 +1,4 @@
-use wither::bson::doc;
-use wither::prelude::*;
-
-#[derive(Debug, Model, Serialize, Deserialize)]
-#[model(
-    collection_name = "mfa_tickets",
-    index(keys = r#"doc!{"token": 1}"#, options = r#"doc!{"unique": true}"#)
-)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct MFATicket {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
