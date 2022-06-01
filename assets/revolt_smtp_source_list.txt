@@ -1,2 +1,0 @@
-prd-smtp.10minutemail.com
-in.mail.tm
