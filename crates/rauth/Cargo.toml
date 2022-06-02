@@ -8,17 +8,18 @@ edition = "2021"
 [features]
 async-std-runtime = [ "async-std", "mongodb/async-std-runtime" ]
 database-mongodb = [ "mongodb" ]
+rocket_impl = [ "rocket" ]
+okapi_impl = [ "rocket_okapi", "okapi", "schemas" ]
 schemas = [ "schemars" ]
 
 revolt_source_list = []
 pwned100k = []
 have_i_been_pwned = []
 hcaptcha = [ "reqwest" ]
-
 default_inbuilts = [ "revolt_source_list", "pwned100k", "hcaptcha" ]
 # default_inbuilts = []
 
-default = [ "async-std-runtime", "mongodb", "schemars", "default_inbuilts" ]
+default = [ "async-std-runtime", "mongodb", "default_inbuilts" ]
 
 [dependencies]
 # Lang
@@ -35,7 +36,8 @@ mongodb = { version = "2.2.1", default-features = false, optional = true }
 async-std = { version = "1.9.0", features = ["tokio02", "tokio1", "attributes"], optional = true }
 
 # Schemas
-# okapi = { git = "https://github.com/insertish/okapi", rev = "dcf0df115596ee07a587a7a543cddf3d7944645b" }
+rocket_okapi = { git = "https://github.com/insertish/okapi", rev = "a1048d0c8cd771e424ec97d33d825c32e06aa120", features = [ "swagger" ], optional = true }
+okapi = { git = "https://github.com/insertish/okapi", rev = "a1048d0c8cd771e424ec97d33d825c32e06aa120", optional = true }
 schemars = { version = "0.8.8", optional = true }
 
 # Validation
@@ -43,3 +45,6 @@ validator = "0.15.0"
 
 # Web Requests
 reqwest = { version = "0.11.10", features = ["json"], optional = true }
+
+# Rocket
+rocket = { version = "0.5.0-rc.2", default-features = false, features = ["json"], optional = true }
