@@ -1323,6 +1323,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "okapi"
+version = "0.7.0-rc.1"
+source = "git+https://github.com/insertish/okapi?rev=a1048d0c8cd771e424ec97d33d825c32e06aa120#a1048d0c8cd771e424ec97d33d825c32e06aa120"
+dependencies = [
+ "log",
+ "schemars",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "once_cell"
 version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1586,7 +1597,10 @@ dependencies = [
  "iso8601-timestamp",
  "lazy_static",
  "mongodb",
+ "okapi",
  "reqwest",
+ "rocket",
+ "rocket_okapi",
  "schemars",
  "serde",
  "validator",
@@ -1773,6 +1787,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "rocket_empty"
+version = "0.1.0"
+source = "git+https://github.com/insertish/rocket_empty?branch=master#9d8234fc3bb215ea241b787301e8cff68ae53652"
+dependencies = [
+ "okapi",
+ "rocket",
+ "rocket_okapi",
+]
+
+[[package]]
 name = "rocket_http"
 version = "0.5.0-rc.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1800,10 +1824,44 @@ dependencies = [
 ]
 
 [[package]]
+name = "rocket_okapi"
+version = "0.8.0-rc.1"
+source = "git+https://github.com/insertish/okapi?rev=a1048d0c8cd771e424ec97d33d825c32e06aa120#a1048d0c8cd771e424ec97d33d825c32e06aa120"
+dependencies = [
+ "either",
+ "log",
+ "okapi",
+ "rocket",
+ "rocket_okapi_codegen",
+ "schemars",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rocket_okapi_codegen"
+version = "0.8.0-rc.1"
+source = "git+https://github.com/insertish/okapi?rev=a1048d0c8cd771e424ec97d33d825c32e06aa120#a1048d0c8cd771e424ec97d33d825c32e06aa120"
+dependencies = [
+ "darling",
+ "proc-macro2",
+ "quote",
+ "rocket_http",
+ "syn",
+]
+
+[[package]]
 name = "rocket_rauth"
 version = "0.1.0"
 dependencies = [
+ "okapi",
+ "rauth",
+ "reqwest",
  "rocket",
+ "rocket_empty",
+ "rocket_okapi",
+ "schemars",
+ "serde",
 ]
 
 [[package]]
@@ -1875,6 +1933,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1847b767a3d62d95cbf3d8a9f0e421cf57a0d8aa4f411d4b16525afb0284d4ed"
 dependencies = [
  "dyn-clone",
+ "indexmap",
  "schemars_derive",
  "serde",
  "serde_json",
