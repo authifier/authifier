@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="banner.png" height="180px" />
-</p>
+<img align="left" src="banner.png" height="180px" />
 
 ## Goals
 
@@ -11,37 +9,30 @@
 - Always confirm any change to security settings using two-factor method if available.
 - Prevent phishing attacks.
 
+## Play around with RAuth API
+
+You can play around with the API by using the provided example and using Swagger:
+
+```bash
+# Clone the project
+git clone https://github.com/insertish/rauth
+cd rauth
+
+# Bring up MongoDB
+docker-compose up -d database
+
+# Start the example
+cargo run --example rocket_mongodb --features example
+```
+
+Now you can navigate to http://localhost:11111/swagger!
+
 ## Usage
 
-Getting started is very simple, create a new instance of the Auth struct and mount it on to Rocket.
+Getting started is very simple, create a new instance of the RAuth struct and mount it on to Rocket.
 
 ```rust
-use mongodb::Client;
-use rocket;
-use rauth;
-
-#[tokio::main]
-async fn main() {
-  let client = Client::with_uri_str("mongodb://localhost:27017/")
-    .await.unwrap();
-
-  // Pick a suitable collection, make sure you set it up correctly
-  // as written below in "Database Migrations".
-  let col = client.database("rauth").collection("accounts");
-
-  // Set any options, such as the public base URL or your email
-  // verification options.
-  let options = rauth::options::Options::new();
-
-  // Create a new instance of the Auth object.
-  let auth = rauth::auth::Auth::new(col, options);
-  rocket::ignite()
-    .manage(auth) // Mount rAuth state.
-    .mount("/", rauth::routes::routes()) // Mount rAuth routes.
-    .launch()
-    .await
-    .unwrap();
-}
+TODO: update this
 ```
 
 ## Testing
@@ -60,8 +51,28 @@ Then you can run the tests:
 cargo test --features test
 
 # Or using nextest
-cargo nextest run --features test
+cargo --features test nextest run
 ```
+
+## Database Migrations
+
+Migrating the database is easy, you just have to orchestrate it yourself, ideally you have your own versioned migration system which you can slot changes into.
+
+```rust
+use rauth::{ Database, Migration };
+
+// Acquire the database first
+let database = Database::[..];
+
+// Then run a specific migration
+database.run_migration(Migration::[..]).await.unwrap();
+```
+
+The following migrations are available and must be run in order:
+
+| Date       | Migration                   | Description                                                                                          |
+| ---------- | --------------------------- | ---------------------------------------------------------------------------------------------------- |
+| 2022-06-03 | `M2022_06_03EnsureUpToSpec` | Reset and reconstruct indexes to be fully up to date. This will also create any missing collections. |
 
 ## How does rAuth work?
 
@@ -83,24 +94,4 @@ Internally rAuth stores emails with and without special characters, `+.`.
 - In the case of Gmail, all emails with dots are forwarded to those without them, this can lead to some [unfortunate situations](https://jameshfisher.com/2018/04/07/the-dots-do-matter-how-to-scam-a-gmail-user/).
   - Generally, we treat all emails with dots as their non-dot counterpart when checking if an email exists.
   - This may inconvenience some users but I would rather avoid situations like above or duplicate accounts.
-- When logging in, the email given is checked against the original email and nothing else.
-
-## Database Migrations
-
-Migrating the database is easy, you just have to orchestrate it yourself, ideally you have your own versioned migration system which you can slot changes into.
-
-```rust
-use rauth::{ Database, Migration };
-
-// Acquire the database first
-let database = Database::[..];
-
-// Then run a specific migration
-database.run_migration(Migration::[..]).await.unwrap();
-```
-
-The following migrations are available and must be run in order:
-
-| Date       | Migration                   | Description                                                                                          |
-| ---------- | --------------------------- | ---------------------------------------------------------------------------------------------------- |
-| 2022-06-03 | `M2022_06_03EnsureUpToSpec` | Reset and reconstruct indexes to be fully up to date. This will also create any missing collections. |
+- When logging in, we use the normalised email to find the correct account.
