@@ -9,6 +9,8 @@ fn is_false(t: &bool) -> bool {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "status")]
 pub enum EmailVerification {
+    /// In process of being created
+    PendingSend,
     /// Account is verified
     Verified,
     /// Pending email verification
@@ -79,7 +81,7 @@ pub struct MultiFactorAuthentication {
 pub struct Account {
     /// Unique Id
     #[serde(rename = "_id")]
-    pub id: Option<String>,
+    pub id: String,
 
     /// User's email
     pub email: String,

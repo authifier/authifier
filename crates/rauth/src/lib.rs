@@ -4,10 +4,31 @@ extern crate serde;
 extern crate schemars;
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
+extern crate async_trait;
+#[macro_use]
+extern crate nanoid;
+#[macro_use]
+extern crate log;
+#[macro_use]
+extern crate serde_json;
 
 mod result;
 pub use result::*;
 
 pub mod config;
+pub mod database;
+pub mod derive;
 pub mod r#impl;
 pub mod models;
+pub mod util;
+
+pub use config::Config;
+pub use database::Database;
+
+/// rAuth state
+#[derive(Default)]
+pub struct RAuth {
+    pub config: Config,
+    pub database: Database,
+}

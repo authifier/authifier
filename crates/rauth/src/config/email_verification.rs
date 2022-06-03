@@ -1,3 +1,10 @@
+use lettre::{
+    transport::smtp::{authentication::Credentials, client::Tls},
+    SmtpTransport,
+};
+
+use crate::{Error, Result, Success};
+
 /// SMTP mail server configuration
 #[derive(Serialize, Deserialize)]
 pub struct SMTPSettings {
@@ -90,5 +97,86 @@ pub enum EmailVerificationConfig {
 impl Default for EmailVerificationConfig {
     fn default() -> EmailVerificationConfig {
         EmailVerificationConfig::Disabled
+    }
+}
+
+impl SMTPSettings {
+    /// Create SMTP transport
+    pub fn create_transport(&self) -> SmtpTransport {
+        let relay = SmtpTransport::relay(&self.host).unwrap();
+        let relay = if let Some(port) = self.port {
+            relay.port(port.try_into().unwrap())
+        } else {
+            relay
+        };
+
+        let relay = if let Some(false) = self.use_tls {
+            relay.tls(Tls::None)
+        } else {
+            relay
+        };
+
+        relay
+            .credentials(Credentials::new(
+                self.username.clone(),
+                self.password.clone(),
+            ))
+            .build()
+    }
+
+    /// Render an email template
+    fn render_template(text: &str, variables: &handlebars::JsonValue) -> Result<String> {
+        lazy_static! {
+            static ref HANDLEBARS: handlebars::Handlebars<'static> = handlebars::Handlebars::new();
+        }
+
+        HANDLEBARS
+            .render_template(text, variables)
+            .map_err(|_| Error::RenderFail)
+    }
+
+    /// Send an email
+    pub fn send_email(
+        &self,
+        address: String,
+        template: &Template,
+        variables: handlebars::JsonValue,
+    ) -> Success {
+        let m = lettre::Message::builder()
+            .from(self.from.parse().expect("valid `smtp_from`"))
+            .to(address.parse().expect("valid `smtp_to`"))
+            .subject(template.title.clone());
+
+        let m = if let Some(reply_to) = &self.reply_to {
+            m.reply_to(reply_to.parse().expect("valid `smtp_reply_to`"))
+        } else {
+            m
+        };
+
+        let text =
+            SMTPSettings::render_template(&template.text, &variables).expect("valid `template`");
+
+        let m = if let Some(html) = &template.html {
+            m.multipart(lettre::message::MultiPart::alternative_plain_html(
+                text,
+                SMTPSettings::render_template(html, &variables).expect("valid `template`"),
+            ))
+        } else {
+            m.body(text)
+        }
+        .expect("valid `message`");
+
+        use lettre::Transport;
+        let sender = self.create_transport();
+        if let Err(error) = sender.send(&m) {
+            error!(
+                "Failed to send email to {}!\nlettre error: {}",
+                address, error
+            );
+
+            return Err(Error::EmailFailed);
+        }
+
+        Ok(())
     }
 }

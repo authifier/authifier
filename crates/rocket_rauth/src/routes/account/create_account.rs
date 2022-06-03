@@ -1,6 +1,7 @@
 /// Create a new account
 /// POST /account/create
-use rauth::Result;
+use rauth::models::Account;
+use rauth::{Error, RAuth, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 use rocket_empty::EmptyResponse;
@@ -24,29 +25,44 @@ pub struct DataCreateAccount {
 #[openapi(tag = "Account")]
 #[post("/create", data = "<data>")]
 pub async fn create_account(
-    // auth: &State<Auth>,
+    rauth: &State<RAuth>,
     data: Json<DataCreateAccount>,
 ) -> Result<EmptyResponse> {
-    /*let data = data.into_inner();
+    let data = data.into_inner();
 
-    // Perform validation on given data.
-    auth.check_captcha(data.captcha).await?;
-    auth.validate_email(&data.email).await?;
-    auth.validate_password(&data.password).await?;
+    // Check Captcha token
+    rauth.config.captcha.check(data.captcha).await?;
 
-    // Make sure the user has a valid invite if required.
-    let invite = auth.check_invite(data.invite).await?;
+    // Make sure email is valid and not blocked
+    rauth.config.email_block_list.validate_email(&data.email)?;
 
-    // Create an account but quietly fail any errors.
-    let account = auth.create_account(data.email, data.password, true).await?;
+    // Ensure password is safe to use
+    rauth
+        .config
+        .password_scanning
+        .assert_safe(&data.password)
+        .await?;
 
-    // Make sure to use up the invite.
+    // If required, fetch valid invite
+    let invite = if rauth.config.invite_only {
+        if let Some(invite) = data.invite {
+            Some(rauth.database.find_invite(&invite).await?)
+        } else {
+            return Err(Error::MissingInvite);
+        }
+    } else {
+        None
+    };
+
+    // Create account
+    let account = Account::new(rauth, data.email, data.password, true).await?;
+
+    // Use up the invite
     if let Some(invite) = invite {
-        invite.claim(&auth.db, account.id.unwrap()).await.ok();
+        rauth.database.use_invite(&invite.id, &account.id).await?;
     }
 
-    Ok(EmptyResponse)*/
-    todo!()
+    Ok(EmptyResponse)
 }
 
 #[cfg(test)]
