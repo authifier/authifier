@@ -2,9 +2,9 @@ name: Rust
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 env:
   CARGO_TERM_COLOR: always
@@ -14,20 +14,23 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        mongodb-version: ['4.0']
+        mongodb-version: ["4.0"]
+    env:
+      CARGO_TERM_COLOR: always
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Build
-      run: cargo build --verbose
-    - name: Start mock SMTP server
-      uses: upgundecha/start-sendria-github-action@v1.0.0
-      with:
-        smtp-port: 1025
-        http-port: 1080
-    - name: Start MongoDB
-      uses: supercharge/mongodb-github-action@1.6.0
-      with:
-        mongodb-version: ${{ matrix.mongodb-version }}
-    - name: Run tests
-      run: cargo test --verbose
+      - uses: actions/checkout@v2
+      - uses: taiki-e/install-action@nextest
+      - name: Build
+        run: cargo build --verbose
+      - name: Start mock SMTP server
+        uses: upgundecha/start-sendria-github-action@v1.0.0
+        with:
+          smtp-port: 1025
+          http-port: 1080
+      - name: Start MongoDB
+        uses: supercharge/mongodb-github-action@1.6.0
+        with:
+          mongodb-version: ${{ matrix.mongodb-version }}
+      - name: Run tests
+        run: cargo nextest --verbose --features test
