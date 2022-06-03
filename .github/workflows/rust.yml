@@ -33,4 +33,4 @@ jobs:
         with:
           mongodb-version: ${{ matrix.mongodb-version }}
       - name: Run tests
-        run: cargo nextest --verbose --features test
+        run: cargo nextest run --verbose --features test
