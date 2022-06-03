@@ -1,32 +1,38 @@
-use rauth::Result;
-/// Fetch all sessions
-/// GET /session/all
+//! Fetch all sessions
+//! GET /session/all
+use rauth::models::Session;
+use rauth::{RAuth, Result};
 use rocket::serde::json::Json;
 use rocket::State;
+
+#[derive(Serialize, Deserialize, JsonSchema)]
+pub struct SessionInfo {
+    #[serde(rename = "_id")]
+    pub id: String,
+    pub name: String,
+}
+
+impl From<Session> for SessionInfo {
+    fn from(item: Session) -> Self {
+        SessionInfo {
+            id: item.id,
+            name: item.name,
+        }
+    }
+}
 
 /// # Fetch Sessions
 ///
 /// Fetch all sessions associated with this account.
 #[openapi(tag = "Session")]
 #[get("/all")]
-pub async fn fetch_all(/*auth: &State<Auth>, session: Session*/
-) -> Result<Json<Vec</*SessionInfo*/ ()>>> {
-    /*let mut cursor = Session::find(&auth.db, doc! { "user_id": session.user_id }, None)
+pub async fn fetch_all(rauth: &State<RAuth>, session: Session) -> Result<Json<Vec<SessionInfo>>> {
+    rauth
+        .database
+        .find_sessions(&session.user_id)
         .await
-        .map_err(|_| Error::DatabaseError {
-            operation: "find",
-            with: "sessions",
-        })?;
-
-    let mut list = vec![];
-    while let Some(result) = cursor.next().await {
-        if let Ok(session) = result {
-            list.push(session.into());
-        }
-    }
-
-    Ok(Json(list))*/
-    todo!()
+        .map(|ok| ok.into_iter().map(|session| session.into()).collect())
+        .map(Json)
 }
 
 #[cfg(test)]

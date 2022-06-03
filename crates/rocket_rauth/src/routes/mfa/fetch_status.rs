@@ -1,12 +1,37 @@
-use rauth::Result;
-/// Fetch MFA status of an account.
-/// GET /mfa
+//! Fetch MFA status of an account.
+//! GET /mfa
+use rauth::{
+    models::{Account, MultiFactorAuthentication},
+    Result,
+};
 use rocket::serde::json::Json;
 
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct MultiFactorStatus {
+    email_otp: bool,
+    trusted_handover: bool,
+    email_mfa: bool,
+    totp_mfa: bool,
+    security_key_mfa: bool,
+    recovery_active: bool,
+}
+
+impl From<MultiFactorAuthentication> for MultiFactorStatus {
+    fn from(item: MultiFactorAuthentication) -> Self {
+        MultiFactorStatus {
+            email_otp: item.enable_email_otp,
+            trusted_handover: item.enable_trusted_handover,
+            email_mfa: item.enable_email_mfa,
+            totp_mfa: !item.totp_token.is_disabled(),
+            security_key_mfa: item.security_key_token.is_some(),
+            recovery_active: !item.recovery_codes.is_empty(),
+        }
+    }
+}
+
 #[get("/")]
-pub async fn fetch_status(/*account: Account*/) -> Result</*Json<MultiFactorStatus>*/ ()> {
-    /*Ok(Json(account.mfa.into()))*/
-    todo!()
+pub async fn fetch_status(account: Account) -> Result<Json<MultiFactorStatus>> {
+    Ok(Json(account.mfa.into()))
 }
 
 #[cfg(test)]

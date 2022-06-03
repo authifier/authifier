@@ -14,10 +14,6 @@ pub trait AbstractDatabase: std::marker::Sync {
         normalised_email: &str,
     ) -> Result<Option<Account>>;
 
-    // FindOneOptions::builder()
-    // .collation(Collation::builder().locale("en").strength(2).build())
-    // .build(),
-
     /// Find account with active pending email verification
     async fn find_account_with_email_verification(&self, token: &str) -> Result<Account>;
 
@@ -26,6 +22,9 @@ pub trait AbstractDatabase: std::marker::Sync {
 
     /// Find invite by id
     async fn find_invite(&self, id: &str) -> Result<Invite>;
+
+    /// Find session by id
+    async fn find_session(&self, id: &str) -> Result<Session>;
 
     /// Find sessions by user id
     async fn find_sessions(&self, user_id: &str) -> Result<Vec<Session>>;
@@ -36,6 +35,15 @@ pub trait AbstractDatabase: std::marker::Sync {
     // Save account
     async fn save_account(&self, account: &Account) -> Success;
 
+    /// Save session
+    async fn save_session(&self, session: &Session) -> Success;
+
     /// Save invite
     async fn save_invite(&self, invite: &Invite) -> Success;
+
+    /// Delete session
+    async fn delete_session(&self, id: &str) -> Success;
+
+    /// Delete session
+    async fn delete_all_sessions(&self, user_id: &str, ignore: Option<String>) -> Success;
 }

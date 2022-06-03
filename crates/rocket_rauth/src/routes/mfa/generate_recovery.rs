@@ -1,6 +1,7 @@
-use rauth::Result;
-/// Re-generate recovery codes for an account.
-/// PATCH /mfa/recovery
+//! Re-generate recovery codes for an account.
+//! PATCH /mfa/recovery
+use rauth::models::Account;
+use rauth::{RAuth, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 
@@ -11,8 +12,8 @@ pub struct Data {
 
 #[patch("/recovery", data = "<data>")]
 pub async fn generate_recovery(
-    // auth: &State<Auth>,
-    // mut account: Account,
+    rauth: &State<RAuth>,
+    mut account: Account,
     data: Json<Data>,
 ) -> Result<Json<Vec<String>>> {
     /*account.verify_password(&data.password)?;

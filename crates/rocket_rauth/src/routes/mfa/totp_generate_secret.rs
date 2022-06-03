@@ -1,6 +1,7 @@
-use rauth::Result;
-/// Generate a new secret for TOTP.
-/// POST /mfa/totp
+//! Generate a new secret for TOTP.
+//! POST /mfa/totp
+use rauth::models::Account;
+use rauth::{RAuth, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 
@@ -10,8 +11,9 @@ pub struct Response {
 }
 
 #[post("/totp")]
-pub async fn totp_generate_secret(// auth: &State<Auth>,
-    // mut account: Account,
+pub async fn totp_generate_secret(
+    rauth: &State<RAuth>,
+    mut account: Account,
 ) -> Result<Json<Response>> {
     /*let secret = auth.mfa_generate_totp_secret(&mut account).await?;
     Ok(Json(Response { secret }))*/

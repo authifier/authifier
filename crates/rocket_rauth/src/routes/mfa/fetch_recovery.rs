@@ -1,6 +1,6 @@
-use rauth::Result;
-/// Fetch recovery codes for an account.
-/// POST /mfa/recovery
+//! Fetch recovery codes for an account.
+//! POST /mfa/recovery
+use rauth::{models::Account, Result};
 use rocket::serde::json::Json;
 
 #[derive(Serialize, Deserialize)]
@@ -9,7 +9,7 @@ pub struct Data {
 }
 
 #[post("/recovery", data = "<data>")]
-pub async fn fetch_recovery(/*account: Account,*/ data: Json<Data>,) -> Result<Json<Vec<String>>> {
+pub async fn fetch_recovery(account: Account, data: Json<Data>) -> Result<Json<Vec<String>>> {
     /*account.verify_password(&data.password)?;
     Ok(Json(account.mfa.recovery_codes))*/
     todo!()

@@ -1,6 +1,8 @@
-use rauth::Result;
-/// Login to an account
-/// POST /session/login
+//! Login to an account
+//! POST /session/login
+use rauth::models::Session;
+use rauth::util::normalise_email;
+use rauth::{Error, RAuth, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 
@@ -26,7 +28,7 @@ pub struct DataLogin {
 #[derive(Serialize, JsonSchema)]
 #[serde(tag = "result")]
 pub enum ResponseLogin {
-    Success(/*Session*/ ()),
+    Success(Session),
     EmailOTP,
     MFA {
         ticket: String,
@@ -40,45 +42,45 @@ pub enum ResponseLogin {
 /// Login to an account.
 #[openapi(tag = "Session")]
 #[post("/login", data = "<data>")]
-pub async fn login(/*auth: &State<Auth>,*/ data: Json<DataLogin>,) -> Result<Json<ResponseLogin>> {
-    /*let data = data.into_inner();
+pub async fn login(rauth: &State<RAuth>, data: Json<DataLogin>) -> Result<Json<ResponseLogin>> {
+    let data = data.into_inner();
 
-    // Perform validation on given data.
-    auth.check_captcha(data.captcha).await?;
-    auth.validate_email(&data.email).await?;
+    // Check Captcha token
+    rauth.config.captcha.check(data.captcha).await?;
+
+    // Make sure email is valid and not blocked
+    rauth.config.email_block_list.validate_email(&data.email)?;
 
     // Generate a session name ahead of time.
     let name = data.friendly_name.unwrap_or_else(|| "Unknown".to_string());
 
-    // * We could check if passwords are compromised
-    // * on login, in the future.
-    // auth.validate_password(&password).await?;
-
     // Try to find the account we want.
-    if let Some(account) = Account::find_one(
-        &auth.db,
-        doc! { "email": data.email },
-        FindOneOptions::builder()
-            .collation(Collation::builder().locale("en").strength(2).build())
-            .build(),
-    )
-    .await
-    .map_err(|_| Error::DatabaseError {
-        operation: "find_one",
-        with: "account",
-    })? {
+    let email_normalised = normalise_email(data.email);
+
+    if let Some(account) = rauth
+        .database
+        .find_account_by_normalised_email(&email_normalised)
+        .await?
+    {
         // Figure out whether we are doing password, 1FA key or email 1FA OTP.
         if let Some(password) = data.password {
+            // Make sure password has not been compromised
+            rauth
+                .config
+                .password_scanning
+                .assert_safe(&password)
+                .await?;
+
             // Verify the password is correct.
             account.verify_password(&password)?;
 
             // Prevent disabled accounts from logging in.
-            if account.disabled.unwrap_or(false) {
+            if account.disabled {
                 return Err(Error::DisabledAccount);
             }
 
             Ok(Json(ResponseLogin::Success(
-                auth.create_session(&account, name).await?,
+                account.create_session(rauth, name).await?,
             )))
         } else if let Some(_challenge) = data.challenge {
             // TODO: implement; issue #5
@@ -89,8 +91,7 @@ pub async fn login(/*auth: &State<Auth>,*/ data: Json<DataLogin>,) -> Result<Jso
         }
     } else {
         Err(Error::InvalidCredentials)
-    }*/
-    todo!()
+    }
 }
 
 #[cfg(test)]

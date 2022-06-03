@@ -22,6 +22,10 @@ impl AbstractDatabase for DummyDb {
         todo!()
     }
 
+    // FindOneOptions::builder()
+    // .collation(Collation::builder().locale("en").strength(2).build())
+    // .build(),
+
     /// Find account with active pending email verification
     async fn find_account_with_email_verification(&self, token: &str) -> Result<Account> {
         todo!()
@@ -34,6 +38,11 @@ impl AbstractDatabase for DummyDb {
 
     /// Find invite by id
     async fn find_invite(&self, id: &str) -> Result<Invite> {
+        todo!()
+    }
+
+    /// Find session by id
+    async fn find_session(&self, id: &str) -> Result<Session> {
         todo!()
     }
 
@@ -52,8 +61,36 @@ impl AbstractDatabase for DummyDb {
         todo!()
     }
 
+    /// Save session
+    async fn save_session(&self, session: &Session) -> Success {
+        todo!()
+    }
+
     /// Save invite
     async fn save_invite(&self, invite: &Invite) -> Success {
         todo!()
+    }
+
+    /// Delete session
+    async fn delete_session(&self, id: &str) -> Success {
+        todo!()
+    }
+
+    /// Delete session
+    async fn delete_all_sessions(&self, user_id: &str, ignore: Option<String>) -> Success {
+        todo!()
+        /*
+            let mut update = doc! {
+            "user_id": session.user_id
+        };
+
+        if !revoke_self {
+            update.insert(
+                "_id",
+                doc! {
+                    "$ne": session.id.unwrap()
+                },
+            );
+        } */
     }
 }
