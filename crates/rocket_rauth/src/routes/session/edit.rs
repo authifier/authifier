@@ -53,7 +53,7 @@ mod tests {
 
         let (_, auth, session, _) = for_test_authenticated("edit::success").await;
         let client =
-            bootstrap_rocket_with_auth(auth, routes![crate::web::session::edit::edit]).await;
+            bootstrap_rocket_with_auth(auth, routes![crate::routes::session::edit::edit]).await;
 
         let res = client
             .patch(format!("/{}", session.id.as_ref().unwrap()))

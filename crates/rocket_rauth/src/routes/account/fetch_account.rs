@@ -30,7 +30,6 @@ pub async fn fetch_account(account: Account) -> Result<Json<AccountInfo>> {
 
 #[cfg(test)]
 #[cfg(feature = "test")]
-#[cfg(feature = "TODO")]
 mod tests {
     use crate::test::*;
 
@@ -38,10 +37,10 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (_, auth, session, _) = for_test_authenticated("fetch_account::success").await;
+        let (rauth, session, _) = for_test_authenticated("fetch_account::success").await;
         let client = bootstrap_rocket_with_auth(
-            auth,
-            routes![crate::web::account::fetch_account::fetch_account],
+            rauth,
+            routes![crate::routes::account::fetch_account::fetch_account],
         )
         .await;
 
@@ -52,6 +51,11 @@ mod tests {
             .await;
 
         assert_eq!(res.status(), Status::Ok);
-        assert!(serde_json::from_str::<AccountInfo>(&res.into_string().await.unwrap()).is_ok());
+        assert!(
+            serde_json::from_str::<crate::routes::account::fetch_account::AccountInfo>(
+                &res.into_string().await.unwrap()
+            )
+            .is_ok()
+        );
     }
 }

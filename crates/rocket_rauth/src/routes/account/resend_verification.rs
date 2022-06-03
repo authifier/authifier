@@ -52,39 +52,37 @@ pub async fn resend_verification(
 
 #[cfg(test)]
 #[cfg(feature = "test")]
-#[cfg(feature = "TODO")]
 mod tests {
+    use iso8601_timestamp::Timestamp;
+
     use crate::test::*;
 
     #[async_std::test]
     async fn success() {
-        use chrono::Utc;
-        use mongodb::bson::DateTime;
-
-        let (db, auth) =
+        let rauth =
             for_test_with_config("resend_verification::success", test_smtp_config().await).await;
 
-        let mut account = auth
-            .create_account(
-                "resend_verification@smtp.test".into(),
-                "password".into(),
-                false,
-            )
-            .await
-            .unwrap();
+        let mut account = Account::new(
+            &rauth,
+            "resend_verification@smtp.test".into(),
+            "password".into(),
+            false,
+        )
+        .await
+        .unwrap();
 
-        account.verification = AccountVerification::Pending {
+        account.verification = EmailVerification::Pending {
             token: "".into(),
-            expiry: DateTime(Utc::now()),
+            expiry: Timestamp::now_utc(),
         };
 
-        account.save(&db, None).await.unwrap();
+        rauth.database.save_account(&account).await.unwrap();
 
         let client = bootstrap_rocket_with_auth(
-            auth,
+            rauth,
             routes![
-                crate::web::account::resend_verification::resend_verification,
-                crate::web::account::verify_email::verify_email
+                crate::routes::account::resend_verification::resend_verification,
+                crate::routes::account::verify_email::verify_email
             ],
         )
         .await;
@@ -114,14 +112,14 @@ mod tests {
 
     #[async_std::test]
     async fn success_unknown() {
-        let (_, auth) = for_test_with_config(
+        let rauth = for_test_with_config(
             "resend_verification::success_unknown",
             test_smtp_config().await,
         )
         .await;
         let client = bootstrap_rocket_with_auth(
-            auth,
-            routes![crate::web::account::resend_verification::resend_verification],
+            rauth,
+            routes![crate::routes::account::resend_verification::resend_verification],
         )
         .await;
 
@@ -145,7 +143,7 @@ mod tests {
         let client = bootstrap_rocket(
             "resend_verification",
             "fail_bad_email",
-            routes![crate::web::account::resend_verification::resend_verification],
+            routes![crate::routes::account::resend_verification::resend_verification],
         )
         .await;
 

@@ -21,7 +21,7 @@ pub async fn test_smtp_config() -> Config {
                 host: "127.0.0.1".into(),
                 port: Some(1025),
                 username: "noreply@example.com".into(),
-                password: "password".into(),
+                password: "password_insecure".into(),
                 use_tls: Some(false),
             },
             expiry: Default::default(),

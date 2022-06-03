@@ -53,8 +53,8 @@ mod tests {
         let client = bootstrap_rocket_with_auth(
             auth,
             routes![
-                crate::web::mfa::totp_generate_secret::totp_generate_secret,
-                crate::web::mfa::totp_enable::totp_enable
+                crate::routes::mfa::totp_generate_secret::totp_generate_secret,
+                crate::routes::mfa::totp_enable::totp_enable
             ],
         )
         .await;
@@ -84,7 +84,7 @@ mod tests {
             .put("/totp")
             .header(Header::new("X-Session-Token", session.token))
             .header(ContentType::JSON)
-            .body(json!({ "code": code, "password": "password" }).to_string())
+            .body(json!({ "code": code, "password": "password_insecure" }).to_string())
             .dispatch()
             .await;
 

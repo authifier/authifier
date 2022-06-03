@@ -48,9 +48,6 @@ pub async fn login(rauth: &State<RAuth>, data: Json<DataLogin>) -> Result<Json<R
     // Check Captcha token
     rauth.config.captcha.check(data.captcha).await?;
 
-    // Make sure email is valid and not blocked
-    rauth.config.email_block_list.validate_email(&data.email)?;
-
     // Generate a session name ahead of time.
     let name = data.friendly_name.unwrap_or_else(|| "Unknown".to_string());
 
@@ -109,7 +106,7 @@ mod tests {
             .unwrap();
 
         let client =
-            bootstrap_rocket_with_auth(auth, routes![crate::web::session::login::login]).await;
+            bootstrap_rocket_with_auth(auth, routes![crate::routes::session::login::login]).await;
 
         let res = client
             .post("/login")
@@ -117,7 +114,7 @@ mod tests {
             .body(
                 json!({
                     "email": "EXAMPLE@validemail.com",
-                    "password": "password"
+                    "password": "password_insecure"
                 })
                 .to_string(),
             )
@@ -133,7 +130,7 @@ mod tests {
         let client = bootstrap_rocket(
             "create_account",
             "fail_invalid_user",
-            routes![crate::web::session::login::login],
+            routes![crate::routes::session::login::login],
         )
         .await;
 
@@ -143,7 +140,7 @@ mod tests {
             .body(
                 json!({
                     "email": "example@validemail.com",
-                    "password": "password"
+                    "password": "password_insecure"
                 })
                 .to_string(),
             )
@@ -170,7 +167,7 @@ mod tests {
         account.save(&db, None).await.unwrap();
 
         let client =
-            bootstrap_rocket_with_auth(auth, routes![crate::web::session::login::login]).await;
+            bootstrap_rocket_with_auth(auth, routes![crate::routes::session::login::login]).await;
 
         let res = client
             .post("/login")
@@ -178,7 +175,7 @@ mod tests {
             .body(
                 json!({
                     "email": "example@validemail.com",
-                    "password": "password"
+                    "password": "password_insecure"
                 })
                 .to_string(),
             )

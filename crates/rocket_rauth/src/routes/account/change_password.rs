@@ -51,7 +51,6 @@ pub async fn change_password(
 
 #[cfg(test)]
 #[cfg(feature = "test")]
-#[cfg(feature = "TODO")]
 mod tests {
     use crate::test::*;
 
@@ -59,10 +58,10 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (_, auth, session, _) = for_test_authenticated("change_password::success").await;
+        let (rauth, session, _) = for_test_authenticated("change_password::success").await;
         let client = bootstrap_rocket_with_auth(
-            auth,
-            routes![crate::web::account::change_password::change_password],
+            rauth,
+            routes![crate::routes::account::change_password::change_password],
         )
         .await;
 
@@ -73,7 +72,7 @@ mod tests {
             .body(
                 json!({
                     "password": "new password",
-                    "current_password": "password"
+                    "current_password": "password_insecure"
                 })
                 .to_string(),
             )
