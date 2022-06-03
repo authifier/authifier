@@ -13,6 +13,10 @@ extern crate log;
 #[macro_use]
 extern crate serde_json;
 
+#[cfg(feature = "database-mongodb")]
+#[macro_use]
+extern crate bson;
+
 mod result;
 pub use result::*;
 
