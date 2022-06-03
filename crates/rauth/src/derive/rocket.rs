@@ -23,7 +23,7 @@ impl<'r> Responder<'r, 'static> for Error {
             Error::MissingHeaders => Status::BadRequest,
             Error::CaptchaFailed => Status::BadRequest,
             Error::InvalidSession => Status::Unauthorized,
-            Error::UnverifiedAccount => Status::BadRequest,
+            Error::UnverifiedAccount => Status::Forbidden,
             Error::UnknownUser => Status::NotFound,
             Error::EmailFailed => Status::InternalServerError,
             Error::InvalidCredentials => Status::Unauthorized,
