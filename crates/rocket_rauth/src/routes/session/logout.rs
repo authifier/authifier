@@ -1,6 +1,6 @@
-use rauth::Result;
-/// Logout of current session
-/// POST /session/logout
+//! Logout of current session
+//! POST /session/logout
+use rauth::{models::Session, RAuth, Result};
 use rocket::State;
 use rocket_empty::EmptyResponse;
 
@@ -9,16 +9,12 @@ use rocket_empty::EmptyResponse;
 /// Delete current session.
 #[openapi(tag = "Session")]
 #[post("/logout")]
-pub async fn logout(/*auth: &State<Auth>, session: Session*/) -> Result<EmptyResponse> {
-    /*session
-    .delete(&auth.db)
-    .await
-    .map(|_| EmptyResponse)
-    .map_err(|_| Error::DatabaseError {
-        operation: "delete",
-        with: "session",
-    })*/
-    todo!()
+pub async fn logout(rauth: &State<RAuth>, session: Session) -> Result<EmptyResponse> {
+    rauth
+        .database
+        .delete_session(&session.id)
+        .await
+        .map(|_| EmptyResponse)
 }
 
 #[cfg(test)]

@@ -1,8 +1,11 @@
-use rauth::Result;
-/// Edit a session
-/// PATCH /session/:id
+//! Edit a session
+//! PATCH /session/:id
+use rauth::models::Session;
+use rauth::{Error, RAuth, Result};
 use rocket::serde::json::Json;
 use rocket::State;
+
+use super::fetch_all::SessionInfo;
 
 /// # Edit Data
 #[derive(Serialize, Deserialize, JsonSchema)]
@@ -17,33 +20,25 @@ pub struct DataEditSession {
 #[openapi(tag = "Session")]
 #[patch("/<id>", data = "<data>")]
 pub async fn edit(
-    // auth: &State<Auth>,
-    // session: Session,
+    rauth: &State<RAuth>,
+    user: Session,
     id: String,
     data: Json<DataEditSession>,
-) -> Result</*Json<Session>*/ ()> {
-    /*let mut session = Session::find_one(
-        &auth.db,
-        doc! { "_id": id, "user_id": session.user_id },
-        None,
-    )
-    .await
-    .map_err(|_| Error::DatabaseError {
-        operation: "find_one",
-        with: "session",
-    })?
-    .ok_or(Error::InvalidSession)?;
+) -> Result<Json<SessionInfo>> {
+    let mut session = rauth.database.find_session(&id).await?;
 
+    // Make sure we own this session
+    if user.user_id != session.user_id {
+        return Err(Error::InvalidSession);
+    }
+
+    // Rename the session
     session.name = data.into_inner().friendly_name;
-    session
-        .save(&auth.db, None)
-        .await
-        .map(|_| Json(session))
-        .map_err(|_| Error::DatabaseError {
-            operation: "save",
-            with: "session",
-        })*/
-    todo!()
+
+    // Save session
+    rauth.database.save_session(&session).await?;
+
+    Ok(Json(session.into()))
 }
 
 #[cfg(test)]

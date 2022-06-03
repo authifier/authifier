@@ -1,6 +1,7 @@
-use rauth::Result;
-/// Generate a new secret for TOTP.
-/// POST /mfa/totp
+//! Generate a new secret for TOTP.
+//! POST /mfa/totp
+use rauth::models::Account;
+use rauth::{RAuth, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 use rocket_empty::EmptyResponse;
@@ -13,8 +14,8 @@ pub struct Data {
 
 #[put("/totp", data = "<data>")]
 pub async fn totp_enable(
-    // auth: &State<Auth>,
-    // mut account: Account,
+    rauth: &State<RAuth>,
+    mut account: Account,
     data: Json<Data>,
 ) -> Result<EmptyResponse> {
     /*account.verify_password(&data.password)?;

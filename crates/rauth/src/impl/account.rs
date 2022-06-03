@@ -3,7 +3,7 @@ use iso8601_timestamp::Timestamp;
 
 use crate::{
     config::EmailVerificationConfig,
-    models::{Account, EmailVerification, PasswordReset, Totp},
+    models::{Account, EmailVerification, PasswordReset, Session, Totp},
     util::{hash_password, normalise_email},
     Error, RAuth, Result, Success,
 };
@@ -61,6 +61,23 @@ impl Account {
 
             Ok(account)
         }
+    }
+
+    /// Create a new session
+    pub async fn create_session(&self, rauth: &RAuth, name: String) -> Result<Session> {
+        let session = Session {
+            id: ulid::Ulid::new().to_string(),
+            token: nanoid!(64),
+
+            user_id: self.id.clone(),
+            name,
+
+            subscription: None,
+        };
+
+        rauth.database.save_session(&session).await?;
+
+        Ok(session)
     }
 
     /// Send account verification email

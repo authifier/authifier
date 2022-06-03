@@ -1,6 +1,6 @@
-use rauth::Result;
-/// Revoke all sessions
-/// DELETE /session/all
+//! Revoke all sessions
+//! DELETE /session/all
+use rauth::{models::Session, RAuth, Result};
 use rocket::State;
 use rocket_empty::EmptyResponse;
 
@@ -10,32 +10,21 @@ use rocket_empty::EmptyResponse;
 #[openapi(tag = "Session")]
 #[delete("/all?<revoke_self>")]
 pub async fn revoke_all(
-    // auth: &State<Auth>,
-    // session: Session,
+    rauth: &State<RAuth>,
+    session: Session,
     revoke_self: Option<bool>,
 ) -> Result<EmptyResponse> {
-    /*let revoke_self = revoke_self.unwrap_or(false);
-    let mut update = doc! {
-        "user_id": session.user_id
+    let ignore = if revoke_self.unwrap_or(false) {
+        None
+    } else {
+        Some(session.id)
     };
 
-    if !revoke_self {
-        update.insert(
-            "_id",
-            doc! {
-                "$ne": session.id.unwrap()
-            },
-        );
-    }
-
-    Session::delete_many(&auth.db, update, None)
+    rauth
+        .database
+        .delete_all_sessions(&session.user_id, ignore)
         .await
         .map(|_| EmptyResponse)
-        .map_err(|_| Error::DatabaseError {
-            operation: "delete",
-            with: "session",
-        })*/
-    todo!()
 }
 
 #[cfg(test)]
