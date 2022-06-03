@@ -72,46 +72,20 @@ Internally rAuth stores emails with and without special characters, `+.`.
 
 ## Database Migrations
 
-You need to manage the database migrations yourself.
-
-#### Creating the database.
-
-rAuth needs a collection and two indexes to operate optimally.
+Migrating the database is easy, you just have to orchestrate it yourself, ideally you have your own versioned migration system which you can slot changes into.
 
 ```rust
-db.create_collection("accounts", None);
-db.run_command(
-  doc! {
-    "createIndexes": "accounts",
-    "indexes": [
-      {
-        "key": {
-          "email": 1
-        },
-        "name": "email",
-        "unique": true,
-        "collation": {
-          "locale": "en",
-          "strength": 2
-        }
-      },
-      {
-        "key": {
-          "email_normalised": 1
-        },
-        "name": "email_normalised",
-        "unique": true,
-        "collation": {
-          "locale": "en",
-          "strength": 2
-        }
-      }
-    ]
-  },
-  None,
-);
+use rauth::{ Database, Migration };
+
+// Acquire the database first
+let database = Database::[..];
+
+// Then run a specific migration
+database.run_migration(Migration::[..]).await.unwrap();
 ```
 
-### Migrations
+The following migrations are available and must be run in order:
 
-Currently no migrations are available, but they will be added here as needed.
+| Date       | Migration                   | Description                                                                                          |
+| ---------- | --------------------------- | ---------------------------------------------------------------------------------------------------- |
+| 2022-06-03 | `M2022_06_03EnsureUpToSpec` | Reset and reconstruct indexes to be fully up to date. This will also create any missing collections. |

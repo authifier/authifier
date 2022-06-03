@@ -1,4 +1,4 @@
-use bson::{to_document, Bson, DateTime};
+use bson::{to_document, Bson, DateTime, Document};
 use futures::stream::TryStreamExt;
 use mongodb::options::{Collation, CollationStrength, FindOneOptions, UpdateOptions};
 use std::ops::Deref;
@@ -8,7 +8,7 @@ use crate::{
     Error, Result, Success,
 };
 
-use super::definition::AbstractDatabase;
+use super::{definition::AbstractDatabase, Migration};
 
 pub struct MongoDb(pub mongodb::Database);
 
@@ -22,6 +22,130 @@ impl Deref for MongoDb {
 
 #[async_trait]
 impl AbstractDatabase for MongoDb {
+    /// Run a database migration
+    async fn run_migration(&self, migration: Migration) -> Success {
+        match migration {
+            Migration::WipeAll => {
+                // Drop the entire database
+                self.drop(None).await.unwrap();
+            }
+            Migration::M2022_06_03EnsureUpToSpec => {
+                // Make sure all collections exist
+                let list = self.list_collection_names(None).await.unwrap();
+                let collections = ["accounts", "sessions", "invites", "mfa_tickets"];
+
+                for name in collections {
+                    if !list.contains(&name.to_string()) {
+                        self.create_collection(name, None).await.unwrap();
+                    }
+                }
+
+                // Setup index for `accounts`
+                let col = self.collection::<Document>("accounts");
+                col.drop_indexes(None).await.unwrap();
+
+                self.run_command(
+                    doc! {
+                        "createIndexes": "accounts",
+                        "indexes": [
+                            {
+                                "key": {
+                                    "email": 1
+                                },
+                                "name": "email",
+                                "unique": true,
+                                "collation": {
+                                    "locale": "en",
+                                    "strength": 2
+                                }
+                            },
+                            {
+                                "key": {
+                                    "email_normalised": 1
+                                },
+                                "name": "email_normalised",
+                                "unique": true,
+                                "collation": {
+                                    "locale": "en",
+                                    "strength": 2
+                                }
+                            },
+                            {
+                                "key": {
+                                    "verification.token": 1
+                                },
+                                "name": "email_verification",
+                                "unique": true
+                            },
+                            {
+                                "key": {
+                                    "password_reset.token": 1
+                                },
+                                "name": "password_reset",
+                                "unique": true
+                            }
+                        ]
+                    },
+                    None,
+                )
+                .await
+                .unwrap();
+
+                // Setup index for `sessions`
+                let col = self.collection::<Document>("sessions");
+                col.drop_indexes(None).await.unwrap();
+
+                self.run_command(
+                    doc! {
+                        "createIndexes": "sessions",
+                        "indexes": [
+                            {
+                                "key": {
+                                    "token": 1
+                                },
+                                "name": "token",
+                                "unique": true
+                            },
+                            {
+                                "key": {
+                                    "user_id": 1
+                                },
+                                "name": "user_id"
+                            }
+                        ]
+                    },
+                    None,
+                )
+                .await
+                .unwrap();
+
+                // Setup index for `mfa_tickets`
+                let col = self.collection::<Document>("mfa_tickets");
+                col.drop_indexes(None).await.unwrap();
+
+                self.run_command(
+                    doc! {
+                        "createIndexes": "mfa_tickets",
+                        "indexes": [
+                            {
+                                "key": {
+                                    "token": 1
+                                },
+                                "name": "token",
+                                "unique": true
+                            }
+                        ]
+                    },
+                    None,
+                )
+                .await
+                .unwrap();
+            }
+        }
+
+        Ok(())
+    }
+
     /// Find account by id
     async fn find_account(&self, id: &str) -> Result<Account> {
         self.collection("accounts")
@@ -185,11 +309,13 @@ impl AbstractDatabase for MongoDb {
                 doc! {
                     "_id": &account.id
                 },
-                to_document(account).map_err(|_| Error::DatabaseError {
-                    operation: "to_document",
-                    with: "account",
-                })?,
-                UpdateOptions::builder().build(),
+                doc! {
+                    "$set": to_document(account).map_err(|_| Error::DatabaseError {
+                        operation: "to_document",
+                        with: "account",
+                    })?
+                },
+                UpdateOptions::builder().upsert(true).build(),
             )
             .await
             .map_err(|_| Error::DatabaseError {
@@ -206,11 +332,13 @@ impl AbstractDatabase for MongoDb {
                 doc! {
                     "_id": &session.id
                 },
-                to_document(session).map_err(|_| Error::DatabaseError {
-                    operation: "to_document",
-                    with: "session",
-                })?,
-                UpdateOptions::builder().build(),
+                doc! {
+                    "$set": to_document(session).map_err(|_| Error::DatabaseError {
+                        operation: "to_document",
+                        with: "session",
+                    })?,
+                },
+                UpdateOptions::builder().upsert(true).build(),
             )
             .await
             .map_err(|_| Error::DatabaseError {
@@ -227,11 +355,13 @@ impl AbstractDatabase for MongoDb {
                 doc! {
                     "_id": &invite.id
                 },
-                to_document(invite).map_err(|_| Error::DatabaseError {
-                    operation: "to_document",
-                    with: "invite",
-                })?,
-                UpdateOptions::builder().build(),
+                doc! {
+                    "$set": to_document(invite).map_err(|_| Error::DatabaseError {
+                        operation: "to_document",
+                        with: "invite",
+                    })?,
+                },
+                UpdateOptions::builder().upsert(true).build(),
             )
             .await
             .map_err(|_| Error::DatabaseError {
