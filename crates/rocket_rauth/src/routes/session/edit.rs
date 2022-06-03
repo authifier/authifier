@@ -43,20 +43,19 @@ pub async fn edit(
 
 #[cfg(test)]
 #[cfg(feature = "test")]
-#[cfg(feature = "TODO")]
 mod tests {
-    use crate::test::*;
+    use crate::{routes::session::fetch_all::SessionInfo, test::*};
 
     #[async_std::test]
     async fn success() {
         use rocket::http::Header;
 
-        let (_, auth, session, _) = for_test_authenticated("edit::success").await;
+        let (rauth, session, _) = for_test_authenticated("edit::success").await;
         let client =
-            bootstrap_rocket_with_auth(auth, routes![crate::routes::session::edit::edit]).await;
+            bootstrap_rocket_with_auth(rauth, routes![crate::routes::session::edit::edit]).await;
 
         let res = client
-            .patch(format!("/{}", session.id.as_ref().unwrap()))
+            .patch(format!("/{}", session.id))
             .header(ContentType::JSON)
             .header(Header::new("X-Session-Token", session.token))
             .body(
@@ -71,7 +70,7 @@ mod tests {
         assert_eq!(res.status(), Status::Ok);
 
         let result = res.into_string().await.unwrap();
-        let session = serde_json::from_str::<Session>(&result).unwrap();
+        let session = serde_json::from_str::<SessionInfo>(&result).unwrap();
         assert_eq!(session.name, "test name");
     }
 }

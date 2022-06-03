@@ -266,7 +266,7 @@ impl AbstractDatabase for MongoDb {
 
     /// Find sessions by user id
     async fn find_sessions(&self, user_id: &str) -> Result<Vec<Session>> {
-        self.collection::<Session>("invites")
+        self.collection::<Session>("sessions")
             .find(
                 doc! {
                     "user_id": user_id

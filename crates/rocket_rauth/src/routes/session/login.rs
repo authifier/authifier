@@ -93,20 +93,24 @@ pub async fn login(rauth: &State<RAuth>, data: Json<DataLogin>) -> Result<Json<R
 
 #[cfg(test)]
 #[cfg(feature = "test")]
-#[cfg(feature = "TODO")]
 mod tests {
     use crate::test::*;
 
     #[async_std::test]
     async fn success() {
-        let (_, auth) = for_test("login::success").await;
+        let rauth = for_test("login::success").await;
 
-        auth.create_account("example@validemail.com".into(), "password".into(), false)
-            .await
-            .unwrap();
+        Account::new(
+            &rauth,
+            "example@validemail.com".into(),
+            "password_insecure".into(),
+            false,
+        )
+        .await
+        .unwrap();
 
         let client =
-            bootstrap_rocket_with_auth(auth, routes![crate::routes::session::login::login]).await;
+            bootstrap_rocket_with_auth(rauth, routes![crate::routes::session::login::login]).await;
 
         let res = client
             .post("/login")
@@ -156,18 +160,22 @@ mod tests {
 
     #[async_std::test]
     async fn fail_disabled_account() {
-        let (db, auth) = for_test("login::fail_disabled_account").await;
+        let rauth = for_test("login::fail_disabled_account").await;
 
-        let mut account = auth
-            .create_account("example@validemail.com".into(), "password".into(), false)
-            .await
-            .unwrap();
+        let mut account = Account::new(
+            &rauth,
+            "example@validemail.com".into(),
+            "password_insecure".into(),
+            false,
+        )
+        .await
+        .unwrap();
 
-        account.disabled = Some(true);
-        account.save(&db, None).await.unwrap();
+        account.disabled = true;
+        rauth.database.save_account(&account).await.unwrap();
 
         let client =
-            bootstrap_rocket_with_auth(auth, routes![crate::routes::session::login::login]).await;
+            bootstrap_rocket_with_auth(rauth, routes![crate::routes::session::login::login]).await;
 
         let res = client
             .post("/login")

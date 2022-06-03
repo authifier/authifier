@@ -1,5 +1,7 @@
 pub use mongodb::Client;
-pub use rauth::{config::*, database::MongoDb, models::*, Config, Database, Migration, RAuth};
+pub use rauth::{
+    config::*, database::MongoDb, models::*, Config, Database, Error, Migration, RAuth, Result,
+};
 pub use rocket::http::{ContentType, Status};
 
 use rocket::Route;
@@ -60,6 +62,9 @@ pub struct Mail {
 }
 
 pub async fn assert_email_sendria(mailbox: String) -> Mail {
+    // Wait a moment for sendira to catch the email
+    async_std::task::sleep(std::time::Duration::from_secs(1)).await;
+
     let client = reqwest::Client::new();
     let resp = client
         .get("http://localhost:1080/api/messages/")

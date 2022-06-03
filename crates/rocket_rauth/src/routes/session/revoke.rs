@@ -25,7 +25,6 @@ pub async fn revoke(rauth: &State<RAuth>, user: Session, id: String) -> Result<E
 
 #[cfg(test)]
 #[cfg(feature = "test")]
-#[cfg(feature = "TODO")]
 mod tests {
     use crate::test::*;
 
@@ -33,22 +32,23 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (db, auth, session, _) = for_test_authenticated("revoke::success").await;
-        let client =
-            bootstrap_rocket_with_auth(auth, routes![crate::routes::session::revoke::revoke]).await;
+        let (rauth, session, _) = for_test_authenticated("revoke::success").await;
+        let client = bootstrap_rocket_with_auth(
+            rauth.clone(),
+            routes![crate::routes::session::revoke::revoke],
+        )
+        .await;
 
         let res = client
-            .delete(format!("/{}", session.id.as_ref().unwrap()))
+            .delete(format!("/{}", session.id))
             .header(Header::new("X-Session-Token", session.token))
             .dispatch()
             .await;
 
         assert_eq!(res.status(), Status::NoContent);
-        assert!(
-            Session::find_one(&db, doc! { "_id": session.id.unwrap() }, None)
-                .await
-                .unwrap()
-                .is_none()
+        assert_eq!(
+            rauth.database.find_session(&session.id).await.unwrap_err(),
+            Error::UnknownUser
         );
     }
 }
