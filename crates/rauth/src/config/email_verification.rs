@@ -6,7 +6,7 @@ use lettre::{
 use crate::{Error, Result, Success};
 
 /// SMTP mail server configuration
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct SMTPSettings {
     /// Sender address
     pub from: String,
@@ -31,7 +31,7 @@ pub struct SMTPSettings {
 }
 
 /// Email template
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Template {
     /// Title of the email
     pub title: String,
@@ -50,7 +50,7 @@ pub struct Template {
 }
 
 /// Email templates
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Templates {
     /// Template for email verification
     pub verify: Template,
@@ -63,7 +63,7 @@ pub struct Templates {
 }
 
 /// Email expiration config
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct EmailExpiryConfig {
     /// How long email verification codes should last for (in seconds)
     pub expire_verification: i64,
@@ -81,7 +81,7 @@ impl Default for EmailExpiryConfig {
 }
 
 /// Email verification config
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[allow(clippy::large_enum_variant)]
 pub enum EmailVerificationConfig {
     /// Don't require email verification

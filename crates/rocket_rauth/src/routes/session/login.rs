@@ -96,10 +96,10 @@ pub async fn login(rauth: &State<RAuth>, data: Json<DataLogin>) -> Result<Json<R
 
 #[cfg(test)]
 #[cfg(feature = "test")]
+#[cfg(feature = "TODO")]
 mod tests {
     use crate::test::*;
 
-    #[cfg(feature = "async-std-runtime")]
     #[async_std::test]
     async fn success() {
         let (_, auth) = for_test("login::success").await;
@@ -128,7 +128,6 @@ mod tests {
         assert!(serde_json::from_str::<Session>(&res.into_string().await.unwrap()).is_ok());
     }
 
-    #[cfg(feature = "async-std-runtime")]
     #[async_std::test]
     async fn fail_invalid_user() {
         let client = bootstrap_rocket(
@@ -158,7 +157,6 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "async-std-runtime")]
     #[async_std::test]
     async fn fail_disabled_account() {
         let (db, auth) = for_test("login::fail_disabled_account").await;

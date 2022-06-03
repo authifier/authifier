@@ -2089,12 +2089,14 @@ dependencies = [
  "mongodb",
  "okapi",
  "rauth",
+ "regex",
  "reqwest",
  "rocket",
  "rocket_empty",
  "rocket_okapi",
  "schemars",
  "serde",
+ "serde_json",
 ]
 
 [[package]]

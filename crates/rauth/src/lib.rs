@@ -31,7 +31,7 @@ pub use config::Config;
 pub use database::{Database, Migration};
 
 /// rAuth state
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct RAuth {
     pub config: Config,
     pub database: Database,

@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use crate::{Error, Result};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub enum PasswordScanning {
     /// Disable password scanning
     None,
@@ -67,14 +67,12 @@ mod tests {
 
     use std::collections::HashSet;
 
-    #[cfg(feature = "async-std-runtime")]
     #[async_std::test]
     async fn it_accepts_any_passwords() {
         let passwords = PasswordScanning::None;
         assert_eq!(passwords.assert_safe("example").await, Ok(()));
     }
 
-    #[cfg(feature = "async-std-runtime")]
     #[async_std::test]
     async fn it_accepts_some_passwords() {
         let passwords = PasswordScanning::Custom {
@@ -84,7 +82,6 @@ mod tests {
         assert_eq!(passwords.assert_safe("example").await, Ok(()));
     }
 
-    #[cfg(feature = "async-std-runtime")]
     #[async_std::test]
     async fn it_rejects_some_passwords() {
         let passwords = PasswordScanning::Custom {

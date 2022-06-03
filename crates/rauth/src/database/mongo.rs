@@ -1,4 +1,4 @@
-use bson::{to_document, Bson, DateTime, Document};
+use bson::{to_document, DateTime, Document};
 use futures::stream::TryStreamExt;
 use mongodb::options::{Collation, CollationStrength, FindOneOptions, UpdateOptions};
 use std::ops::Deref;
@@ -10,6 +10,7 @@ use crate::{
 
 use super::{definition::AbstractDatabase, Migration};
 
+#[derive(Clone)]
 pub struct MongoDb(pub mongodb::Database);
 
 impl Deref for MongoDb {
@@ -196,7 +197,7 @@ impl AbstractDatabase for MongoDb {
                 doc! {
                     "verification.token": token,
                     "verification.expiry": {
-                        "$gte": Bson::DateTime(DateTime::now())
+                        "$gte": DateTime::now().to_rfc3339_string()
                     }
                 },
                 None,
@@ -216,7 +217,7 @@ impl AbstractDatabase for MongoDb {
                 doc! {
                     "password_reset.token": token,
                     "password_reset.expiry": {
-                        "$gte": Bson::DateTime(DateTime::now())
+                        "$gte": DateTime::now().to_rfc3339_string()
                     }
                 },
                 None,
@@ -243,7 +244,7 @@ impl AbstractDatabase for MongoDb {
                 operation: "find_one",
                 with: "invite",
             })?
-            .ok_or(Error::UnknownUser)
+            .ok_or(Error::InvalidInvite)
     }
 
     /// Find session by id

@@ -5,6 +5,7 @@ use crate::{
 
 use super::{definition::AbstractDatabase, Migration};
 
+#[derive(Clone)]
 pub struct DummyDb;
 
 #[async_trait]

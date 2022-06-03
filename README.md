@@ -2,10 +2,6 @@
   <img src="banner.png" height="180px" />
 </p>
 
-## Errata Notice
-
-Currently, `rocket` is locked to `0.5.3-rc.1` because `rocket_okapi` is not up to date yet.
-
 ## Goals
 
 - Prevent user enumeration.

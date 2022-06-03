@@ -52,10 +52,10 @@ pub async fn resend_verification(
 
 #[cfg(test)]
 #[cfg(feature = "test")]
+#[cfg(feature = "TODO")]
 mod tests {
     use crate::test::*;
 
-    #[cfg(feature = "async-std-runtime")]
     #[async_std::test]
     async fn success() {
         use chrono::Utc;
@@ -112,7 +112,6 @@ mod tests {
         assert_eq!(res.status(), Status::NoContent);
     }
 
-    #[cfg(feature = "async-std-runtime")]
     #[async_std::test]
     async fn success_unknown() {
         let (_, auth) = for_test_with_config(
@@ -141,7 +140,6 @@ mod tests {
         assert_eq!(res.status(), Status::NoContent);
     }
 
-    #[cfg(feature = "async-std-runtime")]
     #[async_std::test]
     async fn fail_bad_email() {
         let client = bootstrap_rocket(

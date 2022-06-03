@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use crate::{Error, Result};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub enum EmailBlockList {
     /// Don't block any emails
     Disabled,

@@ -29,10 +29,10 @@ pub async fn verify_email(rauth: &State<RAuth>, code: String) -> Result<EmptyRes
 
 #[cfg(test)]
 #[cfg(feature = "test")]
+#[cfg(feature = "TODO")]
 mod tests {
     use crate::test::*;
 
-    #[cfg(feature = "async-std-runtime")]
     #[async_std::test]
     async fn success() {
         use chrono::{Duration, Utc};
@@ -62,7 +62,6 @@ mod tests {
         assert_eq!(res.status(), Status::NoContent);
     }
 
-    #[cfg(feature = "async-std-runtime")]
     #[async_std::test]
     async fn fail_invalid_token() {
         let (_, auth) = for_test("verify_email::fail_invalid_token").await;

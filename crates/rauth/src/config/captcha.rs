@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{Error, Result};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub enum Captcha {
     /// Don't require captcha verification
     Disabled,
@@ -64,7 +64,6 @@ impl Captcha {
 mod tests {
     use super::{Captcha, Error};
 
-    #[cfg(feature = "async-std-runtime")]
     #[async_std::test]
     async fn it_accepts_if_no_captcha_service() {
         let captcha = Captcha::Disabled;
@@ -72,7 +71,6 @@ mod tests {
         assert_eq!(captcha.check(Some("token".to_string())).await, Ok(()));
     }
 
-    #[cfg(feature = "async-std-runtime")]
     #[async_std::test]
     async fn it_accepts_if_hcaptcha() {
         let captcha = Captcha::HCaptcha {
@@ -87,7 +85,6 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "async-std-runtime")]
     #[async_std::test]
     async fn it_rejects_if_hcaptcha_response_is_invalid() {
         let captcha = Captcha::HCaptcha {
@@ -102,7 +99,6 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "async-std-runtime")]
     #[async_std::test]
     async fn it_rejects_if_no_token() {
         assert_eq!(
