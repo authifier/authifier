@@ -1,4 +1,6 @@
-<img align="left" src="banner.png" height="180px" />
+<p align="center">
+  <img src="banner.png" height="180px" />
+</p>
 
 ## Goals
 
