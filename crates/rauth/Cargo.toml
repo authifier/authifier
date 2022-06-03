@@ -7,7 +7,7 @@ edition = "2021"
 
 [features]
 async-std-runtime = [ "async-std", "mongodb/async-std-runtime" ]
-database-mongodb = [ "mongodb" ]
+database-mongodb = [ "mongodb", "bson", "futures" ]
 rocket_impl = [ "rocket" ]
 okapi_impl = [ "rocket_okapi", "okapi", "schemas" ]
 schemas = [ "schemars" ]
@@ -31,12 +31,15 @@ chrono = "0.4.19"
 lazy_static = "1.4.0"
 async-trait = "0.1.56"
 
+futures = { version = "0.3.21", optional = true }
+
 # Serde
 serde_json = { version = "1.0.81" }
 iso8601-timestamp = { version = "0.1.10" }
 serde = { version = "1.0.116", features = [ "derive" ] }
 
 # MongoDB
+bson = { version = "2.2.0", optional = true }
 mongodb = { version = "2.2.1", default-features = false, optional = true }
 
 # Async runtime

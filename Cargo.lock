@@ -771,6 +771,7 @@ checksum = "f73fe65f54d1e12b726f517d3e2135ca3125a437b6d998caf1962961f7172d9e"
 dependencies = [
  "futures-channel",
  "futures-core",
+ "futures-executor",
  "futures-io",
  "futures-sink",
  "futures-task",
@@ -1813,7 +1814,9 @@ version = "0.1.0"
 dependencies = [
  "async-std",
  "async-trait",
+ "bson",
  "chrono",
+ "futures",
  "handlebars",
  "iso8601-timestamp",
  "lazy_static",

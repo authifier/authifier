@@ -9,7 +9,7 @@ edition = "2021"
 test = [ "reqwest" ]
 example = [ "rauth/async-std-runtime", "rauth/database-mongodb", "async-std", "mongodb" ]
 
-# default = [ "example" ]
+default = [ "example" ]
 
 [dependencies]
 # rAuth

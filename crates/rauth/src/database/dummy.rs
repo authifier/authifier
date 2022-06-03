@@ -11,7 +11,7 @@ pub struct DummyDb;
 impl AbstractDatabase for DummyDb {
     /// Find account by id
     async fn find_account(&self, id: &str) -> Result<Account> {
-        todo!()
+        todo!("{id}")
     }
 
     /// Find account by normalised email
@@ -19,78 +19,61 @@ impl AbstractDatabase for DummyDb {
         &self,
         normalised_email: &str,
     ) -> Result<Option<Account>> {
-        todo!()
+        todo!("{normalised_email}")
     }
-
-    // FindOneOptions::builder()
-    // .collation(Collation::builder().locale("en").strength(2).build())
-    // .build(),
 
     /// Find account with active pending email verification
     async fn find_account_with_email_verification(&self, token: &str) -> Result<Account> {
-        todo!()
+        todo!("{token}")
     }
 
     /// Find account with active password reset
     async fn find_account_with_password_reset(&self, token: &str) -> Result<Account> {
-        todo!()
+        todo!("{token}")
     }
 
     /// Find invite by id
     async fn find_invite(&self, id: &str) -> Result<Invite> {
-        todo!()
+        todo!("{id}")
     }
 
     /// Find session by id
     async fn find_session(&self, id: &str) -> Result<Session> {
-        todo!()
+        todo!("{id}")
     }
 
     /// Find sessions by user id
     async fn find_sessions(&self, user_id: &str) -> Result<Vec<Session>> {
-        todo!()
+        todo!("{user_id}")
     }
 
     /// Find session by token
     async fn find_session_by_token(&self, token: &str) -> Result<Option<Session>> {
-        todo!()
+        todo!("{token}")
     }
 
     // Save account
     async fn save_account(&self, account: &Account) -> Success {
-        todo!()
+        todo!("{account:?}")
     }
 
     /// Save session
     async fn save_session(&self, session: &Session) -> Success {
-        todo!()
+        todo!("{session:?}")
     }
 
     /// Save invite
     async fn save_invite(&self, invite: &Invite) -> Success {
-        todo!()
+        todo!("{invite:?}")
     }
 
     /// Delete session
     async fn delete_session(&self, id: &str) -> Success {
-        todo!()
+        todo!("{id}")
     }
 
     /// Delete session
     async fn delete_all_sessions(&self, user_id: &str, ignore: Option<String>) -> Success {
-        todo!()
-        /*
-            let mut update = doc! {
-            "user_id": session.user_id
-        };
-
-        if !revoke_self {
-            update.insert(
-                "_id",
-                doc! {
-                    "$ne": session.id.unwrap()
-                },
-            );
-        } */
+        todo!("{user_id} {ignore:?}")
     }
 }

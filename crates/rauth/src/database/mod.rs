@@ -9,6 +9,9 @@ mod dummy;
 #[cfg(feature = "database-mongodb")]
 mod mongo;
 
+#[cfg(feature = "database-mongodb")]
+pub use mongo::MongoDb;
+
 pub enum Database {
     Dummy(DummyDb),
     #[cfg(feature = "database-mongodb")]
