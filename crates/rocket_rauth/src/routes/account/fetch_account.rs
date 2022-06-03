@@ -1,5 +1,5 @@
-/// Fetch your account
-/// GET /account
+//! Fetch your account
+//! GET /account
 use rauth::{models::Account, Result};
 use rocket::serde::json::Json;
 
@@ -25,8 +25,7 @@ impl From<Account> for AccountInfo {
 #[openapi(tag = "Account")]
 #[get("/")]
 pub async fn fetch_account(account: Account) -> Result<Json<AccountInfo>> {
-    /*Ok(Json(account.into()))*/
-    todo!()
+    Ok(Json(account.into()))
 }
 
 #[cfg(test)]

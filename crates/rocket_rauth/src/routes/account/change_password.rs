@@ -1,6 +1,8 @@
-use rauth::Result;
-/// Change account password.
-/// PATCH /account/change/password
+//! Change account password.
+//! PATCH /account/change/password
+use rauth::models::Account;
+use rauth::util::hash_password;
+use rauth::{RAuth, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 use rocket_empty::EmptyResponse;
@@ -20,22 +22,31 @@ pub struct DataChangePassword {
 #[openapi(tag = "Account")]
 #[patch("/change/password", data = "<data>")]
 pub async fn change_password(
-    /*auth: &State<Auth>,
-    mut account: Account,*/
+    rauth: &State<RAuth>,
+    mut account: Account,
     data: Json<DataChangePassword>,
 ) -> Result<EmptyResponse> {
-    /*let data = data.into_inner();
+    let data = data.into_inner();
 
-    // Perform validation on given data.
-    auth.validate_password(&data.password).await?;
+    // Verify password can be used
+    rauth
+        .config
+        .password_scanning
+        .assert_safe(&data.password)
+        .await?;
+
+    // Ensure given password is correct
     account.verify_password(&data.current_password)?;
 
-    // Hash and replace password.
-    account.password = auth.hash_password(data.password)?;
+    // Hash and replace password
+    account.password = hash_password(data.password)?;
 
-    // Commit to database.
-    account.save_to_db(&auth.db).await.map(|_| EmptyResponse)*/
-    todo!()
+    // Commit to database
+    rauth
+        .database
+        .save_account(&account)
+        .await
+        .map(|_| EmptyResponse)
 }
 
 #[cfg(test)]

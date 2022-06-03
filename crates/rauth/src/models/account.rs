@@ -9,8 +9,6 @@ fn is_false(t: &bool) -> bool {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "status")]
 pub enum EmailVerification {
-    /// In process of being created
-    PendingSend,
     /// Account is verified
     Verified,
     /// Pending email verification

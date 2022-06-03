@@ -1,5 +1,5 @@
-/// Create a new account
-/// POST /account/create
+//! Create a new account
+//! POST /account/create
 use rauth::models::Account;
 use rauth::{Error, RAuth, Result};
 use rocket::serde::json::Json;
@@ -58,8 +58,11 @@ pub async fn create_account(
     let account = Account::new(rauth, data.email, data.password, true).await?;
 
     // Use up the invite
-    if let Some(invite) = invite {
-        rauth.database.use_invite(&invite.id, &account.id).await?;
+    if let Some(mut invite) = invite {
+        invite.claimed_by = Some(account.id);
+        invite.used = true;
+
+        rauth.database.save_invite(&invite).await?;
     }
 
     Ok(EmptyResponse)

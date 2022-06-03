@@ -1,6 +1,7 @@
-use rauth::Result;
-/// Confirm a password reset.
-/// PATCH /account/reset_password
+//! Confirm a password reset.
+//! PATCH /account/reset_password
+use rauth::util::hash_password;
+use rauth::{RAuth, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 use rocket_empty::EmptyResponse;
@@ -20,38 +21,34 @@ pub struct DataPasswordReset {
 #[openapi(tag = "Account")]
 #[patch("/reset_password", data = "<data>")]
 pub async fn password_reset(
-    // auth: &State<Auth>,
+    rauth: &State<RAuth>,
     data: Json<DataPasswordReset>,
 ) -> Result<EmptyResponse> {
-    /*let data = data.into_inner();
+    let data = data.into_inner();
 
-    let mut account = Account::find_one(
-        &auth.db,
-        doc! {
-            "password_reset.token": &data.token,
-            "password_reset.expiry": {
-                "$gte": Bson::DateTime(Utc::now())
-            }
-        },
-        None,
-    )
-    .await
-    .map_err(|_| Error::DatabaseError {
-        operation: "find_one",
-        with: "account",
-    })?
-    .ok_or(Error::InvalidToken)?;
+    // Find the relevant account
+    let mut account = rauth
+        .database
+        .find_account_with_password_reset(&data.token)
+        .await?;
 
-    // Verify password can be used.
-    auth.validate_password(&data.password).await?;
+    // Verify password can be used
+    rauth
+        .config
+        .password_scanning
+        .assert_safe(&data.password)
+        .await?;
 
-    // Update the account.
-    account.password = auth.hash_password(data.password)?;
+    // Update the account
+    account.password = hash_password(data.password)?;
     account.password_reset = None;
 
-    // Commit to database.
-    account.save_to_db(&auth.db).await.map(|_| EmptyResponse)*/
-    todo!()
+    // Commit to database
+    rauth
+        .database
+        .save_account(&account)
+        .await
+        .map(|_| EmptyResponse)
 }
 
 #[cfg(test)]

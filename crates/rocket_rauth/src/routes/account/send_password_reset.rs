@@ -1,6 +1,7 @@
-use rauth::Result;
-/// Send a password reset email
-/// POST /account/reset_password
+//! Send a password reset email
+//! POST /account/reset_password
+use rauth::util::normalise_email;
+use rauth::{RAuth, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 use rocket_empty::EmptyResponse;
@@ -19,42 +20,36 @@ pub struct DataSendPasswordReset {
 /// Send an email to reset account password.
 #[openapi(tag = "Account")]
 #[post("/reset_password", data = "<data>")]
-pub async fn send_password_reset(data: Json<DataSendPasswordReset>) -> Result<EmptyResponse> {
-    /*let data = data.into_inner();
+pub async fn send_password_reset(
+    rauth: &State<RAuth>,
+    data: Json<DataSendPasswordReset>,
+) -> Result<EmptyResponse> {
+    let data = data.into_inner();
 
-    // Perform validation on given data.
-    auth.check_captcha(data.captcha).await?;
-    auth.validate_email(&data.email).await?;
+    // Check Captcha token
+    rauth.config.captcha.check(data.captcha).await?;
+
+    // Make sure email is valid and not blocked
+    rauth.config.email_block_list.validate_email(&data.email)?;
 
     // From this point on, do not report failure to the
     // remote client, as this will open us up to user enumeration.
 
-    // Try to find the relevant account.
-    if let Some(mut account) = Account::find_one(
-        &auth.db,
-        doc! { "email": data.email },
-        FindOneOptions::builder()
-            .collation(Collation::builder().locale("en").strength(2).build())
-            .build(),
-    )
-    .await
-    .map_err(|_| Error::DatabaseError {
-        operation: "find_one",
-        with: "account",
-    })? {
-        // Generate password reset email.
-        account.password_reset = auth
-            .generate_email_password_reset(account.email.clone())
-            .await;
+    // Normalise the email
+    let email_normalised = normalise_email(data.email);
 
-        // Commit to database.
-        account.save_to_db(&auth.db).await?;
+    // Try to find the relevant account
+    if let Some(mut account) = rauth
+        .database
+        .find_account_by_normalised_email(&email_normalised)
+        .await?
+    {
+        account.start_password_reset(rauth).await?;
     }
 
     // Never fail this route, (except for db error)
     // You may open the application to email enumeration otherwise.
-    Ok(EmptyResponse)*/
-    todo!()
+    Ok(EmptyResponse)
 }
 
 #[cfg(test)]

@@ -5,7 +5,7 @@ use crate::{
     config::EmailVerificationConfig,
     models::{Account, EmailVerification, PasswordReset, Totp},
     util::{hash_password, normalise_email},
-    RAuth, Result, Success,
+    Error, RAuth, Result, Success,
 };
 
 impl Account {
@@ -46,22 +46,17 @@ impl Account {
                 password,
 
                 disabled: false,
-                verification: if verify_email {
-                    EmailVerification::PendingSend
-                } else {
-                    EmailVerification::Verified
-                },
+                verification: EmailVerification::Verified,
                 password_reset: None,
 
                 mfa: Default::default(),
             };
 
-            // Save account to database
-            rauth.database.insert_account(&account).await?;
-
             // Send email verification
             if verify_email {
                 account.start_email_verification(rauth).await?;
+            } else {
+                rauth.database.save_account(&account).await?;
             }
 
             Ok(account)
@@ -91,9 +86,11 @@ impl Account {
                         .timestamp_millis(),
                 ),
             };
-
-            rauth.database.save_account(&self).await?;
+        } else {
+            self.verification = EmailVerification::Verified;
         }
+
+        rauth.database.save_account(self).await?;
 
         Ok(())
     }
@@ -122,9 +119,12 @@ impl Account {
                         .timestamp_millis(),
                 ),
             };
-
-            rauth.database.save_account(&self).await?;
+        } else {
+            self.email_normalised = normalise_email(new_email.clone());
+            self.email = new_email;
         }
+
+        rauth.database.save_account(self).await?;
 
         Ok(())
     }
@@ -153,10 +153,27 @@ impl Account {
                 ),
             });
 
-            rauth.database.save_account(&self).await?;
+            rauth.database.save_account(self).await?;
+        } else {
+            return Err(Error::OperationFailed);
         }
 
         Ok(())
+    }
+
+    /// Verify a user's password is correct
+    pub fn verify_password(&self, plaintext_password: &str) -> Success {
+        argon2::verify_encoded(&self.password, plaintext_password.as_bytes())
+            .map(|v| {
+                if v {
+                    Ok(())
+                } else {
+                    Err(Error::InvalidCredentials)
+                }
+            })
+            // To prevent user enumeration, we should ignore
+            // the error and pretend the password is wrong.
+            .map_err(|_| Error::InvalidCredentials)?
     }
 }
 

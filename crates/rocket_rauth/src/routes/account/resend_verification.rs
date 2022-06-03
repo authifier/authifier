@@ -1,8 +1,7 @@
-use rauth::Result;
-/// Resend account verification email
-/// POST /account/reverify
-use rocket::serde::json::Json;
-use rocket::State;
+//! Resend account verification email
+//! POST /account/reverify
+use rauth::{util::normalise_email, RAuth, Result};
+use rocket::{serde::json::Json, State};
 use rocket_empty::EmptyResponse;
 
 /// # Resend Information
@@ -20,46 +19,35 @@ pub struct DataResendVerification {
 #[openapi(tag = "Account")]
 #[post("/reverify", data = "<data>")]
 pub async fn resend_verification(
-    // auth: &State<Auth>,
+    rauth: &State<RAuth>,
     data: Json<DataResendVerification>,
 ) -> Result<EmptyResponse> {
-    /*let data = data.into_inner();
+    let data = data.into_inner();
 
-    // Perform validation on given data.
-    auth.check_captcha(data.captcha).await?;
-    auth.validate_email(&data.email).await?;
+    // Check Captcha token
+    rauth.config.captcha.check(data.captcha).await?;
+
+    // Make sure email is valid and not blocked
+    rauth.config.email_block_list.validate_email(&data.email)?;
 
     // From this point on, do not report failure to the
     // remote client, as this will open us up to user enumeration.
 
-    // Try to find the relevant account.
-    if let Some(mut account) = Account::find_one(
-        &auth.db,
-        doc! { "email": data.email },
-        FindOneOptions::builder()
-            .collation(Collation::builder().locale("en").strength(2).build())
-            .build(),
-    )
-    .await
-    .map_err(|_| Error::DatabaseError {
-        operation: "find_one",
-        with: "account",
-    })? {
-        if let AccountVerification::Pending { .. } = &account.verification {
-            // Send out verification email and update verification object.
-            account.verification = auth
-                .generate_email_verification(account.email.clone())
-                .await;
+    // Normalise the email
+    let email_normalised = normalise_email(data.email);
 
-            // Commit to database.
-            account.save_to_db(&auth.db).await?;
-        }
+    // Try to find the relevant account
+    if let Some(mut account) = rauth
+        .database
+        .find_account_by_normalised_email(&email_normalised)
+        .await?
+    {
+        account.start_email_verification(rauth).await?;
     }
 
     // Never fail this route,
     // You may open the application to email enumeration otherwise.
-    Ok(EmptyResponse)*/
-    todo!()
+    Ok(EmptyResponse)
 }
 
 #[cfg(test)]

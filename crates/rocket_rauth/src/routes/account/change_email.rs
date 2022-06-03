@@ -1,6 +1,7 @@
 //! Change account email.
 //! PATCH /account/change/email
-use rauth::Result;
+use rauth::models::Account;
+use rauth::{RAuth, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 use rocket_empty::EmptyResponse;
@@ -20,30 +21,23 @@ pub struct DataChangeEmail {
 #[openapi(tag = "Account")]
 #[patch("/change/email", data = "<data>")]
 pub async fn change_email(
-    // auth: &State<Auth>,
-    // mut account: Account,
+    rauth: &State<RAuth>,
+    mut account: Account,
     data: Json<DataChangeEmail>,
 ) -> Result<EmptyResponse> {
-    todo!();
-    /*let data = data.into_inner();
+    let data = data.into_inner();
 
-    // Perform validation on given data.
-    auth.validate_email(&data.email).await?;
+    // Make sure email is valid and not blocked
+    rauth.config.email_block_list.validate_email(&data.email)?;
+
+    // Ensure given password is correct
     account.verify_password(&data.current_password)?;
 
-    // Send email verification for new email.
-    account.verification = auth
-        .generate_email_move_verification(data.email.clone())
-        .await;
-
-    // If email verification is disabled, update the email field.
-    if let AccountVerification::Verified = &account.verification {
-        account.email_normalised = normalise_email(data.email.clone());
-        account.email = data.email;
-    }
-
-    // Commit to database.
-    account.save_to_db(&auth.db).await.map(|_| EmptyResponse)*/
+    // Send email verification for new email
+    account
+        .start_email_move(rauth, data.email)
+        .await
+        .map(|_| EmptyResponse)
 }
 
 #[cfg(test)]
