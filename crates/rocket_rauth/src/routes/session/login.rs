@@ -1,6 +1,6 @@
 //! Login to an account
 //! POST /session/login
-use rauth::models::Session;
+use rauth::models::{EmailVerification, Session};
 use rauth::util::normalise_email;
 use rauth::{Error, RAuth, Result};
 use rocket::serde::json::Json;
@@ -61,6 +61,11 @@ pub async fn login(rauth: &State<RAuth>, data: Json<DataLogin>) -> Result<Json<R
     {
         // Figure out whether we are doing password, 1FA key or email 1FA OTP.
         if let Some(password) = data.password {
+            // Make sure the account has been verified
+            if let EmailVerification::Pending { .. } = account.verification {
+                return Err(Error::UnverifiedAccount);
+            }
+
             // Make sure password has not been compromised
             rauth
                 .config
@@ -94,6 +99,8 @@ pub async fn login(rauth: &State<RAuth>, data: Json<DataLogin>) -> Result<Json<R
 #[cfg(test)]
 #[cfg(feature = "test")]
 mod tests {
+    use iso8601_timestamp::Timestamp;
+
     use crate::test::*;
 
     #[async_std::test]
@@ -194,6 +201,49 @@ mod tests {
         assert_eq!(
             res.into_string().await,
             Some("{\"type\":\"DisabledAccount\"}".into())
+        );
+    }
+
+    #[async_std::test]
+    async fn fail_unverified_account() {
+        let rauth = for_test("login::fail_unverified_account").await;
+
+        let mut account = Account::new(
+            &rauth,
+            "example@validemail.com".into(),
+            "password_insecure".into(),
+            false,
+        )
+        .await
+        .unwrap();
+
+        account.verification = EmailVerification::Pending {
+            token: "".to_string(),
+            expiry: Timestamp::now_utc(),
+        };
+
+        rauth.database.save_account(&account).await.unwrap();
+
+        let client =
+            bootstrap_rocket_with_auth(rauth, routes![crate::routes::session::login::login]).await;
+
+        let res = client
+            .post("/login")
+            .header(ContentType::JSON)
+            .body(
+                json!({
+                    "email": "example@validemail.com",
+                    "password": "password_insecure"
+                })
+                .to_string(),
+            )
+            .dispatch()
+            .await;
+
+        assert_eq!(res.status(), Status::Forbidden);
+        assert_eq!(
+            res.into_string().await,
+            Some("{\"type\":\"UnverifiedAccount\"}".into())
         );
     }
 }
