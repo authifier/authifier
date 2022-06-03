@@ -34,7 +34,45 @@ Now you can navigate to http://localhost:11111/swagger!
 Getting started is very simple, create a new instance of the RAuth struct and mount it on to Rocket.
 
 ```rust
-TODO: update this
+#[macro_use]
+extern crate rocket;
+
+use mongodb::{options::ClientOptions, Client};
+use rauth::database::MongoDb;
+use rauth::Migration;
+
+#[launch]
+async fn rocket() -> _ {
+  // Prepare MongoDB configuration
+  let client_options = ClientOptions::parse("mongodb://localhost:27017")
+    .await
+    .expect("Valid connection URL");
+
+  // Connect to MongoDB
+  let client = Client::with_options(client_options).expect("MongoDB server");
+
+  // Prepare rAuth database abstraction
+  let database = rauth::Database::MongoDb(MongoDb(client.database("rauth")));
+
+  // Run database migrations
+  // TODO: you should only run this once and have this as part of your migrations
+  // Also keep this up to date with the "migrations" section down below this one.
+  database.run_migration(Migration::M2022_06_03EnsureUpToSpec).await.unwrap();
+
+  // Configure rAuth however you need to
+  let rauth = rauth::RAuth {
+    database,
+    ..Default::default()
+  };
+
+  // Build your web server as usual...
+  rocket::build()
+    // Attach the configuration as state
+    .manage(rauth)
+    // Mount authentication routes
+    .mount("/auth/account", rocket_rauth::routes::account::routes().0)
+    .mount("/auth/session", rocket_rauth::routes::session::routes().0)
+}
 ```
 
 ## Testing
