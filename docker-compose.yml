@@ -6,3 +6,8 @@ services:
       - "27017:27017"
     volumes:
       - ./.data:/data/db
+  sendria:
+    image: msztolcman/sendria:v2.2.2.0
+    ports:
+      - "1025:1025"
+      - "1080:1080"

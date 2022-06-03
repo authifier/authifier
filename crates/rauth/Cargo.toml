@@ -19,7 +19,7 @@ hcaptcha = [ "reqwest" ]
 default_inbuilts = [ "revolt_source_list", "pwned100k", "hcaptcha" ]
 # default_inbuilts = []
 
-default = [ "async-std-runtime", "default_inbuilts" ]
+default = [ "async-std-runtime", "database-mongodb", "default_inbuilts" ]
 
 [dependencies]
 # Lang

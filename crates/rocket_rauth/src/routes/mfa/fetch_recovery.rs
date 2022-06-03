@@ -10,9 +10,9 @@ pub struct Data {
 
 #[post("/recovery", data = "<data>")]
 pub async fn fetch_recovery(account: Account, data: Json<Data>) -> Result<Json<Vec<String>>> {
-    /*account.verify_password(&data.password)?;
-    Ok(Json(account.mfa.recovery_codes))*/
-    todo!()
+    // TODO: require MFA ticket
+    account.verify_password(&data.password)?;
+    Ok(Json(account.mfa.recovery_codes))
 }
 
 #[cfg(test)]

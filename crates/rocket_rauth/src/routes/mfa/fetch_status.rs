@@ -36,7 +36,6 @@ pub async fn fetch_status(account: Account) -> Result<Json<MultiFactorStatus>> {
 
 #[cfg(test)]
 #[cfg(feature = "test")]
-#[cfg(feature = "TODO")]
 mod tests {
     use crate::test::*;
 
