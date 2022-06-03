@@ -6,11 +6,6 @@ lazy_static! {
     static ref ARGON_CONFIG: argon2::Config<'static> = argon2::Config::default();
 }
 
-static ALPHABET: [char; 32] = [
-    '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'j',
-    'k', 'm', 'n', 'p', 'q', 'r', 's', 't', 'v', 'w', 'x', 'y', 'z',
-];
-
 /// Strip special characters and aliases from emails
 pub fn normalise_email(original: String) -> String {
     lazy_static! {

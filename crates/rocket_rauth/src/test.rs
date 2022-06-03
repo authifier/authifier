@@ -13,8 +13,6 @@ pub async fn connect_db() -> Client {
 }
 
 pub async fn test_smtp_config() -> Config {
-    use rauth::config::{EmailVerificationConfig, SMTPSettings, Template, Templates};
-
     Config {
         email_verification: EmailVerificationConfig::Enabled {
             smtp: SMTPSettings {

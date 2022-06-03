@@ -44,6 +44,25 @@ async fn main() {
 }
 ```
 
+## Testing
+
+To test the library, pull up required services:
+
+```bash
+# Start MongoDB and Sendria
+docker-compose up -d
+```
+
+Then you can run the tests:
+
+```bash
+# Run cargo test
+cargo test --features test
+
+# Or using nextest
+cargo nextest run --features test
+```
+
 ## How does rAuth work?
 
 rAuth uses email / password combinations to authenticate users and nothing else, this might not be what you're looking for but I personally prefer this format.
