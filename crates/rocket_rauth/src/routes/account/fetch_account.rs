@@ -1,14 +1,30 @@
 /// Fetch your account
 /// GET /account
-use rauth::Result;
+use rauth::{models::Account, Result};
 use rocket::serde::json::Json;
+
+#[derive(Serialize, Deserialize, JsonSchema)]
+pub struct AccountInfo {
+    #[serde(rename = "_id")]
+    pub id: String,
+    pub email: String,
+}
+
+impl From<Account> for AccountInfo {
+    fn from(item: Account) -> Self {
+        AccountInfo {
+            id: item.id,
+            email: item.email,
+        }
+    }
+}
 
 /// # Fetch Account
 ///
 /// Fetch account information from the current session.
 #[openapi(tag = "Account")]
 #[get("/")]
-pub async fn fetch_account(/*account: Account*/) -> Result</*Json<AccountInfo>*/ ()> {
+pub async fn fetch_account(account: Account) -> Result<Json<AccountInfo>> {
     /*Ok(Json(account.into()))*/
     todo!()
 }

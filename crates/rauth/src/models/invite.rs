@@ -2,8 +2,8 @@
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Invite {
     /// Invite code
-    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
-    pub id: Option<String>,
+    #[serde(rename = "_id")]
+    pub id: String,
     /// Whether this invite ticket has been used
     #[serde(skip_serializing_if = "Option::is_none")]
     pub used: Option<bool>,

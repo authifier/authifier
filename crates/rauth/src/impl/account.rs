@@ -1,4 +1,164 @@
-use crate::models::Totp;
+use chrono::Duration;
+use iso8601_timestamp::Timestamp;
+
+use crate::{
+    config::EmailVerificationConfig,
+    models::{Account, EmailVerification, PasswordReset, Totp},
+    util::{hash_password, normalise_email},
+    RAuth, Result, Success,
+};
+
+impl Account {
+    /// Create a new account
+    pub async fn new(
+        rauth: &RAuth,
+        email: String,
+        plaintext_password: String,
+        verify_email: bool,
+    ) -> Result<Account> {
+        // Hash the user's password
+        let password = hash_password(plaintext_password)?;
+
+        // Get a normalised representation of the user's email
+        let email_normalised = normalise_email(email.clone());
+
+        // Try to find an existing account
+        if let Some(mut account) = rauth
+            .database
+            .find_account_by_normalised_email(&email_normalised)
+            .await?
+        {
+            // Resend account verification or send password reset
+            if let EmailVerification::Pending { .. } = &account.verification {
+                account.start_email_verification(rauth).await?;
+            } else {
+                account.start_password_reset(rauth).await?;
+            }
+
+            Ok(account)
+        } else {
+            // Create a new account
+            let mut account = Account {
+                id: ulid::Ulid::new().to_string(),
+
+                email,
+                email_normalised,
+                password,
+
+                disabled: false,
+                verification: if verify_email {
+                    EmailVerification::PendingSend
+                } else {
+                    EmailVerification::Verified
+                },
+                password_reset: None,
+
+                mfa: Default::default(),
+            };
+
+            // Save account to database
+            rauth.database.insert_account(&account).await?;
+
+            // Send email verification
+            if verify_email {
+                account.start_email_verification(rauth).await?;
+            }
+
+            Ok(account)
+        }
+    }
+
+    /// Send account verification email
+    pub async fn start_email_verification(&mut self, rauth: &RAuth) -> Success {
+        if let EmailVerificationConfig::Enabled {
+            templates,
+            expiry,
+            smtp,
+        } = &rauth.config.email_verification
+        {
+            let token = nanoid!(32);
+            let url = format!("{}{}", templates.verify.url, token);
+
+            smtp.send_email(self.email.clone(), &templates.verify, json!({ "url": url }))
+                .ok();
+
+            self.verification = EmailVerification::Pending {
+                token,
+                expiry: Timestamp::from_unix_timestamp_ms(
+                    chrono::Utc::now()
+                        .checked_add_signed(Duration::seconds(expiry.expire_verification))
+                        .expect("failed to checked_add_signed")
+                        .timestamp_millis(),
+                ),
+            };
+
+            rauth.database.save_account(&self).await?;
+        }
+
+        Ok(())
+    }
+
+    /// Send account verification to new email
+    pub async fn start_email_move(&mut self, rauth: &RAuth, new_email: String) -> Success {
+        if let EmailVerificationConfig::Enabled {
+            templates,
+            expiry,
+            smtp,
+        } = &rauth.config.email_verification
+        {
+            let token = nanoid!(32);
+            let url = format!("{}{}", templates.verify.url, token);
+
+            smtp.send_email(self.email.clone(), &templates.verify, json!({ "url": url }))
+                .ok();
+
+            self.verification = EmailVerification::Moving {
+                new_email,
+                token,
+                expiry: Timestamp::from_unix_timestamp_ms(
+                    chrono::Utc::now()
+                        .checked_add_signed(Duration::seconds(expiry.expire_verification))
+                        .expect("failed to checked_add_signed")
+                        .timestamp_millis(),
+                ),
+            };
+
+            rauth.database.save_account(&self).await?;
+        }
+
+        Ok(())
+    }
+
+    /// Send password reset email
+    pub async fn start_password_reset(&mut self, rauth: &RAuth) -> Success {
+        if let EmailVerificationConfig::Enabled {
+            templates,
+            expiry,
+            smtp,
+        } = &rauth.config.email_verification
+        {
+            let token = nanoid!(32);
+            let url = format!("{}{}", templates.reset.url, token);
+
+            smtp.send_email(self.email.clone(), &templates.reset, json!({ "url": url }))
+                .ok();
+
+            self.password_reset = Some(PasswordReset {
+                token,
+                expiry: Timestamp::from_unix_timestamp_ms(
+                    chrono::Utc::now()
+                        .checked_add_signed(Duration::seconds(expiry.expire_password_reset))
+                        .expect("failed to checked_add_signed")
+                        .timestamp_millis(),
+                ),
+            });
+
+            rauth.database.save_account(&self).await?;
+        }
+
+        Ok(())
+    }
+}
 
 impl Totp {
     /// Whether TOTP is disabled
