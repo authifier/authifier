@@ -29,7 +29,6 @@ pub async fn revoke_all(
 
 #[cfg(test)]
 #[cfg(feature = "test")]
-#[cfg(feature = "TODO")]
 mod tests {
     use crate::test::*;
 
@@ -37,16 +36,17 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (db, auth, session, account) = for_test_authenticated("revoke_all::success").await;
+        let (rauth, session, account) = for_test_authenticated("revoke_all::success").await;
 
         for i in 1..=3 {
-            auth.create_session(&account, format!("session{}", i))
+            account
+                .create_session(&rauth, format!("session{}", i))
                 .await
                 .unwrap();
         }
 
         let client = bootstrap_rocket_with_auth(
-            auth,
+            rauth.clone(),
             routes![crate::routes::session::revoke_all::revoke_all],
         )
         .await;
@@ -58,29 +58,30 @@ mod tests {
             .await;
 
         assert_eq!(res.status(), Status::NoContent);
-        assert!(
-            Session::find_one(&db, doc! { "user_id": session.user_id }, None)
-                .await
-                .unwrap()
-                .is_none()
-        );
+        assert!(rauth
+            .database
+            .find_sessions(&session.user_id)
+            .await
+            .unwrap()
+            .is_empty());
     }
 
     #[async_std::test]
     async fn success_not_including_self() {
         use rocket::http::Header;
 
-        let (db, auth, session, account) =
+        let (rauth, session, account) =
             for_test_authenticated("revoke_all::success_not_including_self").await;
 
         for i in 1..=3 {
-            auth.create_session(&account, format!("session{}", i))
+            account
+                .create_session(&rauth, format!("session{}", i))
                 .await
                 .unwrap();
         }
 
         let client = bootstrap_rocket_with_auth(
-            auth,
+            rauth.clone(),
             routes![crate::routes::session::revoke_all::revoke_all],
         )
         .await;
@@ -92,21 +93,14 @@ mod tests {
             .await;
 
         assert_eq!(res.status(), Status::NoContent);
-
-        assert!(Session::find_one(
-            &db,
-            doc! { "_id": { "$ne": session.id.as_ref().unwrap() }, "user_id": session.user_id },
-            None
-        )
-        .await
-        .unwrap()
-        .is_none());
-
-        assert!(
-            Session::find_one(&db, doc! { "_id": session.id.as_ref().unwrap() }, None)
+        assert_eq!(
+            rauth
+                .database
+                .find_sessions(&session.user_id)
                 .await
                 .unwrap()
-                .is_some()
+                .len(),
+            1
         );
     }
 }

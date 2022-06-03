@@ -37,7 +37,6 @@ pub async fn fetch_all(rauth: &State<RAuth>, session: Session) -> Result<Json<Ve
 
 #[cfg(test)]
 #[cfg(feature = "test")]
-#[cfg(feature = "TODO")]
 mod tests {
     use crate::test::*;
 
@@ -45,17 +44,20 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (_, auth, session, account) = for_test_authenticated("fetch_all::success").await;
+        let (rauth, session, account) = for_test_authenticated("fetch_all::success").await;
 
         for i in 1..=3 {
-            auth.create_session(&account, format!("session{}", i))
+            account
+                .create_session(&rauth, format!("session{}", i))
                 .await
                 .unwrap();
         }
 
-        let client =
-            bootstrap_rocket_with_auth(auth, routes![crate::routes::session::fetch_all::fetch_all])
-                .await;
+        let client = bootstrap_rocket_with_auth(
+            rauth,
+            routes![crate::routes::session::fetch_all::fetch_all],
+        )
+        .await;
 
         let res = client
             .get("/all")
@@ -66,7 +68,8 @@ mod tests {
         assert_eq!(res.status(), Status::Ok);
 
         let result = res.into_string().await.unwrap();
-        let sessions: Vec<SessionInfo> = serde_json::from_str(&result).unwrap();
+        let sessions: Vec<crate::routes::session::fetch_all::SessionInfo> =
+            serde_json::from_str(&result).unwrap();
         assert_eq!(sessions.len(), 4);
     }
 }

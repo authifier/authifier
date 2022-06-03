@@ -19,7 +19,6 @@ pub async fn logout(rauth: &State<RAuth>, session: Session) -> Result<EmptyRespo
 
 #[cfg(test)]
 #[cfg(feature = "test")]
-#[cfg(feature = "TODO")]
 mod tests {
     use crate::test::*;
 
@@ -27,9 +26,12 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (db, auth, session, _) = for_test_authenticated("logout::success").await;
-        let client =
-            bootstrap_rocket_with_auth(auth, routes![crate::routes::session::logout::logout]).await;
+        let (rauth, session, _) = for_test_authenticated("logout::success").await;
+        let client = bootstrap_rocket_with_auth(
+            rauth.clone(),
+            routes![crate::routes::session::logout::logout],
+        )
+        .await;
 
         let res = client
             .post("/logout")
@@ -38,11 +40,9 @@ mod tests {
             .await;
 
         assert_eq!(res.status(), Status::NoContent);
-        assert!(
-            Session::find_one(&db, doc! { "_id": session.id.unwrap() }, None)
-                .await
-                .unwrap()
-                .is_none()
+        assert_eq!(
+            rauth.database.find_session(&session.id).await.unwrap_err(),
+            Error::UnknownUser
         );
     }
 

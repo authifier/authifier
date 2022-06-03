@@ -142,7 +142,7 @@ mod tests {
             .body(
                 json!({
                     "email": "example@validemail.com",
-                    "password": "password_insecure"
+                    "password": "password"
                 })
                 .to_string(),
             )
