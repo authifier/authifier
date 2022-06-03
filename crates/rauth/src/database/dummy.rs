@@ -3,12 +3,17 @@ use crate::{
     Result, Success,
 };
 
-use super::definition::AbstractDatabase;
+use super::{definition::AbstractDatabase, Migration};
 
 pub struct DummyDb;
 
 #[async_trait]
 impl AbstractDatabase for DummyDb {
+    /// Run a database migration
+    async fn run_migration(&self, migration: Migration) -> Success {
+        todo!("{migration:?}")
+    }
+
     /// Find account by id
     async fn find_account(&self, id: &str) -> Result<Account> {
         todo!("{id}")

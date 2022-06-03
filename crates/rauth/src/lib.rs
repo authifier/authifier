@@ -28,7 +28,7 @@ pub mod models;
 pub mod util;
 
 pub use config::Config;
-pub use database::Database;
+pub use database::{Database, Migration};
 
 /// rAuth state
 #[derive(Default)]

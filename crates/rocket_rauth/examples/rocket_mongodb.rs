@@ -10,6 +10,7 @@ extern crate rocket;
 async fn rocket() -> _ {
     use mongodb::{options::ClientOptions, Client};
     use rauth::database::MongoDb;
+    use rauth::Migration;
     use rocket_okapi::{mount_endpoints_and_merged_docs, settings::OpenApiSettings};
 
     let client_options = ClientOptions::parse("mongodb://localhost:27017")
@@ -17,9 +18,16 @@ async fn rocket() -> _ {
         .expect("Valid connection URL");
 
     let client = Client::with_options(client_options).expect("MongoDB server");
+    let database = rauth::Database::MongoDb(MongoDb(client.database("rauth")));
+
+    database.run_migration(Migration::WipeAll).await.unwrap();
+    database
+        .run_migration(Migration::M2022_06_03EnsureUpToSpec)
+        .await
+        .unwrap();
 
     let rauth = rauth::RAuth {
-        database: rauth::Database::MongoDb(MongoDb(client.database("rauth"))),
+        database,
         ..Default::default()
     };
 

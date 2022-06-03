@@ -4,6 +4,13 @@ use self::{definition::AbstractDatabase, dummy::DummyDb};
 
 pub mod definition;
 
+#[derive(Debug)]
+pub enum Migration {
+    M2022_06_03EnsureUpToSpec,
+    #[cfg(debug_assertions)]
+    WipeAll,
+}
+
 mod dummy;
 
 #[cfg(feature = "database-mongodb")]

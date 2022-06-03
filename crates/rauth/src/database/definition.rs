@@ -3,8 +3,13 @@ use crate::{
     Result, Success,
 };
 
+use super::Migration;
+
 #[async_trait]
 pub trait AbstractDatabase: std::marker::Sync {
+    /// Run a database migration
+    async fn run_migration(&self, migration: Migration) -> Success;
+
     /// Find account by id
     async fn find_account(&self, id: &str) -> Result<Account>;
 
