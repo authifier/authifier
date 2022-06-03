@@ -22,6 +22,16 @@ impl AbstractDatabase for DummyDb {
         todo!()
     }
 
+    /// Find account with active pending email verification
+    async fn find_account_with_email_verification(&self, token: &str) -> Result<Account> {
+        todo!()
+    }
+
+    /// Find account with active password reset
+    async fn find_account_with_password_reset(&self, token: &str) -> Result<Account> {
+        todo!()
+    }
+
     /// Find invite by id
     async fn find_invite(&self, id: &str) -> Result<Invite> {
         todo!()
@@ -37,18 +47,13 @@ impl AbstractDatabase for DummyDb {
         todo!()
     }
 
-    // Insert new account
-    async fn insert_account(&self, account: &Account) -> Success {
-        todo!()
-    }
-
     // Save account
     async fn save_account(&self, account: &Account) -> Success {
         todo!()
     }
 
-    /// Mark invite as used
-    async fn use_invite(&self, id: &str, user_id: &str) -> Success {
+    /// Save invite
+    async fn save_invite(&self, invite: &Invite) -> Success {
         todo!()
     }
 }

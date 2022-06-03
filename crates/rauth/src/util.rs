@@ -24,8 +24,7 @@ pub fn normalise_email(original: String) -> String {
         .to_string();
 
     clean.push_str(split.get(2).unwrap().as_str());
-
-    clean
+    clean.to_lowercase()
 }
 
 /// Hash a password using argon2

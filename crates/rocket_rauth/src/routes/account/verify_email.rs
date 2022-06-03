@@ -1,6 +1,6 @@
-use rauth::Result;
-/// Verify an account
-/// POST /verify/<code>
+//! Verify an account
+//! POST /verify/<code>
+use rauth::{models::EmailVerification, RAuth, Result};
 use rocket::State;
 use rocket_empty::EmptyResponse;
 
@@ -9,26 +9,22 @@ use rocket_empty::EmptyResponse;
 /// Verify an email address.
 #[openapi(tag = "Account")]
 #[post("/verify/<code>")]
-pub async fn verify_email(/*auth: &State<Auth>,*/ code: String) -> Result<EmptyResponse> {
-    /*let account = Account::find_one(
-        &auth.db,
-        doc! {
-            "verification.token": &code,
-            "verification.expiry": {
-                "$gte": Bson::DateTime(Utc::now())
-            }
-        },
-        None,
-    )
-    .await
-    .map_err(|_| Error::DatabaseError {
-        operation: "find_one",
-        with: "account",
-    })?
-    .ok_or(Error::InvalidToken)?;
+pub async fn verify_email(rauth: &State<RAuth>, code: String) -> Result<EmptyResponse> {
+    // Find the account
+    let mut account = rauth
+        .database
+        .find_account_with_email_verification(&code)
+        .await?;
 
-    auth.verify_account(&account).await.map(|_| EmptyResponse)*/
-    todo!()
+    // Mark as verified
+    account.verification = EmailVerification::Verified;
+
+    // Save to database
+    rauth
+        .database
+        .save_account(&account)
+        .await
+        .map(|_| EmptyResponse)
 }
 
 #[cfg(test)]
