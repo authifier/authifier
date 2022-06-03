@@ -20,11 +20,9 @@ async fn rocket() -> _ {
     let client = Client::with_options(client_options).expect("MongoDB server");
     let database = rauth::Database::MongoDb(MongoDb(client.database("rauth")));
 
-    database.run_migration(Migration::WipeAll).await.unwrap();
-    database
-        .run_migration(Migration::M2022_06_03EnsureUpToSpec)
-        .await
-        .unwrap();
+    for migration in [Migration::WipeAll, Migration::M2022_06_03EnsureUpToSpec] {
+        database.run_migration(migration).await.unwrap();
+    }
 
     let rauth = rauth::RAuth {
         database,

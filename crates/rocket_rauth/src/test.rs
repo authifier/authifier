@@ -1,12 +1,7 @@
-pub use crate::config::Config;
-pub use crate::entities::*;
-pub use crate::logic::Auth;
-
 pub use mongodb::Client;
+pub use rauth::{config::*, database::MongoDb, models::*, Config, Database, Migration, RAuth};
 pub use rocket::http::{ContentType, Status};
-pub use wither::Model;
 
-use mongodb::Database;
 use rocket::Route;
 
 pub async fn connect_db() -> Client {
@@ -16,10 +11,10 @@ pub async fn connect_db() -> Client {
 }
 
 pub async fn test_smtp_config() -> Config {
-    use crate::config::{EmailVerification, SMTPSettings, Template, Templates};
+    use rauth::config::{EmailVerificationConfig, SMTPSettings, Template, Templates};
 
     Config {
-        email_verification: EmailVerification::Enabled {
+        email_verification: EmailVerificationConfig::Enabled {
             smtp: SMTPSettings {
                 from: "noreply@example.com".into(),
                 reply_to: Some("support@revolt.chat".into()),
@@ -97,49 +92,53 @@ pub async fn assert_email_sendria(mailbox: String) -> Mail {
     found.unwrap()
 }
 
-pub async fn for_test_with_config(test: &str, config: Config) -> (Database, Auth) {
+pub async fn for_test_with_config(test: &str, config: Config) -> RAuth {
     let client = connect_db().await;
-    let db = client.database(&format!("test::{}", test));
-    let auth = Auth::new(db.clone(), config);
+    let database = Database::MongoDb(MongoDb(client.database(&format!("test::{}", test))));
 
-    db.drop(None).await.unwrap();
-    sync_models(&db).await;
+    for migration in [Migration::WipeAll, Migration::M2022_06_03EnsureUpToSpec] {
+        database.run_migration(migration).await.unwrap();
+    }
 
-    (db, auth)
+    RAuth { database, config }
 }
 
-pub async fn for_test(test: &str) -> (Database, Auth) {
+pub async fn for_test(test: &str) -> RAuth {
     for_test_with_config(test, Config::default()).await
 }
 
 pub async fn for_test_authenticated_with_config(
     test: &str,
     config: Config,
-) -> (Database, Auth, Session, Account) {
-    let (db, auth) = for_test_with_config(test, config).await;
+) -> (RAuth, Session, Account) {
+    let rauth = for_test_with_config(test, config).await;
 
-    let account = auth
-        .create_account("email@example.com".into(), "password".into(), false)
+    let account = Account::new(
+        &rauth,
+        "email@revolt.chat".into(),
+        "password_insecure".into(),
+        false,
+    )
+    .await
+    .unwrap();
+
+    let session = account
+        .create_session(&rauth, "my session".into())
         .await
         .unwrap();
 
-    let session = auth
-        .create_session(&account, "my session".into())
-        .await
-        .unwrap();
-
-    (db, auth, session, account)
+    (rauth, session, account)
 }
 
-pub async fn for_test_authenticated(test: &str) -> (Database, Auth, Session, Account) {
+pub async fn for_test_authenticated(test: &str) -> (RAuth, Session, Account) {
     for_test_authenticated_with_config(test, Config::default()).await
 }
 
 pub async fn bootstrap_rocket_with_auth(
-    auth: Auth,
+    rauth: RAuth,
     routes: Vec<Route>,
 ) -> rocket::local::asynchronous::Client {
-    let rocket = rocket::build().manage(auth).mount("/", routes);
+    let rocket = rocket::build().manage(rauth).mount("/", routes);
     let client = rocket::local::asynchronous::Client::tracked(rocket)
         .await
         .expect("valid `Rocket`");
@@ -152,6 +151,6 @@ pub async fn bootstrap_rocket(
     test: &str,
     routes: Vec<Route>,
 ) -> rocket::local::asynchronous::Client {
-    let (_, auth) = for_test(&format!("{}::{}", route, test)).await;
-    bootstrap_rocket_with_auth(auth, routes).await
+    let rauth = for_test(&format!("{}::{}", route, test)).await;
+    bootstrap_rocket_with_auth(rauth, routes).await
 }

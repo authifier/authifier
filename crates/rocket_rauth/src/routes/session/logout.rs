@@ -19,10 +19,10 @@ pub async fn logout(rauth: &State<RAuth>, session: Session) -> Result<EmptyRespo
 
 #[cfg(test)]
 #[cfg(feature = "test")]
+#[cfg(feature = "TODO")]
 mod tests {
     use crate::test::*;
 
-    #[cfg(feature = "async-std-runtime")]
     #[async_std::test]
     async fn success() {
         use rocket::http::Header;
@@ -46,7 +46,6 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "async-std-runtime")]
     #[async_std::test]
     async fn fail_invalid_session() {
         use rocket::http::Header;
@@ -67,7 +66,6 @@ mod tests {
         assert_eq!(res.status(), Status::Unauthorized);
     }
 
-    #[cfg(feature = "async-std-runtime")]
     #[async_std::test]
     async fn fail_no_session() {
         let client = bootstrap_rocket(

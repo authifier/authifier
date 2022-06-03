@@ -53,10 +53,10 @@ pub async fn password_reset(
 
 #[cfg(test)]
 #[cfg(feature = "test")]
+#[cfg(feature = "TODO")]
 mod tests {
     use crate::test::*;
 
-    #[cfg(feature = "async-std-runtime")]
     #[async_std::test]
     async fn success() {
         use chrono::{Duration, Utc};
@@ -116,7 +116,6 @@ mod tests {
         assert!(serde_json::from_str::<Session>(&res.into_string().await.unwrap()).is_ok());
     }
 
-    #[cfg(feature = "async-std-runtime")]
     #[async_std::test]
     async fn fail_invalid_token() {
         let (_, auth) = for_test("password_reset::fail_invalid_token").await;

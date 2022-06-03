@@ -19,6 +19,7 @@ mod mongo;
 #[cfg(feature = "database-mongodb")]
 pub use mongo::MongoDb;
 
+#[derive(Clone)]
 pub enum Database {
     Dummy(DummyDb),
     #[cfg(feature = "database-mongodb")]

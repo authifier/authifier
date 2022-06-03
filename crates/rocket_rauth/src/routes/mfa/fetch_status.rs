@@ -36,10 +36,10 @@ pub async fn fetch_status(account: Account) -> Result<Json<MultiFactorStatus>> {
 
 #[cfg(test)]
 #[cfg(feature = "test")]
+#[cfg(feature = "TODO")]
 mod tests {
     use crate::test::*;
 
-    #[cfg(feature = "async-std-runtime")]
     #[async_std::test]
     async fn success() {
         use rocket::http::Header;

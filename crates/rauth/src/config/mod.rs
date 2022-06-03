@@ -9,7 +9,7 @@ pub use email_verification::*;
 pub use passwords::*;
 
 /// rAuth configuration
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize, Clone)]
 pub struct Config {
     /// Check if passwords are compromised
     pub password_scanning: PasswordScanning,

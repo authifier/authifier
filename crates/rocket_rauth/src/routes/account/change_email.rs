@@ -42,15 +42,15 @@ pub async fn change_email(
 
 #[cfg(test)]
 #[cfg(feature = "test")]
+#[cfg(feature = "TODO")]
 mod tests {
     use crate::test::*;
 
-    #[cfg(feature = "async-std-runtime")]
     #[async_std::test]
     async fn success() {
         use rocket::http::Header;
 
-        let (db, auth, session, account) = for_test_authenticated("change_email::success").await;
+        let (rauth, session, account) = for_test_authenticated("change_email::success").await;
         let client = bootstrap_rocket_with_auth(
             auth,
             routes![crate::web::account::change_email::change_email],
@@ -81,7 +81,6 @@ mod tests {
         assert_eq!(account.email, "validexample@valid.com");
     }
 
-    #[cfg(feature = "async-std-runtime")]
     #[async_std::test]
     async fn success_smtp() {
         use rocket::http::Header;

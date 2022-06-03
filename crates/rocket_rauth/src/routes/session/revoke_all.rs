@@ -29,10 +29,10 @@ pub async fn revoke_all(
 
 #[cfg(test)]
 #[cfg(feature = "test")]
+#[cfg(feature = "TODO")]
 mod tests {
     use crate::test::*;
 
-    #[cfg(feature = "async-std-runtime")]
     #[async_std::test]
     async fn success() {
         use rocket::http::Header;
@@ -64,7 +64,6 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "async-std-runtime")]
     #[async_std::test]
     async fn success_not_including_self() {
         use rocket::http::Header;
