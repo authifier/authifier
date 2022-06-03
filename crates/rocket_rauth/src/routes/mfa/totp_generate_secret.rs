@@ -33,7 +33,7 @@ mod tests {
         let (_, auth, session, _) = for_test_authenticated("totp_generate_secret::success").await;
         let client = bootstrap_rocket_with_auth(
             auth,
-            routes![crate::web::mfa::totp_generate_secret::totp_generate_secret],
+            routes![crate::routes::mfa::totp_generate_secret::totp_generate_secret],
         )
         .await;
 

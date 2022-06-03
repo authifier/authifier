@@ -42,7 +42,6 @@ pub async fn change_email(
 
 #[cfg(test)]
 #[cfg(feature = "test")]
-#[cfg(feature = "TODO")]
 mod tests {
     use crate::test::*;
 
@@ -52,8 +51,8 @@ mod tests {
 
         let (rauth, session, account) = for_test_authenticated("change_email::success").await;
         let client = bootstrap_rocket_with_auth(
-            auth,
-            routes![crate::web::account::change_email::change_email],
+            rauth.clone(),
+            routes![crate::routes::account::change_email::change_email],
         )
         .await;
 
@@ -64,7 +63,7 @@ mod tests {
             .body(
                 json!({
                     "email": "validexample@valid.com",
-                    "current_password": "password"
+                    "current_password": "password_insecure"
                 })
                 .to_string(),
             )
@@ -73,10 +72,7 @@ mod tests {
 
         assert_eq!(res.status(), Status::NoContent);
 
-        let account = Account::find_one(&db, doc! { "_id": account.id.unwrap() }, None)
-            .await
-            .unwrap()
-            .unwrap();
+        let account = rauth.database.find_account(&account.id).await.unwrap();
 
         assert_eq!(account.email, "validexample@valid.com");
     }
@@ -85,16 +81,16 @@ mod tests {
     async fn success_smtp() {
         use rocket::http::Header;
 
-        let (db, auth, session, account) = for_test_authenticated_with_config(
+        let (rauth, session, account) = for_test_authenticated_with_config(
             "change_email::success_smtp",
             test_smtp_config().await,
         )
         .await;
         let client = bootstrap_rocket_with_auth(
-            auth,
+            rauth.clone(),
             routes![
-                crate::web::account::change_email::change_email,
-                crate::web::account::verify_email::verify_email
+                crate::routes::account::change_email::change_email,
+                crate::routes::account::verify_email::verify_email
             ],
         )
         .await;
@@ -106,7 +102,7 @@ mod tests {
             .body(
                 json!({
                     "email": "change_email@smtp.test",
-                    "current_password": "password"
+                    "current_password": "password_insecure"
                 })
                 .to_string(),
             )
@@ -123,10 +119,7 @@ mod tests {
 
         assert_eq!(res.status(), Status::NoContent);
 
-        let account = Account::find_one(&db, doc! { "_id": account.id.unwrap() }, None)
-            .await
-            .unwrap()
-            .unwrap();
+        let account = rauth.database.find_account(&account.id).await.unwrap();
 
         assert_eq!(account.email, "change_email@smtp.test");
     }

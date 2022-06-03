@@ -29,7 +29,7 @@ mod tests {
 
         let (db, auth, session, _) = for_test_authenticated("logout::success").await;
         let client =
-            bootstrap_rocket_with_auth(auth, routes![crate::web::session::logout::logout]).await;
+            bootstrap_rocket_with_auth(auth, routes![crate::routes::session::logout::logout]).await;
 
         let res = client
             .post("/logout")
@@ -53,7 +53,7 @@ mod tests {
         let client = bootstrap_rocket(
             "logout",
             "fail_invalid_session",
-            routes![crate::web::session::logout::logout],
+            routes![crate::routes::session::logout::logout],
         )
         .await;
 
@@ -71,7 +71,7 @@ mod tests {
         let client = bootstrap_rocket(
             "logout",
             "fail_no_session",
-            routes![crate::web::session::logout::logout],
+            routes![crate::routes::session::logout::logout],
         )
         .await;
 

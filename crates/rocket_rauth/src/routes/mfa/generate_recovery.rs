@@ -36,8 +36,8 @@ mod tests {
         let client = bootstrap_rocket_with_auth(
             auth,
             routes![
-                crate::web::mfa::generate_recovery::generate_recovery,
-                crate::web::mfa::fetch_recovery::fetch_recovery
+                crate::routes::mfa::generate_recovery::generate_recovery,
+                crate::routes::mfa::fetch_recovery::fetch_recovery
             ],
         )
         .await;
@@ -48,7 +48,7 @@ mod tests {
             .header(ContentType::JSON)
             .body(
                 json!({
-                    "password": "password",
+                    "password": "password_insecure",
                 })
                 .to_string(),
             )
@@ -64,7 +64,7 @@ mod tests {
             .header(ContentType::JSON)
             .body(
                 json!({
-                    "password": "password",
+                    "password": "password_insecure",
                 })
                 .to_string(),
             )

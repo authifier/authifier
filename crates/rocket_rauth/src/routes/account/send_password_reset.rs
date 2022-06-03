@@ -54,36 +54,29 @@ pub async fn send_password_reset(
 
 #[cfg(test)]
 #[cfg(feature = "test")]
-#[cfg(feature = "TODO")]
 mod tests {
     use crate::test::*;
 
     #[async_std::test]
     async fn success() {
-        use chrono::Utc;
-        use mongodb::bson::DateTime;
-
-        let (db, auth) =
+        let rauth =
             for_test_with_config("send_password_reset::success", test_smtp_config().await).await;
 
-        let mut account = auth
-            .create_account("password_reset@smtp.test".into(), "password".into(), false)
-            .await
-            .unwrap();
-
-        account.verification = AccountVerification::Pending {
-            token: "".into(),
-            expiry: DateTime(Utc::now()),
-        };
-
-        account.save(&db, None).await.unwrap();
+        Account::new(
+            &rauth,
+            "password_reset@smtp.test".into(),
+            "password".into(),
+            false,
+        )
+        .await
+        .unwrap();
 
         let client = bootstrap_rocket_with_auth(
-            auth,
+            rauth,
             routes![
-                crate::web::account::password_reset::password_reset,
-                crate::web::account::send_password_reset::send_password_reset,
-                crate::web::session::login::login
+                crate::routes::account::password_reset::password_reset,
+                crate::routes::account::send_password_reset::send_password_reset,
+                crate::routes::session::login::login
             ],
         )
         .await;

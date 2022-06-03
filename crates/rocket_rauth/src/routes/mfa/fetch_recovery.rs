@@ -28,7 +28,7 @@ mod tests {
         let (_, auth, session, _) = for_test_authenticated("fetch_recovery::success").await;
         let client = bootstrap_rocket_with_auth(
             auth,
-            routes![crate::web::mfa::fetch_recovery::fetch_recovery],
+            routes![crate::routes::mfa::fetch_recovery::fetch_recovery],
         )
         .await;
 
@@ -38,7 +38,7 @@ mod tests {
             .header(ContentType::JSON)
             .body(
                 json!({
-                    "password": "password",
+                    "password": "password_insecure",
                 })
                 .to_string(),
             )

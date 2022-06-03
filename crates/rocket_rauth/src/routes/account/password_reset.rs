@@ -53,33 +53,33 @@ pub async fn password_reset(
 
 #[cfg(test)]
 #[cfg(feature = "test")]
-#[cfg(feature = "TODO")]
 mod tests {
+    use chrono::Duration;
+    use iso8601_timestamp::Timestamp;
+
     use crate::test::*;
 
     #[async_std::test]
     async fn success() {
-        use chrono::{Duration, Utc};
-        use mongodb::bson::DateTime;
-
-        let (db, auth, _, mut account) = for_test_authenticated("password_reset::success").await;
+        let (rauth, _, mut account) = for_test_authenticated("password_reset::success").await;
 
         account.password_reset = Some(PasswordReset {
             token: "token".into(),
-            expiry: DateTime(
-                Utc::now()
-                    .checked_add_signed(Duration::seconds(60))
-                    .expect("failed to checked_add_signed"),
+            expiry: Timestamp::from_unix_timestamp_ms(
+                chrono::Utc::now()
+                    .checked_add_signed(Duration::seconds(100))
+                    .expect("failed to checked_add_signed")
+                    .timestamp_millis(),
             ),
         });
 
-        account.save(&db, None).await.unwrap();
+        rauth.database.save_account(&account).await.unwrap();
 
         let client = bootstrap_rocket_with_auth(
-            auth,
+            rauth,
             routes![
-                crate::web::account::password_reset::password_reset,
-                crate::web::session::login::login
+                crate::routes::account::password_reset::password_reset,
+                crate::routes::session::login::login
             ],
         )
         .await;
@@ -104,7 +104,7 @@ mod tests {
             .header(ContentType::JSON)
             .body(
                 json!({
-                    "email": "email@example.com",
+                    "email": "email@revolt.chat",
                     "password": "valid password"
                 })
                 .to_string(),
@@ -118,11 +118,11 @@ mod tests {
 
     #[async_std::test]
     async fn fail_invalid_token() {
-        let (_, auth) = for_test("password_reset::fail_invalid_token").await;
+        let rauth = for_test("password_reset::fail_invalid_token").await;
 
         let client = bootstrap_rocket_with_auth(
-            auth,
-            routes![crate::web::account::password_reset::password_reset],
+            rauth,
+            routes![crate::routes::account::password_reset::password_reset],
         )
         .await;
 

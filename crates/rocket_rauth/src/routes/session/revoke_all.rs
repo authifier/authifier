@@ -45,9 +45,11 @@ mod tests {
                 .unwrap();
         }
 
-        let client =
-            bootstrap_rocket_with_auth(auth, routes![crate::web::session::revoke_all::revoke_all])
-                .await;
+        let client = bootstrap_rocket_with_auth(
+            auth,
+            routes![crate::routes::session::revoke_all::revoke_all],
+        )
+        .await;
 
         let res = client
             .delete("/all?revoke_self=true")
@@ -77,9 +79,11 @@ mod tests {
                 .unwrap();
         }
 
-        let client =
-            bootstrap_rocket_with_auth(auth, routes![crate::web::session::revoke_all::revoke_all])
-                .await;
+        let client = bootstrap_rocket_with_auth(
+            auth,
+            routes![crate::routes::session::revoke_all::revoke_all],
+        )
+        .await;
 
         let res = client
             .delete("/all?revoke_self=false")

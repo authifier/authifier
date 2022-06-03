@@ -123,7 +123,7 @@ impl Account {
             let token = nanoid!(32);
             let url = format!("{}{}", templates.verify.url, token);
 
-            smtp.send_email(self.email.clone(), &templates.verify, json!({ "url": url }))
+            smtp.send_email(new_email.clone(), &templates.verify, json!({ "url": url }))
                 .ok();
 
             self.verification = EmailVerification::Moving {

@@ -35,7 +35,7 @@ mod tests {
 
         let (db, auth, session, _) = for_test_authenticated("revoke::success").await;
         let client =
-            bootstrap_rocket_with_auth(auth, routes![crate::web::session::revoke::revoke]).await;
+            bootstrap_rocket_with_auth(auth, routes![crate::routes::session::revoke::revoke]).await;
 
         let res = client
             .delete(format!("/{}", session.id.as_ref().unwrap()))
