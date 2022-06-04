@@ -17,7 +17,6 @@ pub async fn fetch_recovery(
 
 #[cfg(test)]
 #[cfg(feature = "test")]
-#[cfg(feature = "TODO")]
 mod tests {
     use crate::test::*;
 
@@ -25,9 +24,9 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (_, auth, session, _) = for_test_authenticated("fetch_recovery::success").await;
+        let (rauth, session, _) = for_test_authenticated("fetch_recovery::success").await;
         let client = bootstrap_rocket_with_auth(
-            auth,
+            rauth,
             routes![crate::routes::mfa::fetch_recovery::fetch_recovery],
         )
         .await;

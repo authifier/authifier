@@ -206,7 +206,7 @@ mod tests {
         .unwrap();
 
         account.disabled = true;
-        account.save(rauth).await.unwrap();
+        account.save(&rauth).await.unwrap();
 
         let client =
             bootstrap_rocket_with_auth(rauth, routes![crate::routes::session::login::login]).await;
@@ -249,7 +249,7 @@ mod tests {
             expiry: Timestamp::now_utc(),
         };
 
-        account.save(rauth).await.unwrap();
+        account.save(&rauth).await.unwrap();
 
         let client =
             bootstrap_rocket_with_auth(rauth, routes![crate::routes::session::login::login]).await;

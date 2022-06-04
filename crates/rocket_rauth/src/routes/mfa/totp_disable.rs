@@ -8,7 +8,7 @@ use rocket_empty::EmptyResponse;
 
 #[openapi(tag = "MFA")]
 #[delete("/totp")]
-pub async fn totp_enable(
+pub async fn totp_disable(
     rauth: &State<RAuth>,
     mut account: Account,
     _ticket: ValidatedTicket,

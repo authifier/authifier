@@ -51,7 +51,7 @@ mod tests {
             ),
         };
 
-        account.save(rauth).await.unwrap();
+        account.save(&rauth).await.unwrap();
 
         let client = bootstrap_rocket_with_auth(
             rauth,

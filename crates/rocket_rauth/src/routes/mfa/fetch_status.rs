@@ -45,9 +45,9 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (_, auth, session, _) = for_test_authenticated("fetch_status::success").await;
+        let (rauth, session, _) = for_test_authenticated("fetch_status::success").await;
         let client = bootstrap_rocket_with_auth(
-            auth,
+            rauth,
             routes![crate::routes::mfa::fetch_status::fetch_status],
         )
         .await;
@@ -60,7 +60,10 @@ mod tests {
 
         assert_eq!(res.status(), Status::Ok);
         assert!(
-            serde_json::from_str::<MultiFactorStatus>(&res.into_string().await.unwrap()).is_ok()
+            serde_json::from_str::<crate::routes::mfa::fetch_status::MultiFactorStatus>(
+                &res.into_string().await.unwrap()
+            )
+            .is_ok()
         );
     }
 }
