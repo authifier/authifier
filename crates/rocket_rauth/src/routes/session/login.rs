@@ -8,6 +8,7 @@ use rocket::State;
 
 /// # Login Data
 #[derive(Serialize, Deserialize, JsonSchema)]
+#[serde(untagged)]
 pub enum DataLogin {
     Email {
         /// Email
