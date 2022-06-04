@@ -27,11 +27,23 @@ docker-compose up -d database
 cargo run --example rocket_mongodb --features example
 ```
 
-Now you can navigate to http://localhost:11111/swagger!
+Now you can navigate to http://localhost:8000/swagger!
 
 ## Usage
 
-Getting started is very simple, create a new instance of the RAuth struct and mount it on to Rocket.
+Getting started is very simple, first add rAuth to your `Cargo.toml`:
+
+```toml
+[dependencies]
+rauth = { git = "https://github.com/insertish/rauth", features = [ "rocket_impl", "okapi_impl", "async-std-runtime", "database-mongodb" ] }
+rauth_rauth = { git = "https://github.com/insertish/rauth" }
+
+# For the example below, you also need:
+rocket = { version = "0.5.0-rc.2", default-features = false, features = ["json"] }
+mongodb = { version = "2.2.1", default-features = false, features = ["async-std-runtime"] }
+```
+
+Then you can create a new instance of rAuth and mount it on to Rocket.
 
 ```rust
 #[macro_use]
@@ -72,6 +84,7 @@ async fn rocket() -> _ {
     // Mount authentication routes
     .mount("/auth/account", rocket_rauth::routes::account::routes().0)
     .mount("/auth/session", rocket_rauth::routes::session::routes().0)
+    .mount("/auth/mfa", rocket_rauth::routes::mfa::routes().0)
 }
 ```
 

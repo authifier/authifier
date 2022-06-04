@@ -37,6 +37,7 @@ async fn rocket() -> _ {
         "/" => (vec![], custom_openapi_spec()),
         "/auth/account" => rocket_rauth::routes::account::routes(),
         "/auth/session" => rocket_rauth::routes::session::routes(),
+        "/auth/mfa" => rocket_rauth::routes::mfa::routes(),
     };
 
     rocket.manage(rauth).mount(

@@ -30,6 +30,7 @@ async fn rocket() -> _ {
         .manage(rauth)
         .mount("/auth/account", rocket_rauth::routes::account::routes().0)
         .mount("/auth/session", rocket_rauth::routes::session::routes().0)
+        .mount("/auth/mfa", rocket_rauth::routes::mfa::routes().0)
 }
 
 #[cfg(not(feature = "example"))]
