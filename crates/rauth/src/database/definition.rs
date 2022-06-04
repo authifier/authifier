@@ -34,6 +34,9 @@ pub trait AbstractDatabase: std::marker::Sync {
     /// Find sessions by user id
     async fn find_sessions(&self, user_id: &str) -> Result<Vec<Session>>;
 
+    /// Find sessions by user ids
+    async fn find_sessions_with_subscription(&self, user_ids: &[String]) -> Result<Vec<Session>>;
+
     /// Find session by token
     async fn find_session_by_token(&self, token: &str) -> Result<Option<Session>>;
 

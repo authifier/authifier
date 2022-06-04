@@ -53,6 +53,11 @@ impl AbstractDatabase for DummyDb {
         todo!("{user_id}")
     }
 
+    /// Find sessions by user ids
+    async fn find_sessions_with_subscription(&self, user_ids: &[String]) -> Result<Vec<Session>> {
+        todo!("{user_ids:?}")
+    }
+
     /// Find session by token
     async fn find_session_by_token(&self, token: &str) -> Result<Option<Session>> {
         todo!("{token}")

@@ -286,6 +286,33 @@ impl AbstractDatabase for MongoDb {
             })
     }
 
+    /// Find sessions by user ids
+    async fn find_sessions_with_subscription(&self, user_ids: &[String]) -> Result<Vec<Session>> {
+        self.collection::<Session>("sessions")
+            .find(
+                doc! {
+                    "user_id": {
+                        "$in": user_ids
+                    },
+                    "subscription": {
+                        "$exists": true
+                    }
+                },
+                None,
+            )
+            .await
+            .map_err(|_| Error::DatabaseError {
+                operation: "find",
+                with: "sessions",
+            })?
+            .try_collect()
+            .await
+            .map_err(|_| Error::DatabaseError {
+                operation: "collect",
+                with: "sessions",
+            })
+    }
+
     /// Find session by token
     async fn find_session_by_token(&self, token: &str) -> Result<Option<Session>> {
         self.collection("sessions")
