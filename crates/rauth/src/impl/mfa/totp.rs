@@ -1,7 +1,4 @@
-use crate::{
-    models::{totp::Totp, MFAResponse},
-    Error, Result,
-};
+use crate::{models::totp::Totp, Error, Result};
 
 impl Totp {
     /// Whether TOTP is disabled
