@@ -36,7 +36,7 @@ Getting started is very simple, first add rAuth to your `Cargo.toml`:
 ```toml
 [dependencies]
 rauth = { git = "https://github.com/insertish/rauth", features = [ "rocket_impl", "okapi_impl", "async-std-runtime", "database-mongodb" ] }
-rauth_rauth = { git = "https://github.com/insertish/rauth" }
+rocket_rauth = { git = "https://github.com/insertish/rauth" }
 
 # For the example below, you also need:
 rocket = { version = "0.5.0-rc.2", default-features = false, features = ["json"] }
