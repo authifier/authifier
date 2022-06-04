@@ -1,9 +1,1 @@
-_src
-/target
-/examples/smtp_test.rs
-
-/.data
-*.sqlite
-
-.env
-env.fish
+target

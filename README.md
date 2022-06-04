@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="banner.png" height="180px" />
+  <img src="assets/banner.png" height="180px" />
 </p>
 
 ## Goals
