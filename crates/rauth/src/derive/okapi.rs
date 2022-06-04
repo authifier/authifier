@@ -6,7 +6,7 @@ use rocket_okapi::{
 };
 
 use crate::{
-    models::{Account, Session},
+    models::{Account, MFATicket, Session, UnvalidatedTicket, ValidatedTicket},
     Error,
 };
 
@@ -57,50 +57,65 @@ impl OpenApiResponderInner for Error {
     }
 }
 
-impl<'r> OpenApiFromRequest<'r> for Session {
-    fn from_request_input(
-        _gen: &mut OpenApiGenerator,
-        _name: String,
-        _required: bool,
-    ) -> rocket_okapi::Result<RequestHeaderInput> {
-        let mut requirements = schemars::Map::new();
-        requirements.insert("Api Key".to_owned(), vec![]);
+macro_rules! from_request {
+    ($struct_name:ident, $name:expr, $header_name:expr, $description:expr) => {
+        impl<'r> OpenApiFromRequest<'r> for $struct_name {
+            fn from_request_input(
+                _gen: &mut OpenApiGenerator,
+                _name: String,
+                _required: bool,
+            ) -> rocket_okapi::Result<RequestHeaderInput> {
+                let mut requirements = schemars::Map::new();
+                requirements.insert($name.to_owned(), vec![]);
 
-        Ok(RequestHeaderInput::Security(
-            "Api Key".to_owned(),
-            SecurityScheme {
-                data: SecuritySchemeData::ApiKey {
-                    name: "x-session-token".to_owned(),
-                    location: "header".to_owned(),
-                },
-                description: Some("Session Token".to_owned()),
-                extensions: schemars::Map::new(),
-            },
-            requirements,
-        ))
-    }
+                Ok(RequestHeaderInput::Security(
+                    $name.to_owned(),
+                    SecurityScheme {
+                        data: SecuritySchemeData::ApiKey {
+                            name: $header_name.to_owned(),
+                            location: "header".to_owned(),
+                        },
+                        description: Some($description.to_owned()),
+                        extensions: schemars::Map::new(),
+                    },
+                    requirements,
+                ))
+            }
+        }
+    };
 }
 
-impl<'r> OpenApiFromRequest<'r> for Account {
-    fn from_request_input(
-        _gen: &mut OpenApiGenerator,
-        _name: String,
-        _required: bool,
-    ) -> rocket_okapi::Result<RequestHeaderInput> {
-        let mut requirements = schemars::Map::new();
-        requirements.insert("Api Key".to_owned(), vec![]);
+from_request!(
+    Session,
+    "Api Key",
+    "x-session-token",
+    "Used to authenticate as a user."
+);
 
-        Ok(RequestHeaderInput::Security(
-            "Api Key".to_owned(),
-            SecurityScheme {
-                data: SecuritySchemeData::ApiKey {
-                    name: "x-session-token".to_owned(),
-                    location: "header".to_owned(),
-                },
-                description: Some("Session Token".to_owned()),
-                extensions: schemars::Map::new(),
-            },
-            requirements,
-        ))
-    }
-}
+from_request!(
+    Account,
+    "Api Key",
+    "x-session-token",
+    "Used to authenticate as a user."
+);
+
+from_request!(
+    MFATicket,
+    "MFA Ticket",
+    "x-mfa-ticket",
+    "Used to authorise a request."
+);
+
+from_request!(
+    ValidatedTicket,
+    "Valid MFA Ticket",
+    "x-mfa-ticket",
+    "Used to authorise a request."
+);
+
+from_request!(
+    UnvalidatedTicket,
+    "Unvalidated MFA Ticket",
+    "x-mfa-ticket",
+    "Used to authorise a request."
+);

@@ -58,6 +58,11 @@ impl AbstractDatabase for DummyDb {
         todo!("{token}")
     }
 
+    /// Find ticket by token
+    async fn find_ticket_by_token(&self, token: &str) -> Result<Option<MFATicket>> {
+        todo!("{token}")
+    }
+
     // Save account
     async fn save_account(&self, account: &Account) -> Success {
         todo!("{account:?}")
@@ -86,5 +91,10 @@ impl AbstractDatabase for DummyDb {
     /// Delete session
     async fn delete_all_sessions(&self, user_id: &str, ignore: Option<String>) -> Success {
         todo!("{user_id} {ignore:?}")
+    }
+
+    /// Delete ticket
+    async fn delete_ticket(&self, id: &str) -> Success {
+        todo!("{id}")
     }
 }

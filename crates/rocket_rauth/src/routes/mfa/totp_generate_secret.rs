@@ -1,23 +1,30 @@
 //! Generate a new secret for TOTP.
 //! POST /mfa/totp
-use rauth::models::Account;
+use rauth::models::{Account, ValidatedTicket};
 use rauth::{RAuth, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 
-#[derive(Serialize)]
-pub struct Response {
+#[derive(Serialize, JsonSchema)]
+pub struct ResponseTotpSecret {
     secret: String,
 }
 
+#[openapi(tag = "MFA")]
 #[post("/totp")]
 pub async fn totp_generate_secret(
     rauth: &State<RAuth>,
     mut account: Account,
-) -> Result<Json<Response>> {
-    /*let secret = auth.mfa_generate_totp_secret(&mut account).await?;
-    Ok(Json(Response { secret }))*/
-    todo!()
+    _ticket: ValidatedTicket,
+) -> Result<Json<ResponseTotpSecret>> {
+    // Generate a new secret
+    let secret = account.mfa.generate_new_totp_secret()?;
+
+    // Save model to database
+    account.save(rauth).await?;
+
+    // Send secret to user
+    Ok(Json(ResponseTotpSecret { secret }))
 }
 
 #[cfg(test)]
@@ -51,6 +58,8 @@ mod tests {
             secret: String,
         }
 
-        assert!(serde_json::from_str::<Response>(&res.into_string().await.unwrap()).is_ok());
+        assert!(
+            serde_json::from_str::<ResponseTotpSecret>(&res.into_string().await.unwrap()).is_ok()
+        );
     }
 }

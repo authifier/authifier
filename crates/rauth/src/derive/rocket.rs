@@ -7,7 +7,7 @@ use rocket::{
 };
 
 use crate::{
-    models::{Account, Session},
+    models::{Account, MFATicket, Session, UnvalidatedTicket, ValidatedTicket},
     Error, RAuth,
 };
 
@@ -42,6 +42,7 @@ impl<'r> Responder<'r, 'static> for Error {
                     .ok();
             }
             Error::TotpAlreadyEnabled => Status::BadRequest,
+            Error::DisallowedMFAMethod => Status::BadRequest,
         };
 
         // Serialize the error data structure into JSON.
@@ -101,6 +102,84 @@ impl<'r> FromRequest<'r> for Account {
                 }
             }
             Outcome::Forward(_) => unreachable!(),
+            Outcome::Failure(err) => Outcome::Failure(err),
+        }
+    }
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for MFATicket {
+    type Error = Error;
+
+    #[allow(clippy::collapsible_match)]
+    async fn from_request(request: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
+        let header_mfa_ticket = request
+            .headers()
+            .get("x-mfa-ticket")
+            .next()
+            .map(|x| x.to_string());
+
+        match (request.rocket().state::<RAuth>(), header_mfa_ticket) {
+            (Some(rauth), Some(token)) => {
+                if let Ok(ticket) = rauth.database.find_ticket_by_token(&token).await {
+                    if let Some(ticket) = ticket {
+                        Outcome::Success(ticket)
+                    } else {
+                        Outcome::Failure((Status::Unauthorized, Error::InvalidSession))
+                    }
+                } else {
+                    Outcome::Failure((Status::Unauthorized, Error::InvalidSession))
+                }
+            }
+            (_, _) => Outcome::Failure((Status::Unauthorized, Error::MissingHeaders)),
+        }
+    }
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for ValidatedTicket {
+    type Error = Error;
+
+    #[allow(clippy::collapsible_match)]
+    async fn from_request(request: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
+        match request.guard::<MFATicket>().await {
+            Outcome::Success(ticket) => {
+                if ticket.validated {
+                    let rauth = request
+                        .rocket()
+                        .state::<RAuth>()
+                        .expect("This code is unreachable.");
+
+                    if ticket.claim(rauth).await.is_ok() {
+                        Outcome::Success(ValidatedTicket(ticket))
+                    } else {
+                        Outcome::Failure((Status::InternalServerError, Error::InternalError))
+                    }
+                } else {
+                    Outcome::Failure((Status::Forbidden, Error::InvalidToken))
+                }
+            }
+            Outcome::Forward(f) => Outcome::Forward(f),
+            Outcome::Failure(err) => Outcome::Failure(err),
+        }
+    }
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for UnvalidatedTicket {
+    type Error = Error;
+
+    #[allow(clippy::collapsible_match)]
+    async fn from_request(request: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
+        match request.guard::<MFATicket>().await {
+            Outcome::Success(ticket) => {
+                if !ticket.validated {
+                    Outcome::Success(UnvalidatedTicket(ticket))
+                } else {
+                    Outcome::Failure((Status::Forbidden, Error::InvalidToken))
+                }
+            }
+            Outcome::Forward(f) => Outcome::Forward(f),
             Outcome::Failure(err) => Outcome::Failure(err),
         }
     }

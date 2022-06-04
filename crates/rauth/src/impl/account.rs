@@ -3,7 +3,9 @@ use iso8601_timestamp::Timestamp;
 
 use crate::{
     config::EmailVerificationConfig,
-    models::{Account, EmailVerification, PasswordReset, Session},
+    models::{
+        totp::Totp, Account, EmailVerification, MFAMethod, MFAResponse, PasswordReset, Session,
+    },
     util::{hash_password, normalise_email},
     Error, RAuth, Result, Success,
 };
@@ -190,5 +192,52 @@ impl Account {
             // To prevent user enumeration, we should ignore
             // the error and pretend the password is wrong.
             .map_err(|_| Error::InvalidCredentials)?
+    }
+
+    // Validate an MFA response
+    pub async fn consume_mfa_response(&mut self, rauth: &RAuth, response: MFAResponse) -> Success {
+        let allowed_methods = self.mfa.get_methods();
+
+        match response {
+            MFAResponse::Password { password } => {
+                if allowed_methods.contains(&MFAMethod::Password) {
+                    self.verify_password(&password)
+                } else {
+                    Err(Error::OperationFailed)
+                }
+            }
+            MFAResponse::Totp { totp_code } => {
+                if allowed_methods.contains(&MFAMethod::Totp) {
+                    if let Totp::Enabled { .. } = &self.mfa.totp_token {
+                        if self.mfa.totp_token.generate_code()? == totp_code {
+                            Ok(())
+                        } else {
+                            Err(Error::InvalidToken)
+                        }
+                    } else {
+                        unreachable!()
+                    }
+                } else {
+                    Err(Error::OperationFailed)
+                }
+            }
+            MFAResponse::Recovery { recovery_code } => {
+                if allowed_methods.contains(&MFAMethod::Recovery) {
+                    if let Some(index) = self
+                        .mfa
+                        .recovery_codes
+                        .iter()
+                        .position(|x| x == &recovery_code)
+                    {
+                        self.mfa.recovery_codes.remove(index);
+                        self.save(rauth).await
+                    } else {
+                        Err(Error::InvalidToken)
+                    }
+                } else {
+                    Err(Error::OperationFailed)
+                }
+            }
+        }
     }
 }

@@ -1,5 +1,6 @@
 /// Web Push subscription
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemas", derive(JsonSchema))]
 pub struct WebPushSubscription {
     pub endpoint: String,
     pub p256dh: String,
@@ -7,7 +8,8 @@ pub struct WebPushSubscription {
 }
 
 /// Session information
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemas", derive(JsonSchema))]
 pub struct Session {
     /// Unique Id
     #[serde(rename = "_id")]

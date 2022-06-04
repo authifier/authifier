@@ -1,25 +1,25 @@
 //! Re-generate recovery codes for an account.
 //! PATCH /mfa/recovery
-use rauth::models::Account;
+use rauth::models::{Account, ValidatedTicket};
 use rauth::{RAuth, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 
-#[derive(Serialize, Deserialize)]
-pub struct Data {
-    password: String,
-}
-
-#[patch("/recovery", data = "<data>")]
+#[openapi(tag = "MFA")]
+#[patch("/recovery")]
 pub async fn generate_recovery(
     rauth: &State<RAuth>,
     mut account: Account,
-    data: Json<Data>,
+    _ticket: ValidatedTicket,
 ) -> Result<Json<Vec<String>>> {
-    /*account.verify_password(&data.password)?;
-    auth.mfa_regenerate_recovery(&mut account).await?;
-    Ok(Json(account.mfa.recovery_codes))*/
-    todo!()
+    // Generate new codes
+    account.mfa.generate_recovery_codes();
+
+    // Save account model
+    account.save(rauth).await?;
+
+    // Return them to the user
+    Ok(Json(account.mfa.recovery_codes))
 }
 
 #[cfg(test)]

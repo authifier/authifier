@@ -303,6 +303,23 @@ impl AbstractDatabase for MongoDb {
             .ok_or(Error::UnknownUser)
     }
 
+    /// Find ticket by token
+    async fn find_ticket_by_token(&self, token: &str) -> Result<Option<MFATicket>> {
+        self.collection("mfa_tickets")
+            .find_one(
+                doc! {
+                    "token": token
+                },
+                None,
+            )
+            .await
+            .map_err(|_| Error::DatabaseError {
+                operation: "find_one",
+                with: "mfa_ticket",
+            })?
+            .ok_or(Error::InvalidToken)
+    }
+
     // Save account
     async fn save_account(&self, account: &Account) -> Success {
         self.collection::<Account>("accounts")
@@ -433,6 +450,23 @@ impl AbstractDatabase for MongoDb {
             .map_err(|_| Error::DatabaseError {
                 operation: "delete_one",
                 with: "session",
+            })
+            .map(|_| ())
+    }
+
+    /// Delete ticket
+    async fn delete_ticket(&self, id: &str) -> Success {
+        self.collection::<MFATicket>("mfa_tickets")
+            .delete_one(
+                doc! {
+                    "_id": id
+                },
+                None,
+            )
+            .await
+            .map_err(|_| Error::DatabaseError {
+                operation: "delete_one",
+                with: "mfa_ticket",
             })
             .map(|_| ())
     }

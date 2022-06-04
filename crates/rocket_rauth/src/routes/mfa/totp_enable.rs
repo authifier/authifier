@@ -1,42 +1,23 @@
 //! Generate a new secret for TOTP.
 //! POST /mfa/totp
-use rauth::models::Account;
+use rauth::models::{Account, MFAResponse};
 use rauth::{RAuth, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 use rocket_empty::EmptyResponse;
 
-#[derive(Deserialize)]
-pub struct Data {
-    code: String,
-    password: String,
-}
-
+#[openapi(tag = "MFA")]
 #[put("/totp", data = "<data>")]
 pub async fn totp_enable(
     rauth: &State<RAuth>,
     mut account: Account,
-    data: Json<Data>,
+    data: Json<MFAResponse>,
 ) -> Result<EmptyResponse> {
-    /*account.verify_password(&data.password)?;
+    // Enable TOTP 2FA
+    account.mfa.enable_totp(data.into_inner())?;
 
-    if let Totp::Pending { secret } = &account.mfa.totp_token {
-        let secret_u8 = base32::decode(base32::Alphabet::RFC4648 { padding: false }, secret)
-            .expect("valid `secret`");
-        let code = Auth::mfa_generate_totp_code(&secret_u8);
-
-        if code == data.code {
-            account.mfa.totp_token = Totp::Enabled {
-                secret: secret.clone(),
-            };
-            account.save_to_db(&auth.db).await.map(|_| EmptyResponse)
-        } else {
-            unimplemented!()
-        }
-    } else {
-        unimplemented!()
-    }*/
-    todo!()
+    // Save model to database
+    account.save(rauth).await.map(|_| EmptyResponse)
 }
 
 #[cfg(test)]

@@ -1,17 +1,17 @@
 //! Fetch recovery codes for an account.
 //! POST /mfa/recovery
-use rauth::{models::Account, Result};
+use rauth::{
+    models::{Account, ValidatedTicket},
+    Result,
+};
 use rocket::serde::json::Json;
 
-#[derive(Serialize, Deserialize)]
-pub struct Data {
-    password: String,
-}
-
-#[post("/recovery", data = "<data>")]
-pub async fn fetch_recovery(account: Account, data: Json<Data>) -> Result<Json<Vec<String>>> {
-    // TODO: require MFA ticket
-    account.verify_password(&data.password)?;
+#[openapi(tag = "MFA")]
+#[post("/recovery")]
+pub async fn fetch_recovery(
+    account: Account,
+    _ticket: ValidatedTicket,
+) -> Result<Json<Vec<String>>> {
     Ok(Json(account.mfa.recovery_codes))
 }
 

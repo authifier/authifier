@@ -39,3 +39,21 @@ pub struct MultiFactorAuthentication {
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub recovery_codes: Vec<String>,
 }
+
+/// MFA method
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(feature = "schemas", derive(JsonSchema))]
+pub enum MFAMethod {
+    Password,
+    Recovery,
+    Totp,
+}
+
+/// MFA response
+#[derive(Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "schemas", derive(JsonSchema))]
+pub enum MFAResponse {
+    Password { password: String },
+    Recovery { recovery_code: String },
+    Totp { totp_code: String },
+}

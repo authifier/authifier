@@ -1,6 +1,6 @@
 //! Login to an account
 //! POST /session/login
-use rauth::models::{EmailVerification, Session};
+use rauth::models::{EmailVerification, MFAMethod, MFAResponse, Session};
 use rauth::util::normalise_email;
 use rauth::{Error, RAuth, Result};
 use rocket::serde::json::Json;
@@ -8,32 +8,38 @@ use rocket::State;
 
 /// # Login Data
 #[derive(Serialize, Deserialize, JsonSchema)]
-pub struct DataLogin {
-    /// Email
-    pub email: String,
-
-    /// Password
-    pub password: Option<String>,
-    /// UN-USED: MFA challenge
-    pub challenge: Option<String>,
-
-    /// Friendly name used for the session
-    pub friendly_name: Option<String>,
-    /// Captcha verification code
-    pub captcha: Option<String>,
+pub enum DataLogin {
+    Email {
+        /// Email
+        email: String,
+        /// Password
+        password: String,
+        /// Captcha verification code
+        captcha: Option<String>,
+        /// Friendly name used for the session
+        friendly_name: Option<String>,
+    },
+    MFA {
+        /// Unvalidated MFA ticket
+        ///
+        /// Used to resolve the correct account
+        mfa_ticket: String,
+        /// Valid MFA response
+        ///
+        /// This will take precedence over the `password` field where applicable
+        mfa_response: MFAResponse,
+        /// Friendly name used for the session
+        friendly_name: Option<String>,
+    },
 }
 
-// TODO: remove dead_code
-#[allow(dead_code)]
 #[derive(Serialize, JsonSchema)]
 #[serde(tag = "result")]
 pub enum ResponseLogin {
     Success(Session),
-    EmailOTP,
     MFA {
         ticket: String,
-        // TODO: swap this out for an enum
-        allowed_methods: Vec<String>,
+        allowed_methods: Vec<MFAMethod>,
     },
 }
 
@@ -43,57 +49,78 @@ pub enum ResponseLogin {
 #[openapi(tag = "Session")]
 #[post("/login", data = "<data>")]
 pub async fn login(rauth: &State<RAuth>, data: Json<DataLogin>) -> Result<Json<ResponseLogin>> {
-    let data = data.into_inner();
+    let (account, name) = match data.into_inner() {
+        DataLogin::Email {
+            email,
+            password,
+            captcha,
+            friendly_name,
+        } => {
+            // Check Captcha token
+            rauth.config.captcha.check(captcha).await?;
 
-    // Check Captcha token
-    rauth.config.captcha.check(data.captcha).await?;
+            // Try to find the account we want
+            let email_normalised = normalise_email(email);
 
-    // Generate a session name ahead of time.
-    let name = data.friendly_name.unwrap_or_else(|| "Unknown".to_string());
+            // Lookup the email in database
+            if let Some(account) = rauth
+                .database
+                .find_account_by_normalised_email(&email_normalised)
+                .await?
+            {
+                // Make sure the account has been verified
+                if let EmailVerification::Pending { .. } = account.verification {
+                    return Err(Error::UnverifiedAccount);
+                }
 
-    // Try to find the account we want.
-    let email_normalised = normalise_email(data.email);
+                // Make sure password has not been compromised
+                rauth
+                    .config
+                    .password_scanning
+                    .assert_safe(&password)
+                    .await?;
 
-    if let Some(account) = rauth
-        .database
-        .find_account_by_normalised_email(&email_normalised)
-        .await?
-    {
-        // Figure out whether we are doing password, 1FA key or email 1FA OTP.
-        if let Some(password) = data.password {
-            // Make sure the account has been verified
-            if let EmailVerification::Pending { .. } = account.verification {
-                return Err(Error::UnverifiedAccount);
+                // Verify the password is correct.
+                account.verify_password(&password)?;
+
+                (account, friendly_name)
+            } else {
+                return Err(Error::InvalidCredentials);
             }
-
-            // Make sure password has not been compromised
-            rauth
-                .config
-                .password_scanning
-                .assert_safe(&password)
-                .await?;
-
-            // Verify the password is correct.
-            account.verify_password(&password)?;
-
-            // Prevent disabled accounts from logging in.
-            if account.disabled {
-                return Err(Error::DisabledAccount);
-            }
-
-            Ok(Json(ResponseLogin::Success(
-                account.create_session(rauth, name).await?,
-            )))
-        } else if let Some(_challenge) = data.challenge {
-            // TODO: implement; issue #5
-            Err(Error::InvalidCredentials)
-        } else {
-            // TODO: implement; issue #5
-            Err(Error::InvalidCredentials)
         }
-    } else {
-        Err(Error::InvalidCredentials)
+        DataLogin::MFA {
+            mfa_ticket,
+            mfa_response,
+            friendly_name,
+        } => {
+            // Resolve the MFA ticket
+            let ticket = rauth
+                .database
+                .find_ticket_by_token(&mfa_ticket)
+                .await?
+                .ok_or(Error::InvalidToken)?;
+
+            // Find the corresponding account
+            let mut account = rauth.database.find_account(&ticket.account_id).await?;
+
+            // Verify the MFA response
+            account.consume_mfa_response(rauth, mfa_response).await?;
+            (account, friendly_name)
+        }
+    };
+
+    // Generate a session name
+    let name = name.unwrap_or_else(|| "Unknown".to_string());
+
+    // Prevent disabled accounts from logging in
+    if account.disabled {
+        return Err(Error::DisabledAccount);
     }
+
+    // Create and return a new session
+    Ok(Json(ResponseLogin::Success(
+        account.create_session(rauth, name).await?,
+    )))
 }
 
 #[cfg(test)]

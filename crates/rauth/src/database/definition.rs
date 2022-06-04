@@ -37,6 +37,9 @@ pub trait AbstractDatabase: std::marker::Sync {
     /// Find session by token
     async fn find_session_by_token(&self, token: &str) -> Result<Option<Session>>;
 
+    /// Find ticket by token
+    async fn find_ticket_by_token(&self, token: &str) -> Result<Option<MFATicket>>;
+
     // Save account
     async fn save_account(&self, account: &Account) -> Success;
 
@@ -54,4 +57,7 @@ pub trait AbstractDatabase: std::marker::Sync {
 
     /// Delete session
     async fn delete_all_sessions(&self, user_id: &str, ignore: Option<String>) -> Success;
+
+    /// Delete ticket
+    async fn delete_ticket(&self, id: &str) -> Success;
 }

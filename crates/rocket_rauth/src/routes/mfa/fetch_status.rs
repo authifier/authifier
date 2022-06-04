@@ -6,7 +6,7 @@ use rauth::{
 };
 use rocket::serde::json::Json;
 
-#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema, Default)]
 pub struct MultiFactorStatus {
     email_otp: bool,
     trusted_handover: bool,
@@ -19,16 +19,18 @@ pub struct MultiFactorStatus {
 impl From<MultiFactorAuthentication> for MultiFactorStatus {
     fn from(item: MultiFactorAuthentication) -> Self {
         MultiFactorStatus {
-            email_otp: item.enable_email_otp,
-            trusted_handover: item.enable_trusted_handover,
-            email_mfa: item.enable_email_mfa,
+            // email_otp: item.enable_email_otp,
+            // trusted_handover: item.enable_trusted_handover,
+            // email_mfa: item.enable_email_mfa,
             totp_mfa: !item.totp_token.is_disabled(),
-            security_key_mfa: item.security_key_token.is_some(),
+            // security_key_mfa: item.security_key_token.is_some(),
             recovery_active: !item.recovery_codes.is_empty(),
+            ..Default::default()
         }
     }
 }
 
+#[openapi(tag = "MFA")]
 #[get("/")]
 pub async fn fetch_status(account: Account) -> Result<Json<MultiFactorStatus>> {
     Ok(Json(account.mfa.into()))
