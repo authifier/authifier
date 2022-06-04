@@ -4,7 +4,7 @@ use mongodb::options::{Collation, CollationStrength, FindOneOptions, UpdateOptio
 use std::ops::Deref;
 
 use crate::{
-    models::{Account, Invite, Session},
+    models::{Account, Invite, MFATicket, Session},
     Error, Result, Success,
 };
 
@@ -368,6 +368,29 @@ impl AbstractDatabase for MongoDb {
             .map_err(|_| Error::DatabaseError {
                 operation: "upsert_one",
                 with: "invite",
+            })
+            .map(|_| ())
+    }
+
+    /// Save ticket
+    async fn save_ticket(&self, ticket: &MFATicket) -> Success {
+        self.collection::<MFATicket>("mfa_tickets")
+            .update_one(
+                doc! {
+                    "_id": &ticket.id
+                },
+                doc! {
+                    "$set": to_document(ticket).map_err(|_| Error::DatabaseError {
+                        operation: "to_document",
+                        with: "ticket",
+                    })?,
+                },
+                UpdateOptions::builder().upsert(true).build(),
+            )
+            .await
+            .map_err(|_| Error::DatabaseError {
+                operation: "upsert_one",
+                with: "ticket",
             })
             .map(|_| ())
     }

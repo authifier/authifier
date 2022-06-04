@@ -76,7 +76,7 @@ mod tests {
             expiry: Timestamp::now_utc(),
         };
 
-        rauth.database.save_account(&account).await.unwrap();
+        account.save(rauth).await.unwrap();
 
         let client = bootstrap_rocket_with_auth(
             rauth,

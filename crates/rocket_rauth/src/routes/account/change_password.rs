@@ -42,11 +42,7 @@ pub async fn change_password(
     account.password = hash_password(data.password)?;
 
     // Commit to database
-    rauth
-        .database
-        .save_account(&account)
-        .await
-        .map(|_| EmptyResponse)
+    account.save(rauth).await.map(|_| EmptyResponse)
 }
 
 #[cfg(test)]

@@ -290,6 +290,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 
 [[package]]
+name = "base32"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23ce669cd6c8588f79e15cf450314f9638f967fc5770ff1c7c1deb0925ea7cfa"
+
+[[package]]
 name = "base64"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1814,6 +1820,7 @@ version = "0.1.0"
 dependencies = [
  "async-std",
  "async-trait",
+ "base32",
  "bson",
  "chrono",
  "futures",
@@ -1825,6 +1832,7 @@ dependencies = [
  "mongodb",
  "nanoid",
  "okapi",
+ "rand",
  "regex",
  "reqwest",
  "rocket",
@@ -1833,6 +1841,7 @@ dependencies = [
  "schemars",
  "serde",
  "serde_json",
+ "totp-lite",
  "ulid",
  "validator",
 ]
@@ -2694,6 +2703,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d82e1a7758622a465f8cee077614c73484dac5b836c02ff6a40d5d1010324d7"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "totp-lite"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5cc496875d9c8fe9a0ce19e3ee8e8808c60376831a439543f0aac71c9dd129fa"
+dependencies = [
+ "digest 0.10.3",
+ "hmac",
+ "sha-1 0.10.0",
+ "sha2",
 ]
 
 [[package]]

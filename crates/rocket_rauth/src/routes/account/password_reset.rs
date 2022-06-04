@@ -44,11 +44,7 @@ pub async fn password_reset(
     account.password_reset = None;
 
     // Commit to database
-    rauth
-        .database
-        .save_account(&account)
-        .await
-        .map(|_| EmptyResponse)
+    account.save(rauth).await.map(|_| EmptyResponse)
 }
 
 #[cfg(test)]
@@ -73,7 +69,7 @@ mod tests {
             ),
         });
 
-        rauth.database.save_account(&account).await.unwrap();
+        account.save(rauth).await.unwrap();
 
         let client = bootstrap_rocket_with_auth(
             rauth,

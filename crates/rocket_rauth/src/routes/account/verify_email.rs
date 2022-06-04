@@ -26,11 +26,7 @@ pub async fn verify_email(rauth: &State<RAuth>, code: String) -> Result<EmptyRes
     account.verification = EmailVerification::Verified;
 
     // Save to database
-    rauth
-        .database
-        .save_account(&account)
-        .await
-        .map(|_| EmptyResponse)
+    account.save(rauth).await.map(|_| EmptyResponse)
 }
 
 #[cfg(test)]
@@ -55,7 +51,7 @@ mod tests {
             ),
         };
 
-        rauth.database.save_account(&account).await.unwrap();
+        account.save(rauth).await.unwrap();
 
         let client = bootstrap_rocket_with_auth(
             rauth,

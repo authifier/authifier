@@ -1,5 +1,5 @@
 use crate::{
-    models::{Account, Invite, Session},
+    models::{Account, Invite, MFATicket, Session},
     Result, Success,
 };
 
@@ -45,6 +45,9 @@ pub trait AbstractDatabase: std::marker::Sync {
 
     /// Save invite
     async fn save_invite(&self, invite: &Invite) -> Success;
+
+    /// Save ticket
+    async fn save_ticket(&self, ticket: &MFATicket) -> Success;
 
     /// Delete session
     async fn delete_session(&self, id: &str) -> Success;

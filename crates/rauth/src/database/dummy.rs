@@ -1,5 +1,5 @@
 use crate::{
-    models::{Account, Invite, Session},
+    models::{Account, Invite, MFATicket, Session},
     Result, Success,
 };
 
@@ -71,6 +71,11 @@ impl AbstractDatabase for DummyDb {
     /// Save invite
     async fn save_invite(&self, invite: &Invite) -> Success {
         todo!("{invite:?}")
+    }
+
+    /// Save ticket
+    async fn save_ticket(&self, ticket: &MFATicket) -> Success {
+        todo!("{ticket:?}")
     }
 
     /// Delete session

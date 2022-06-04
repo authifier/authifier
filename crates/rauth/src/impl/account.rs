@@ -3,12 +3,17 @@ use iso8601_timestamp::Timestamp;
 
 use crate::{
     config::EmailVerificationConfig,
-    models::{Account, EmailVerification, PasswordReset, Session, Totp},
+    models::{Account, EmailVerification, PasswordReset, Session},
     util::{hash_password, normalise_email},
     Error, RAuth, Result, Success,
 };
 
 impl Account {
+    /// Save model
+    pub async fn save(&self, rauth: &RAuth) -> Success {
+        rauth.database.save_account(self).await
+    }
+
     /// Create a new account
     pub async fn new(
         rauth: &RAuth,
@@ -56,7 +61,7 @@ impl Account {
             if verify_email {
                 account.start_email_verification(rauth).await?;
             } else {
-                rauth.database.save_account(&account).await?;
+                account.save(rauth).await?;
             }
 
             Ok(account)
@@ -107,9 +112,7 @@ impl Account {
             self.verification = EmailVerification::Verified;
         }
 
-        rauth.database.save_account(self).await?;
-
-        Ok(())
+        self.save(rauth).await
     }
 
     /// Send account verification to new email
@@ -141,9 +144,7 @@ impl Account {
             self.email = new_email;
         }
 
-        rauth.database.save_account(self).await?;
-
-        Ok(())
+        self.save(rauth).await
     }
 
     /// Send password reset email
@@ -169,13 +170,11 @@ impl Account {
                         .timestamp_millis(),
                 ),
             });
-
-            rauth.database.save_account(self).await?;
         } else {
             return Err(Error::OperationFailed);
         }
 
-        Ok(())
+        self.save(rauth).await
     }
 
     /// Verify a user's password is correct
@@ -191,18 +190,5 @@ impl Account {
             // To prevent user enumeration, we should ignore
             // the error and pretend the password is wrong.
             .map_err(|_| Error::InvalidCredentials)?
-    }
-}
-
-impl Totp {
-    /// Whether TOTP is disabled
-    pub fn is_disabled(&self) -> bool {
-        matches!(self, Totp::Disabled)
-    }
-}
-
-impl Default for Totp {
-    fn default() -> Totp {
-        Totp::Disabled
     }
 }
