@@ -2095,6 +2095,7 @@ name = "rocket_rauth"
 version = "0.1.0"
 dependencies = [
  "async-std",
+ "base32",
  "chrono",
  "iso8601-timestamp",
  "mongodb",

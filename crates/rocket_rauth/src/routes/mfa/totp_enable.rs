@@ -22,17 +22,19 @@ pub async fn totp_enable(
 
 #[cfg(test)]
 #[cfg(feature = "test")]
-#[cfg(feature = "TODO")]
 mod tests {
+    use rauth::models::totp::Totp;
+
     use crate::test::*;
 
     #[async_std::test]
     async fn success() {
         use rocket::http::Header;
 
-        let (_, auth, session, _) = for_test_authenticated("totp_enable::success").await;
+        let (rauth, session, account) = for_test_authenticated("totp_enable::success").await;
+        let ticket = MFATicket::new(&rauth, account.id, true).await.unwrap();
         let client = bootstrap_rocket_with_auth(
-            auth,
+            rauth,
             routes![
                 crate::routes::mfa::totp_generate_secret::totp_generate_secret,
                 crate::routes::mfa::totp_enable::totp_enable
@@ -43,6 +45,7 @@ mod tests {
         let res = client
             .post("/totp")
             .header(Header::new("X-Session-Token", session.token.clone()))
+            .header(Header::new("X-MFA-Ticket", ticket.token))
             .dispatch()
             .await;
 
@@ -57,15 +60,13 @@ mod tests {
         let Response { secret } =
             serde_json::from_str::<Response>(&res.into_string().await.unwrap()).unwrap();
 
-        let secret_u8 = base32::decode(base32::Alphabet::RFC4648 { padding: false }, &secret)
-            .expect("valid `secret`");
+        let code = Totp::Enabled { secret }.generate_code().unwrap();
 
-        let code = Auth::mfa_generate_totp_code(&secret_u8);
         let res = client
             .put("/totp")
             .header(Header::new("X-Session-Token", session.token))
             .header(ContentType::JSON)
-            .body(json!({ "code": code, "password": "password_insecure" }).to_string())
+            .body(json!({ "totp_code": code }).to_string())
             .dispatch()
             .await;
 

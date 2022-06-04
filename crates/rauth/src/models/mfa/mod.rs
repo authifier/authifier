@@ -52,6 +52,7 @@ pub enum MFAMethod {
 /// MFA response
 #[derive(Debug, Serialize, Deserialize)]
 #[cfg_attr(feature = "schemas", derive(JsonSchema))]
+#[serde(untagged)]
 pub enum MFAResponse {
     Password { password: String },
     Recovery { recovery_code: String },

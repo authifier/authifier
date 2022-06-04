@@ -24,7 +24,8 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, _) = for_test_authenticated("fetch_recovery::success").await;
+        let (rauth, session, account) = for_test_authenticated("fetch_recovery::success").await;
+        let ticket = MFATicket::new(&rauth, account.id, true).await.unwrap();
         let client = bootstrap_rocket_with_auth(
             rauth,
             routes![crate::routes::mfa::fetch_recovery::fetch_recovery],
@@ -34,17 +35,16 @@ mod tests {
         let res = client
             .post("/recovery")
             .header(Header::new("X-Session-Token", session.token))
+            .header(Header::new("X-MFA-Ticket", ticket.token))
             .header(ContentType::JSON)
-            .body(
-                json!({
-                    "password": "password_insecure",
-                })
-                .to_string(),
-            )
             .dispatch()
             .await;
 
         assert_eq!(res.status(), Status::Ok);
-        assert!(serde_json::from_str::<Vec<String>>(&res.into_string().await.unwrap()).is_ok());
+        assert!(
+            serde_json::from_str::<Vec<String>>(&res.into_string().await.unwrap())
+                .unwrap()
+                .is_empty()
+        );
     }
 }

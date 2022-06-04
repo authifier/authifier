@@ -125,10 +125,10 @@ impl<'r> FromRequest<'r> for MFATicket {
                     if let Some(ticket) = ticket {
                         Outcome::Success(ticket)
                     } else {
-                        Outcome::Failure((Status::Unauthorized, Error::InvalidSession))
+                        Outcome::Failure((Status::Unauthorized, Error::InvalidToken))
                     }
                 } else {
-                    Outcome::Failure((Status::Unauthorized, Error::InvalidSession))
+                    Outcome::Failure((Status::Unauthorized, Error::InternalError))
                 }
             }
             (_, _) => Outcome::Failure((Status::Unauthorized, Error::MissingHeaders)),

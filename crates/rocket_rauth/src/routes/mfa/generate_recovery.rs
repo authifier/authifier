@@ -24,7 +24,6 @@ pub async fn generate_recovery(
 
 #[cfg(test)]
 #[cfg(feature = "test")]
-#[cfg(feature = "TODO")]
 mod tests {
     use crate::test::*;
 
@@ -32,9 +31,13 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (_, auth, session, _) = for_test_authenticated("generate_recovery::success").await;
+        let (rauth, session, account) = for_test_authenticated("generate_recovery::success").await;
+        let ticket1 = MFATicket::new(&rauth, account.id.to_string(), true)
+            .await
+            .unwrap();
+        let ticket2 = MFATicket::new(&rauth, account.id, true).await.unwrap();
         let client = bootstrap_rocket_with_auth(
-            auth,
+            rauth,
             routes![
                 crate::routes::mfa::generate_recovery::generate_recovery,
                 crate::routes::mfa::fetch_recovery::fetch_recovery
@@ -45,13 +48,8 @@ mod tests {
         let res = client
             .patch("/recovery")
             .header(Header::new("X-Session-Token", session.token.clone()))
+            .header(Header::new("X-MFA-Ticket", ticket1.token))
             .header(ContentType::JSON)
-            .body(
-                json!({
-                    "password": "password_insecure",
-                })
-                .to_string(),
-            )
             .dispatch()
             .await;
 
@@ -61,13 +59,8 @@ mod tests {
         let res = client
             .post("/recovery")
             .header(Header::new("X-Session-Token", session.token))
+            .header(Header::new("X-MFA-Ticket", ticket2.token))
             .header(ContentType::JSON)
-            .body(
-                json!({
-                    "password": "password_insecure",
-                })
-                .to_string(),
-            )
             .dispatch()
             .await;
 

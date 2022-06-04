@@ -1,6 +1,7 @@
 pub use mongodb::Client;
 pub use rauth::{
-    config::*, database::MongoDb, models::*, Config, Database, Error, Migration, RAuth, Result,
+    config::*, database::MongoDb, models::totp::*, models::*, Config, Database, Error, Migration,
+    RAuth, Result,
 };
 pub use rocket::http::{ContentType, Status};
 

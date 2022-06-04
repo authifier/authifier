@@ -203,7 +203,7 @@ impl Account {
                 if allowed_methods.contains(&MFAMethod::Password) {
                     self.verify_password(&password)
                 } else {
-                    Err(Error::OperationFailed)
+                    Err(Error::DisallowedMFAMethod)
                 }
             }
             MFAResponse::Totp { totp_code } => {
@@ -218,7 +218,7 @@ impl Account {
                         unreachable!()
                     }
                 } else {
-                    Err(Error::OperationFailed)
+                    Err(Error::DisallowedMFAMethod)
                 }
             }
             MFAResponse::Recovery { recovery_code } => {
@@ -235,7 +235,7 @@ impl Account {
                         Err(Error::InvalidToken)
                     }
                 } else {
-                    Err(Error::OperationFailed)
+                    Err(Error::DisallowedMFAMethod)
                 }
             }
         }

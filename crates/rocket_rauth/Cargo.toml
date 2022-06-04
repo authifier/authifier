@@ -6,10 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-test = [ "reqwest", "regex", "serde_json", "chrono", "iso8601-timestamp", "example" ]
+test = [ "reqwest", "regex", "serde_json", "chrono", "iso8601-timestamp", "base32", "example" ]
 example = [ "rauth/async-std-runtime", "rauth/database-mongodb", "async-std", "mongodb" ]
 
-default = [ ]
+default = [ "test" ]
 
 [dependencies]
 # rAuth
@@ -28,6 +28,7 @@ okapi = { git = "https://github.com/insertish/okapi", rev = "a1048d0c8cd771e424e
 schemars = { version = "0.8.8" }
 
 # Testing
+base32 = { version = "0.4.0", optional = true }
 regex = { version = "1.5.6", optional = true }
 chrono = { version = "0.4.19", optional = true }
 serde_json = { version = "1.0.81", optional = true }

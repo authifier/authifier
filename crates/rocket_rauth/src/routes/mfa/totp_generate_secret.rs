@@ -5,7 +5,7 @@ use rauth::{RAuth, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 
-#[derive(Serialize, JsonSchema)]
+#[derive(Serialize, Deserialize, JsonSchema)]
 pub struct ResponseTotpSecret {
     secret: String,
 }
@@ -29,7 +29,6 @@ pub async fn totp_generate_secret(
 
 #[cfg(test)]
 #[cfg(feature = "test")]
-#[cfg(feature = "TODO")]
 mod tests {
     use crate::test::*;
 
@@ -37,9 +36,11 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (_, auth, session, _) = for_test_authenticated("totp_generate_secret::success").await;
+        let (rauth, session, account) =
+            for_test_authenticated("totp_generate_secret::success").await;
+        let ticket = MFATicket::new(&rauth, account.id, true).await.unwrap();
         let client = bootstrap_rocket_with_auth(
-            auth,
+            rauth,
             routes![crate::routes::mfa::totp_generate_secret::totp_generate_secret],
         )
         .await;
@@ -47,19 +48,16 @@ mod tests {
         let res = client
             .post("/totp")
             .header(Header::new("X-Session-Token", session.token))
+            .header(Header::new("X-MFA-Ticket", ticket.token))
             .dispatch()
             .await;
 
         assert_eq!(res.status(), Status::Ok);
-
-        #[allow(dead_code)]
-        #[derive(Deserialize)]
-        pub struct Response {
-            secret: String,
-        }
-
         assert!(
-            serde_json::from_str::<ResponseTotpSecret>(&res.into_string().await.unwrap()).is_ok()
+            serde_json::from_str::<crate::routes::mfa::totp_generate_secret::ResponseTotpSecret>(
+                &res.into_string().await.unwrap()
+            )
+            .is_ok()
         );
     }
 }
