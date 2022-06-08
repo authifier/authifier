@@ -26,6 +26,7 @@ impl AbstractDatabase for MongoDb {
     /// Run a database migration
     async fn run_migration(&self, migration: Migration) -> Success {
         match migration {
+            #[cfg(debug_assertions)]
             Migration::WipeAll => {
                 // Drop the entire database
                 self.drop(None).await.unwrap();
