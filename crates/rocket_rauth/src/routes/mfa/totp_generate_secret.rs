@@ -5,11 +5,15 @@ use rauth::{RAuth, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 
+/// # Totp Secret
 #[derive(Serialize, Deserialize, JsonSchema)]
 pub struct ResponseTotpSecret {
     secret: String,
 }
 
+/// # Generate TOTP Secret
+///
+/// Generate a new secret for TOTP.
 #[openapi(tag = "MFA")]
 #[post("/totp")]
 pub async fn totp_generate_secret(

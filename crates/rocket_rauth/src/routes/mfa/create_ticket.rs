@@ -5,6 +5,9 @@ use rauth::{Error, RAuth, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 
+/// # Create MFA ticket
+///
+/// Create a new MFA ticket or validate an existing one.
 #[openapi(tag = "MFA")]
 #[put("/ticket", data = "<data>")]
 pub async fn create_ticket(

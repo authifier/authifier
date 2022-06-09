@@ -5,6 +5,9 @@ use rauth::{RAuth, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 
+/// # Generate Recovery Codes
+///
+/// Re-generate recovery codes for an account.
 #[openapi(tag = "MFA")]
 #[patch("/recovery")]
 pub async fn generate_recovery(

@@ -30,6 +30,9 @@ impl From<MultiFactorAuthentication> for MultiFactorStatus {
     }
 }
 
+/// # MFA Status
+///
+/// Fetch MFA status of an account.
 #[openapi(tag = "MFA")]
 #[get("/")]
 pub async fn fetch_status(account: Account) -> Result<Json<MultiFactorStatus>> {

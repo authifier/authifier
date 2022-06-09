@@ -6,6 +6,9 @@ use rauth::{RAuth, Result};
 use rocket::State;
 use rocket_empty::EmptyResponse;
 
+/// # Disable TOTP 2FA
+///
+/// Disable TOTP 2FA for an account.
 #[openapi(tag = "MFA")]
 #[delete("/totp")]
 pub async fn totp_disable(

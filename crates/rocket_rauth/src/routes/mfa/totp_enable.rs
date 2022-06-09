@@ -6,6 +6,9 @@ use rocket::serde::json::Json;
 use rocket::State;
 use rocket_empty::EmptyResponse;
 
+/// # Enable TOTP 2FA
+///
+/// Generate a new secret for TOTP.
 #[openapi(tag = "MFA")]
 #[put("/totp", data = "<data>")]
 pub async fn totp_enable(
