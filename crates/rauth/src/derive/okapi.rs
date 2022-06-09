@@ -31,7 +31,7 @@ impl OpenApiResponderInner for Error {
         }
 
         definitions.insert(
-            "Error".to_string(),
+            "RAuth Error".to_string(),
             schemars::schema::Schema::Object(schema.schema),
         );
 
@@ -87,14 +87,14 @@ macro_rules! from_request {
 
 from_request!(
     Session,
-    "Api Key",
+    "Session Token",
     "x-session-token",
     "Used to authenticate as a user."
 );
 
 from_request!(
     Account,
-    "Api Key",
+    "Session Token",
     "x-session-token",
     "Used to authenticate as a user."
 );
