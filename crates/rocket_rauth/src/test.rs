@@ -39,6 +39,12 @@ pub async fn test_smtp_config() -> Config {
                     url: "".into(),
                     html: None,
                 },
+                deletion: Template {
+                    title: "deletion".into(),
+                    text: "[[{{url}}]]".into(),
+                    url: "".into(),
+                    html: None,
+                },
                 welcome: Some(Template {
                     title: "welcome".into(),
                     text: "[[dummy]]".into(),

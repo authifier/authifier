@@ -4,7 +4,8 @@ use iso8601_timestamp::Timestamp;
 use crate::{
     config::EmailVerificationConfig,
     models::{
-        totp::Totp, Account, EmailVerification, MFAMethod, MFAResponse, PasswordReset, Session,
+        totp::Totp, Account, DeletionInfo, EmailVerification, MFAMethod, MFAResponse,
+        PasswordReset, Session,
     },
     util::{hash_password, normalise_email},
     Error, RAuth, Result, Success,
@@ -55,6 +56,7 @@ impl Account {
                 disabled: false,
                 verification: EmailVerification::Verified,
                 password_reset: None,
+                deletion: None,
 
                 mfa: Default::default(),
             };
@@ -179,6 +181,42 @@ impl Account {
         self.save(rauth).await
     }
 
+    /// Begin account deletion process by sending confirmation email
+    ///
+    /// If email verification is not on, the account will be marked for deletion instantly
+    pub async fn start_account_deletion(&mut self, rauth: &RAuth) -> Success {
+        if let EmailVerificationConfig::Enabled {
+            templates,
+            expiry,
+            smtp,
+        } = &rauth.config.email_verification
+        {
+            let token = nanoid!(32);
+            let url = format!("{}{}", templates.deletion.url, token);
+
+            smtp.send_email(
+                self.email.clone(),
+                &templates.deletion,
+                json!({ "url": url }),
+            )
+            .ok();
+
+            self.deletion = Some(DeletionInfo::WaitingForVerification {
+                token,
+                expiry: Timestamp::from_unix_timestamp_ms(
+                    chrono::Utc::now()
+                        .checked_add_signed(Duration::seconds(expiry.expire_password_reset))
+                        .expect("failed to checked_add_signed")
+                        .timestamp_millis(),
+                ),
+            });
+
+            self.save(rauth).await
+        } else {
+            self.schedule_deletion(rauth).await
+        }
+    }
+
     /// Verify a user's password is correct
     pub fn verify_password(&self, plaintext_password: &str) -> Success {
         argon2::verify_encoded(&self.password, plaintext_password.as_bytes())
@@ -194,7 +232,7 @@ impl Account {
             .map_err(|_| Error::InvalidCredentials)?
     }
 
-    // Validate an MFA response
+    /// Validate an MFA response
     pub async fn consume_mfa_response(&mut self, rauth: &RAuth, response: MFAResponse) -> Success {
         let allowed_methods = self.mfa.get_methods();
 
@@ -239,5 +277,26 @@ impl Account {
                 }
             }
         }
+    }
+
+    /// Disable an account
+    pub async fn disable(&mut self, rauth: &RAuth) -> Success {
+        self.disabled = true;
+        rauth.database.delete_all_sessions(&self.id, None).await?;
+        self.save(rauth).await
+    }
+
+    /// Schedule an account for deletion
+    pub async fn schedule_deletion(&mut self, rauth: &RAuth) -> Success {
+        self.deletion = Some(DeletionInfo::Scheduled {
+            after: Timestamp::from_unix_timestamp_ms(
+                chrono::Utc::now()
+                    .checked_add_signed(Duration::days(3))
+                    .expect("failed to checked_add_signed")
+                    .timestamp_millis(),
+            ),
+        });
+
+        self.disable(rauth).await
     }
 }

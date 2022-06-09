@@ -25,6 +25,9 @@ pub trait AbstractDatabase: std::marker::Sync {
     /// Find account with active password reset
     async fn find_account_with_password_reset(&self, token: &str) -> Result<Account>;
 
+    /// Find account with active deletion token
+    async fn find_account_with_deletion_token(&self, token: &str) -> Result<Account>;
+
     /// Find invite by id
     async fn find_invite(&self, id: &str) -> Result<Invite>;
 

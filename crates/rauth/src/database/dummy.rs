@@ -38,6 +38,11 @@ impl AbstractDatabase for DummyDb {
         todo!("{token}")
     }
 
+    /// Find account with active deletion token
+    async fn find_account_with_deletion_token(&self, token: &str) -> Result<Account> {
+        todo!("{token}")
+    }
+
     /// Find invite by id
     async fn find_invite(&self, id: &str) -> Result<Invite> {
         todo!("{id}")

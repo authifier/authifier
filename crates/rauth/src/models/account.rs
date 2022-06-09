@@ -32,6 +32,16 @@ pub struct PasswordReset {
     pub expiry: Timestamp,
 }
 
+/// Account deletion information
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(tag = "status")]
+pub enum DeletionInfo {
+    /// The user must confirm deletion by email
+    WaitingForVerification { token: String, expiry: Timestamp },
+    /// The account is scheduled for deletion
+    Scheduled { after: Timestamp },
+}
+
 /// Account model
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Account {
@@ -60,6 +70,10 @@ pub struct Account {
     /// Password reset information
     #[serde(skip_serializing_if = "Option::is_none")]
     pub password_reset: Option<PasswordReset>,
+
+    /// Account deletion information
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub deletion: Option<DeletionInfo>,
 
     /// Multi-factor authentication information
     pub mfa: MultiFactorAuthentication,

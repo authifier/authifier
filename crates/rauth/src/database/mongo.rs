@@ -143,6 +143,25 @@ impl AbstractDatabase for MongoDb {
                 .await
                 .unwrap();
             }
+            Migration::M2022_06_09AddIndexForDeletion => {
+                self.run_command(
+                    doc! {
+                        "createIndexes": "accounts",
+                        "indexes": [
+                            {
+                                "key": {
+                                    "deletion.token": 1
+                                },
+                                "name": "account_deletion",
+                                "unique": true
+                            }
+                        ]
+                    },
+                    None,
+                )
+                .await
+                .unwrap();
+            }
         }
 
         Ok(())
@@ -218,6 +237,26 @@ impl AbstractDatabase for MongoDb {
                 doc! {
                     "password_reset.token": token,
                     "password_reset.expiry": {
+                        "$gte": DateTime::now().to_rfc3339_string()
+                    }
+                },
+                None,
+            )
+            .await
+            .map_err(|_| Error::DatabaseError {
+                operation: "find_one",
+                with: "account",
+            })?
+            .ok_or(Error::InvalidToken)
+    }
+
+    /// Find account with active deletion token
+    async fn find_account_with_deletion_token(&self, token: &str) -> Result<Account> {
+        self.collection("accounts")
+            .find_one(
+                doc! {
+                    "deletion.token": token,
+                    "deletion.expiry": {
                         "$gte": DateTime::now().to_rfc3339_string()
                     }
                 },

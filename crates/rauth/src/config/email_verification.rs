@@ -56,6 +56,8 @@ pub struct Templates {
     pub verify: Template,
     /// Template for password reset
     pub reset: Template,
+    /// Template for account deletion
+    pub deletion: Template,
     /// Template for welcome email
     ///
     /// Unlike the other two, this one isn't required for email verification to function.
@@ -69,6 +71,8 @@ pub struct EmailExpiryConfig {
     pub expire_verification: i64,
     /// How long password reset codes should last for (in seconds)
     pub expire_password_reset: i64,
+    /// How long account deletion codes should last for (in seconds)
+    pub expire_account_deletion: i64,
 }
 
 impl Default for EmailExpiryConfig {
@@ -76,6 +80,7 @@ impl Default for EmailExpiryConfig {
         EmailExpiryConfig {
             expire_verification: 3600 * 24,
             expire_password_reset: 3600,
+            expire_account_deletion: 3600,
         }
     }
 }
