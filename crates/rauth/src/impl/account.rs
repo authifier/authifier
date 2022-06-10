@@ -291,7 +291,7 @@ impl Account {
         self.deletion = Some(DeletionInfo::Scheduled {
             after: Timestamp::from_unix_timestamp_ms(
                 chrono::Utc::now()
-                    .checked_add_signed(Duration::days(3))
+                    .checked_add_signed(Duration::weeks(1))
                     .expect("failed to checked_add_signed")
                     .timestamp_millis(),
             ),
