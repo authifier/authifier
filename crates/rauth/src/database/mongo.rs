@@ -76,15 +76,13 @@ impl AbstractDatabase for MongoDb {
                                 "key": {
                                     "verification.token": 1
                                 },
-                                "name": "email_verification",
-                                "unique": true
+                                "name": "email_verification"
                             },
                             {
                                 "key": {
                                     "password_reset.token": 1
                                 },
-                                "name": "password_reset",
-                                "unique": true
+                                "name": "password_reset"
                             }
                         ]
                     },
@@ -152,8 +150,7 @@ impl AbstractDatabase for MongoDb {
                                 "key": {
                                     "deletion.token": 1
                                 },
-                                "name": "account_deletion",
-                                "unique": true
+                                "name": "account_deletion"
                             }
                         ]
                     },
