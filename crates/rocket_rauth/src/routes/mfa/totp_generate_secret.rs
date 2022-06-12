@@ -34,6 +34,7 @@ pub async fn totp_generate_secret(
 #[cfg(test)]
 #[cfg(feature = "test")]
 mod tests {
+    use crate::routes::mfa::totp_generate_secret::ResponseTotpSecret;
     use crate::test::*;
 
     #[async_std::test]
@@ -42,9 +43,11 @@ mod tests {
 
         let (rauth, session, account) =
             for_test_authenticated("totp_generate_secret::success").await;
-        let ticket = MFATicket::new(&rauth, account.id, true).await.unwrap();
+        let ticket = MFATicket::new(&rauth, account.id.to_string(), true)
+            .await
+            .unwrap();
         let client = bootstrap_rocket_with_auth(
-            rauth,
+            rauth.clone(),
             routes![crate::routes::mfa::totp_generate_secret::totp_generate_secret],
         )
         .await;
@@ -57,11 +60,11 @@ mod tests {
             .await;
 
         assert_eq!(res.status(), Status::Ok);
-        assert!(
-            serde_json::from_str::<crate::routes::mfa::totp_generate_secret::ResponseTotpSecret>(
-                &res.into_string().await.unwrap()
-            )
-            .is_ok()
-        );
+
+        let ResponseTotpSecret { secret } =
+            serde_json::from_str::<ResponseTotpSecret>(&res.into_string().await.unwrap()).unwrap();
+
+        let account = rauth.database.find_account(&account.id).await.unwrap();
+        assert_eq!(account.mfa.totp_token, Totp::Pending { secret });
     }
 }

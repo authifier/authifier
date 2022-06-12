@@ -27,7 +27,7 @@ pub struct MultiFactorAuthentication {
 
     /// TOTP MFA token, enabled if present
     /// (2-Factor)
-    #[serde(skip_serializing_if = "Totp::is_disabled", default)]
+    #[serde(skip_serializing_if = "Totp::is_empty", default)]
     pub totp_token: Totp,
 
     /// Security Key MFA token, enabled if present

@@ -1,6 +1,11 @@
 use crate::{models::totp::Totp, Error, Result};
 
 impl Totp {
+    /// Whether TOTP information is empty
+    pub fn is_empty(&self) -> bool {
+        matches!(self, Totp::Disabled)
+    }
+
     /// Whether TOTP is disabled
     pub fn is_disabled(&self) -> bool {
         !matches!(self, Totp::Enabled { .. })

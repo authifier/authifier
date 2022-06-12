@@ -1,5 +1,5 @@
 /// Time-based one-time password configuration
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "status")]
 pub enum Totp {
     /// Disabled
