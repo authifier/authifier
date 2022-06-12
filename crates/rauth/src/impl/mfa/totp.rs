@@ -3,7 +3,7 @@ use crate::{models::totp::Totp, Error, Result};
 impl Totp {
     /// Whether TOTP is disabled
     pub fn is_disabled(&self) -> bool {
-        matches!(self, Totp::Disabled)
+        !matches!(self, Totp::Enabled { .. })
     }
 
     // Generate a TOTP code from secret
