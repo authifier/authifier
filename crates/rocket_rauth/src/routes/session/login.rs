@@ -1,6 +1,6 @@
 //! Login to an account
 //! POST /session/login
-use rauth::models::{EmailVerification, MFAMethod, MFAResponse, Session};
+use rauth::models::{EmailVerification, MFAMethod, MFAResponse, MFATicket, Session};
 use rauth::util::normalise_email;
 use rauth::{Error, RAuth, Result};
 use rocket::serde::json::Json;
@@ -34,7 +34,7 @@ pub enum DataLogin {
     },
 }
 
-#[derive(Serialize, JsonSchema)]
+#[derive(Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "result")]
 pub enum ResponseLogin {
     Success(Session),
@@ -83,6 +83,18 @@ pub async fn login(rauth: &State<RAuth>, data: Json<DataLogin>) -> Result<Json<R
 
                 // Verify the password is correct.
                 account.verify_password(&password)?;
+
+                // Check whether an MFA step is required.
+                if account.mfa.is_active() {
+                    // Create a new ticket
+                    let ticket = MFATicket::new(rauth, account.id, false).await?;
+
+                    // Return applicable methods
+                    return Ok(Json(ResponseLogin::MFA {
+                        ticket: ticket.token,
+                        allowed_methods: account.mfa.get_methods(),
+                    }));
+                }
 
                 (account, friendly_name)
             } else {
