@@ -40,6 +40,8 @@ pub enum DeletionInfo {
     WaitingForVerification { token: String, expiry: Timestamp },
     /// The account is scheduled for deletion
     Scheduled { after: Timestamp },
+    /// This account was deleted
+    Deleted
 }
 
 /// Account model
