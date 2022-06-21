@@ -91,36 +91,46 @@ impl Account {
 
     /// Send account verification email
     pub async fn start_email_verification(&mut self, rauth: &RAuth) -> Success {
-        if let EmailVerificationConfig::Enabled {
-            templates,
-            expiry,
-            smtp,
-        } = &rauth.config.email_verification
-        {
-            let token = nanoid!(32);
-            let url = format!("{}{}", templates.verify.url, token);
+        if let EmailVerification::Pending { .. } = self.verification {
+            if let EmailVerificationConfig::Enabled {
+                templates,
+                expiry,
+                smtp,
+            } = &rauth.config.email_verification
+            {
+                let token = nanoid!(32);
+                let url = format!("{}{}", templates.verify.url, token);
 
-            smtp.send_email(self.email.clone(), &templates.verify, json!({ "url": url }))
-                .ok();
+                smtp.send_email(self.email.clone(), &templates.verify, json!({ "url": url }))
+                    .ok();
 
-            self.verification = EmailVerification::Pending {
-                token,
-                expiry: Timestamp::from_unix_timestamp_ms(
-                    chrono::Utc::now()
-                        .checked_add_signed(Duration::seconds(expiry.expire_verification))
-                        .expect("failed to checked_add_signed")
-                        .timestamp_millis(),
-                ),
-            };
+                self.verification = EmailVerification::Pending {
+                    token,
+                    expiry: Timestamp::from_unix_timestamp_ms(
+                        chrono::Utc::now()
+                            .checked_add_signed(Duration::seconds(expiry.expire_verification))
+                            .expect("failed to checked_add_signed")
+                            .timestamp_millis(),
+                    ),
+                };
+            } else {
+                self.verification = EmailVerification::Verified;
+            }
+
+            self.save(rauth).await
         } else {
-            self.verification = EmailVerification::Verified;
+            Ok(())
         }
-
-        self.save(rauth).await
     }
 
     /// Send account verification to new email
     pub async fn start_email_move(&mut self, rauth: &RAuth, new_email: String) -> Success {
+        // This method should and will never be called on an unverified account,
+        // but just validate this just in case.
+        if let EmailVerification::Pending { .. } = self.verification {
+            return Err(Error::UnverifiedAccount);
+        }
+
         if let EmailVerificationConfig::Enabled {
             templates,
             expiry,
