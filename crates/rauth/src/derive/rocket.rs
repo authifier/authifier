@@ -32,6 +32,7 @@ impl<'r> Responder<'r, 'static> for Error {
             Error::InvalidInvite => Status::BadRequest,
             Error::CompromisedPassword => Status::BadRequest,
             Error::DisabledAccount => Status::Unauthorized,
+            Error::ShortPassword => Status::BadRequest,
             Error::Blacklisted => {
                 // Fail blacklisted email addresses.
                 const RESP: &str = "{\"type\":\"DisallowedContactSupport\", \"email\":\"support@revolt.chat\", \"note\":\"If you see this messages right here, you're probably doing something you shouldn't be.\"}";

@@ -34,6 +34,12 @@ lazy_static! {
 impl PasswordScanning {
     /// Check whether a password can be used
     pub async fn assert_safe(&self, password: &str) -> Result<()> {
+        // Make sure the password is long enough.
+        if password.len() < 8 {
+            return Err(Error::ShortPassword);
+        }
+
+        // Check against password lists.
         match self {
             PasswordScanning::None => Ok(()),
             PasswordScanning::Custom { passwords } => {

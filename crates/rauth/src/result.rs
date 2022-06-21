@@ -27,6 +27,7 @@ pub enum Error {
 
     CompromisedPassword,
     DisabledAccount,
+    ShortPassword,
     Blacklisted,
 
     TotpAlreadyEnabled,
