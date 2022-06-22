@@ -91,36 +91,32 @@ impl Account {
 
     /// Send account verification email
     pub async fn start_email_verification(&mut self, rauth: &RAuth) -> Success {
-        if let EmailVerification::Pending { .. } = self.verification {
-            if let EmailVerificationConfig::Enabled {
-                templates,
-                expiry,
-                smtp,
-            } = &rauth.config.email_verification
-            {
-                let token = nanoid!(32);
-                let url = format!("{}{}", templates.verify.url, token);
+        if let EmailVerificationConfig::Enabled {
+            templates,
+            expiry,
+            smtp,
+        } = &rauth.config.email_verification
+        {
+            let token = nanoid!(32);
+            let url = format!("{}{}", templates.verify.url, token);
 
-                smtp.send_email(self.email.clone(), &templates.verify, json!({ "url": url }))
-                    .ok();
+            smtp.send_email(self.email.clone(), &templates.verify, json!({ "url": url }))
+                .ok();
 
-                self.verification = EmailVerification::Pending {
-                    token,
-                    expiry: Timestamp::from_unix_timestamp_ms(
-                        chrono::Utc::now()
-                            .checked_add_signed(Duration::seconds(expiry.expire_verification))
-                            .expect("failed to checked_add_signed")
-                            .timestamp_millis(),
-                    ),
-                };
-            } else {
-                self.verification = EmailVerification::Verified;
-            }
-
-            self.save(rauth).await
+            self.verification = EmailVerification::Pending {
+                token,
+                expiry: Timestamp::from_unix_timestamp_ms(
+                    chrono::Utc::now()
+                        .checked_add_signed(Duration::seconds(expiry.expire_verification))
+                        .expect("failed to checked_add_signed")
+                        .timestamp_millis(),
+                ),
+            };
         } else {
-            Ok(())
+            self.verification = EmailVerification::Verified;
         }
+
+        self.save(rauth).await
     }
 
     /// Send account verification to new email
