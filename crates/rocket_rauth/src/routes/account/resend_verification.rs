@@ -42,7 +42,19 @@ pub async fn resend_verification(
         .find_account_by_normalised_email(&email_normalised)
         .await?
     {
-        account.start_email_verification(rauth).await?;
+        match account.verification {
+            EmailVerification::Verified => {
+                // Send password reset if already verified
+                account.start_password_reset(rauth).await?;
+            },
+            EmailVerification::Pending { .. } => {
+                // Resend if not verified yet
+                account.start_email_verification(rauth).await?;
+            },
+            // Ignore if pending for another email,
+            // this should be re-initiated from settings.
+            EmailVerification::Pending { .. } => _
+        }
     }
 
     // Never fail this route,
