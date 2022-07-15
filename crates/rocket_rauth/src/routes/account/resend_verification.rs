@@ -1,6 +1,6 @@
 //! Resend account verification email
 //! POST /account/reverify
-use rauth::{util::normalise_email, RAuth, Result};
+use rauth::{models::EmailVerification, util::normalise_email, RAuth, Result};
 use rocket::{serde::json::Json, State};
 use rocket_empty::EmptyResponse;
 
@@ -46,14 +46,14 @@ pub async fn resend_verification(
             EmailVerification::Verified => {
                 // Send password reset if already verified
                 account.start_password_reset(rauth).await?;
-            },
+            }
             EmailVerification::Pending { .. } => {
                 // Resend if not verified yet
                 account.start_email_verification(rauth).await?;
-            },
+            }
             // Ignore if pending for another email,
             // this should be re-initiated from settings.
-            EmailVerification::Pending { .. } => _
+            EmailVerification::Moving { .. } => {}
         }
     }
 
