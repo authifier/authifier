@@ -30,7 +30,7 @@ impl Default for EmailBlockList {
 #[cfg(feature = "revolt_source_list")]
 lazy_static! {
     /// Default email block list
-    static ref REVOLT_SOURCE_LIST: HashSet<String> = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/revolt_source_list.txt"))
+    static ref REVOLT_SOURCE_LIST: HashSet<String> = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/revolt_source_list.txt"))
         .split('\n')
         .map(|x| x.into())
         .collect();

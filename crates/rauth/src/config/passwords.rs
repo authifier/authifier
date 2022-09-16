@@ -25,7 +25,7 @@ impl Default for PasswordScanning {
 #[cfg(feature = "pwned100k")]
 lazy_static! {
     /// Top 100k compromised passwords
-    static ref TOP_100K_COMPROMISED: HashSet<String> = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/pwned100k.txt"))
+    static ref TOP_100K_COMPROMISED: HashSet<String> = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/pwned100k.txt"))
         .split('\n')
         .map(|x| x.into())
         .collect();
