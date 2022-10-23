@@ -42,6 +42,7 @@ impl<'r> Responder<'r, 'static> for Error {
                     .sized_body(RESP.len(), std::io::Cursor::new(RESP))
                     .ok();
             }
+            Error::LockedOut => Status::Forbidden,
             Error::TotpAlreadyEnabled => Status::BadRequest,
             Error::DisallowedMFAMethod => Status::BadRequest,
         };

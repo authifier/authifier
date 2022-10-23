@@ -57,6 +57,7 @@ impl Account {
                 verification: EmailVerification::Verified,
                 password_reset: None,
                 deletion: None,
+                lockout: None,
 
                 mfa: Default::default(),
             };

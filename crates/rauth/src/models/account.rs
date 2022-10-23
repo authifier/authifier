@@ -39,6 +39,15 @@ pub enum DeletionInfo {
     Deleted,
 }
 
+/// Lockout information
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Lockout {
+    /// Attempt counter
+    pub attempts: i32,
+    /// Time at which this lockout expires
+    pub expiry: Option<Timestamp>,
+}
+
 /// Account model
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Account {
@@ -69,6 +78,9 @@ pub struct Account {
 
     /// Account deletion information
     pub deletion: Option<DeletionInfo>,
+
+    /// Account lockout
+    pub lockout: Option<Lockout>,
 
     /// Multi-factor authentication information
     pub mfa: MultiFactorAuthentication,

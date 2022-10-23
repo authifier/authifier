@@ -1,6 +1,10 @@
 //! Login to an account
 //! POST /session/login
-use rauth::models::{EmailVerification, MFAMethod, MFAResponse, MFATicket, Session};
+use std::ops::Add;
+use std::time::Duration;
+
+use iso8601_timestamp::Timestamp;
+use rauth::models::{EmailVerification, Lockout, MFAMethod, MFAResponse, MFATicket, Session};
 use rauth::util::normalise_email;
 use rauth::{Error, RAuth, Result};
 use rocket::serde::json::Json;
@@ -64,7 +68,7 @@ pub async fn login(rauth: &State<RAuth>, data: Json<DataLogin>) -> Result<Json<R
             let email_normalised = normalise_email(email);
 
             // Lookup the email in database
-            if let Some(account) = rauth
+            if let Some(mut account) = rauth
                 .database
                 .find_account_by_normalised_email(&email_normalised)
                 .await?
@@ -81,10 +85,57 @@ pub async fn login(rauth: &State<RAuth>, data: Json<DataLogin>) -> Result<Json<R
                     .assert_safe(&password)
                     .await?;
 
-                // Verify the password is correct.
-                account.verify_password(&password)?;
+                // Check for account lockout
+                if let Some(lockout) = &account.lockout {
+                    if let Some(expiry) = lockout.expiry {
+                        if expiry.to_unix_timestamp_ms()
+                            > Timestamp::now_utc().to_unix_timestamp_ms()
+                        {
+                            return Err(Error::LockedOut);
+                        }
+                    }
+                }
 
-                // Check whether an MFA step is required.
+                // Verify the password is correct.
+                if let Err(err) = account.verify_password(&password) {
+                    // Lock out account if attempts are too high
+                    if let Some(lockout) = &mut account.lockout {
+                        lockout.attempts += 1;
+
+                        // Allow 3 attempts
+                        //
+                        // Lockout for 1 minute on 3rd attempt
+                        // Lockout for 5 minutes on 4th attempt
+                        // Lockout for 1 hour on each subsequent attempt
+                        if lockout.attempts >= 3 {
+                            lockout.expiry = Some(Timestamp::now_utc().add(Duration::from_secs(
+                                if lockout.attempts >= 5 {
+                                    3600
+                                } else if lockout.attempts == 4 {
+                                    300
+                                } else {
+                                    60
+                                },
+                            )));
+                        }
+                    } else {
+                        account.lockout = Some(Lockout {
+                            attempts: 1,
+                            expiry: None,
+                        });
+                    }
+
+                    account.save(rauth).await?;
+                    return Err(err);
+                }
+
+                // Clear lockout information if present
+                if account.lockout.is_some() {
+                    account.lockout = None;
+                    account.save(rauth).await?;
+                }
+
+                // Check whether an MFA step is required
                 if account.mfa.is_active() {
                     // Create a new ticket
                     let ticket = MFATicket::new(rauth, account.id, false).await?;
@@ -285,5 +336,132 @@ mod tests {
             res.into_string().await,
             Some("{\"type\":\"UnverifiedAccount\"}".into())
         );
+    }
+
+    #[async_std::test]
+    async fn fail_locked_account() {
+        let rauth = for_test("login::fail_locked_account").await;
+
+        let mut account = Account::new(
+            &rauth,
+            "example@validemail.com".into(),
+            "password_insecure".into(),
+            false,
+        )
+        .await
+        .unwrap();
+
+        account.save(&rauth).await.unwrap();
+
+        let client = bootstrap_rocket_with_auth(
+            rauth.clone(),
+            routes![crate::routes::session::login::login],
+        )
+        .await;
+
+        // Attempt 1
+        let res = client
+            .post("/login")
+            .header(ContentType::JSON)
+            .body(
+                json!({
+                    "email": "example@validemail.com",
+                    "password": "wrong_password"
+                })
+                .to_string(),
+            )
+            .dispatch()
+            .await;
+
+        assert_eq!(res.status(), Status::Unauthorized);
+        assert_eq!(
+            res.into_string().await,
+            Some("{\"type\":\"InvalidCredentials\"}".into())
+        );
+
+        // Attempt 2
+        let res = client
+            .post("/login")
+            .header(ContentType::JSON)
+            .body(
+                json!({
+                    "email": "example@validemail.com",
+                    "password": "wrong_password"
+                })
+                .to_string(),
+            )
+            .dispatch()
+            .await;
+
+        assert_eq!(res.status(), Status::Unauthorized);
+        assert_eq!(
+            res.into_string().await,
+            Some("{\"type\":\"InvalidCredentials\"}".into())
+        );
+
+        // Attempt 3
+        let res = client
+            .post("/login")
+            .header(ContentType::JSON)
+            .body(
+                json!({
+                    "email": "example@validemail.com",
+                    "password": "wrong_password"
+                })
+                .to_string(),
+            )
+            .dispatch()
+            .await;
+
+        assert_eq!(res.status(), Status::Unauthorized);
+        assert_eq!(
+            res.into_string().await,
+            Some("{\"type\":\"InvalidCredentials\"}".into())
+        );
+
+        // Attempt 4: Locked Out
+        let res = client
+            .post("/login")
+            .header(ContentType::JSON)
+            .body(
+                json!({
+                    "email": "example@validemail.com",
+                    "password": "password_insecure"
+                })
+                .to_string(),
+            )
+            .dispatch()
+            .await;
+
+        assert_eq!(res.status(), Status::Forbidden);
+        assert_eq!(
+            res.into_string().await,
+            Some("{\"type\":\"LockedOut\"}".into())
+        );
+
+        // Pretend it expired
+        account.lockout = Some(Lockout {
+            attempts: 9001,
+            expiry: Some(Timestamp::now_utc()),
+        });
+
+        account.save(&rauth).await.unwrap();
+
+        // Once it expires, we can log in.
+        let res = client
+            .post("/login")
+            .header(ContentType::JSON)
+            .body(
+                json!({
+                    "email": "example@validemail.com",
+                    "password": "password_insecure"
+                })
+                .to_string(),
+            )
+            .dispatch()
+            .await;
+
+        assert_eq!(res.status(), Status::Ok);
+        assert!(serde_json::from_str::<Session>(&res.into_string().await.unwrap()).is_ok());
     }
 }

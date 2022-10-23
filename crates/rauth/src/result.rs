@@ -1,4 +1,4 @@
-#[derive(Serialize, Debug, JsonSchema, PartialEq)]
+#[derive(Serialize, Debug, JsonSchema, PartialEq, Eq)]
 #[serde(tag = "type")]
 pub enum Error {
     IncorrectData {
@@ -29,6 +29,7 @@ pub enum Error {
     DisabledAccount,
     ShortPassword,
     Blacklisted,
+    LockedOut,
 
     TotpAlreadyEnabled,
     DisallowedMFAMethod,
