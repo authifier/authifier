@@ -1,7 +1,9 @@
 use bson::{to_document, DateTime, Document};
+use chrono::{Duration, Utc};
 use futures::stream::TryStreamExt;
 use mongodb::options::{Collation, CollationStrength, FindOneOptions, UpdateOptions};
-use std::ops::Deref;
+use std::{ops::Deref, str::FromStr};
+use ulid::Ulid;
 
 use crate::{
     models::{Account, Invite, MFATicket, Session},
@@ -368,8 +370,11 @@ impl AbstractDatabase for MongoDb {
     }
 
     /// Find ticket by token
+    /// <br>
+    /// Ticket is only valid for 1 minute
     async fn find_ticket_by_token(&self, token: &str) -> Result<Option<MFATicket>> {
-        self.collection("mfa_tickets")
+        let ticket: MFATicket = self
+            .collection("mfa_tickets")
             .find_one(
                 doc! {
                     "token": token
@@ -381,7 +386,17 @@ impl AbstractDatabase for MongoDb {
                 operation: "find_one",
                 with: "mfa_ticket",
             })?
-            .ok_or(Error::InvalidToken)
+            .ok_or(Error::InvalidToken)?;
+
+        if let Ok(ulid) = Ulid::from_str(&ticket.id) {
+            if (ulid.datetime() + Duration::minutes(1)) > Utc::now() {
+                Ok(Some(ticket))
+            } else {
+                Err(Error::InvalidToken)
+            }
+        } else {
+            Err(Error::InvalidToken)
+        }
     }
 
     // Save account
