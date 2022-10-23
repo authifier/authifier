@@ -19,8 +19,6 @@ pub enum DataLogin {
         email: String,
         /// Password
         password: String,
-        /// Captcha verification code
-        captcha: Option<String>,
         /// Friendly name used for the session
         friendly_name: Option<String>,
     },
@@ -58,12 +56,8 @@ pub async fn login(rauth: &State<RAuth>, data: Json<DataLogin>) -> Result<Json<R
         DataLogin::Email {
             email,
             password,
-            captcha,
             friendly_name,
         } => {
-            // Check Captcha token
-            rauth.config.captcha.check(captcha).await?;
-
             // Try to find the account we want
             let email_normalised = normalise_email(email);
 
