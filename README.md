@@ -104,7 +104,7 @@ Then you can run the tests:
 cargo test --features test
 
 # Or using nextest
-cargo --features test nextest run
+cargo nextest run --features test
 ```
 
 ## Database Migrations
