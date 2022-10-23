@@ -11,8 +11,13 @@ use rocket_empty::EmptyResponse;
 pub struct DataPasswordReset {
     /// Reset token
     pub token: String,
+
     /// New password
     pub password: String,
+
+    /// Whether to logout all sessions
+    #[serde(default)]
+    pub remove_sessions: bool,
 }
 
 /// # Password Reset
@@ -44,7 +49,17 @@ pub async fn password_reset(
     account.password_reset = None;
 
     // Commit to database
-    account.save(rauth).await.map(|_| EmptyResponse)
+    account.save(rauth).await?;
+
+    // Delete all sessions if required
+    if data.remove_sessions {
+        rauth
+            .database
+            .delete_all_sessions(&account.id, None)
+            .await?;
+    }
+
+    Ok(EmptyResponse)
 }
 
 #[cfg(test)]
@@ -57,7 +72,7 @@ mod tests {
 
     #[async_std::test]
     async fn success() {
-        let (rauth, _, mut account) = for_test_authenticated("password_reset::success").await;
+        let (rauth, session, mut account) = for_test_authenticated("password_reset::success").await;
 
         account.password_reset = Some(PasswordReset {
             token: "token".into(),
@@ -86,7 +101,8 @@ mod tests {
             .body(
                 json!({
                     "token": "token",
-                    "password": "valid password"
+                    "password": "valid password",
+                    "remove_sessions": true
                 })
                 .to_string(),
             )
@@ -117,6 +133,12 @@ mod tests {
 
         assert_eq!(res.status(), Status::Ok);
         assert!(serde_json::from_str::<Session>(&res.into_string().await.unwrap()).is_ok());
+
+        // Ensure sessions were deleted
+        assert_eq!(
+            rauth.database.find_session(&session.id).await.unwrap_err(),
+            Error::UnknownUser
+        );
     }
 
     #[async_std::test]
