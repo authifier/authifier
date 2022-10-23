@@ -184,8 +184,6 @@ pub async fn login(rauth: &State<RAuth>, data: Json<DataLogin>) -> Result<Json<R
 #[cfg(test)]
 #[cfg(feature = "test")]
 mod tests {
-    use iso8601_timestamp::Timestamp;
-
     use crate::test::*;
 
     #[async_std::test]
