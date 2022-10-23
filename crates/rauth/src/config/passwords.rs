@@ -76,7 +76,7 @@ mod tests {
     #[async_std::test]
     async fn it_accepts_any_passwords() {
         let passwords = PasswordScanning::None;
-        assert_eq!(passwords.assert_safe("example").await, Ok(()));
+        assert_eq!(passwords.assert_safe("example123").await, Ok(()));
     }
 
     #[async_std::test]
@@ -85,18 +85,23 @@ mod tests {
             passwords: HashSet::from(["abc".to_string()]),
         };
 
-        assert_eq!(passwords.assert_safe("example").await, Ok(()));
+        assert_eq!(passwords.assert_safe("example123").await, Ok(()));
     }
 
     #[async_std::test]
     async fn it_rejects_some_passwords() {
         let passwords = PasswordScanning::Custom {
-            passwords: HashSet::from(["example".to_string()]),
+            passwords: HashSet::from(["example123".to_string()]),
         };
 
         assert_eq!(
-            passwords.assert_safe("example").await,
+            passwords.assert_safe("example123").await,
             Err(Error::CompromisedPassword)
+        );
+
+        assert_eq!(
+            passwords.assert_safe("short").await,
+            Err(Error::ShortPassword)
         );
     }
 }
