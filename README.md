@@ -107,6 +107,13 @@ cargo test --features test
 cargo nextest run --features test
 ```
 
+Run a coverage test:
+
+```bash
+# Run tarpaulin
+cargo tarpaulin --features test --out html
+```
+
 ## Database Migrations
 
 Migrating the database is easy, you just have to orchestrate it yourself, ideally you have your own versioned migration system which you can slot changes into.
