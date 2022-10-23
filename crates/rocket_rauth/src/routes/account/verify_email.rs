@@ -54,7 +54,7 @@ mod tests {
         account.save(&rauth).await.unwrap();
 
         let client = bootstrap_rocket_with_auth(
-            rauth,
+            rauth.clone(),
             routes![crate::routes::account::verify_email::verify_email],
         )
         .await;
@@ -62,6 +62,13 @@ mod tests {
         let res = client.post("/verify/token").dispatch().await;
 
         assert_eq!(res.status(), Status::NoContent);
+
+        // Make sure it was used and can't be used again
+        assert!(rauth
+            .database
+            .find_account_with_email_verification("token")
+            .await
+            .is_err());
     }
 
     #[async_std::test]

@@ -2,11 +2,6 @@ use iso8601_timestamp::Timestamp;
 
 use super::MultiFactorAuthentication;
 
-/// Whether a boolean is false
-fn is_false(t: &bool) -> bool {
-    !t
-}
-
 /// Email verification status
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "status")]
@@ -41,7 +36,7 @@ pub enum DeletionInfo {
     /// The account is scheduled for deletion
     Scheduled { after: Timestamp },
     /// This account was deleted
-    Deleted
+    Deleted,
 }
 
 /// Account model
@@ -63,18 +58,16 @@ pub struct Account {
     pub password: String,
 
     /// Whether the account is disabled
-    #[serde(skip_serializing_if = "is_false", default)]
+    #[serde(default)]
     pub disabled: bool,
 
     /// Email verification status
     pub verification: EmailVerification,
 
     /// Password reset information
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub password_reset: Option<PasswordReset>,
 
     /// Account deletion information
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub deletion: Option<DeletionInfo>,
 
     /// Multi-factor authentication information

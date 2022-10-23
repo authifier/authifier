@@ -72,7 +72,7 @@ mod tests {
         account.save(&rauth).await.unwrap();
 
         let client = bootstrap_rocket_with_auth(
-            rauth,
+            rauth.clone(),
             routes![
                 crate::routes::account::password_reset::password_reset,
                 crate::routes::session::login::login
@@ -94,6 +94,13 @@ mod tests {
             .await;
 
         assert_eq!(res.status(), Status::NoContent);
+
+        // Make sure it was used and can't be used again
+        assert!(rauth
+            .database
+            .find_account_with_password_reset("token")
+            .await
+            .is_err());
 
         let res = client
             .post("/login")
