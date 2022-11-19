@@ -381,6 +381,6 @@ mod tests {
             .dispatch()
             .await;
 
-        assert_eq!(res.status(), Status::NoContent);
+        assert_eq!(res.status(), Status::Ok);
     }
 }
