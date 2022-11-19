@@ -28,7 +28,9 @@ mod tests {
         use rocket::http::Header;
 
         let (rauth, session, account) = for_test_authenticated("fetch_recovery::success").await;
-        let ticket = MFATicket::new(&rauth, account.id, true).await.unwrap();
+        let ticket = MFATicket::new(account.id, true);
+        ticket.save(&rauth).await.unwrap();
+
         let client = bootstrap_rocket_with_auth(
             rauth,
             routes![crate::routes::mfa::fetch_recovery::fetch_recovery],

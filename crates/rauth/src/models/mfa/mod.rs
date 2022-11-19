@@ -41,7 +41,7 @@ pub struct MultiFactorAuthentication {
 }
 
 /// MFA method
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "schemas", derive(JsonSchema))]
 pub enum MFAMethod {
     Password,

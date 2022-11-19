@@ -30,9 +30,9 @@ mod tests {
         use rocket::http::Header;
 
         let (rauth, session, account) = for_test_authenticated("disable_account::success").await;
-        let ticket = MFATicket::new(&rauth, account.id.to_string(), true)
-            .await
-            .unwrap();
+        let ticket = MFATicket::new(account.id.to_string(), true);
+        ticket.save(&rauth).await.unwrap();
+
         let client = bootstrap_rocket_with_auth(
             rauth.clone(),
             routes![crate::routes::account::disable_account::disable_account],

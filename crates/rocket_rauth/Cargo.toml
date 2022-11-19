@@ -9,7 +9,7 @@ edition = "2021"
 test = [ "reqwest", "regex", "serde_json", "chrono", "base32", "example" ]
 example = [ "rauth/async-std-runtime", "rauth/database-mongodb", "async-std", "mongodb" ]
 
-default = [ ]
+default = [ "test" ]
 
 [dependencies]
 # rAuth

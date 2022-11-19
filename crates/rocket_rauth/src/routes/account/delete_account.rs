@@ -39,7 +39,9 @@ mod tests {
         account.email = "delete_account@smtp.test".to_string();
         account.save(&rauth).await.unwrap();
 
-        let ticket = MFATicket::new(&rauth, account.id, true).await.unwrap();
+        let ticket = MFATicket::new(account.id.to_string(), true);
+        ticket.save(&rauth).await.unwrap();
+
         let client = bootstrap_rocket_with_auth(
             rauth,
             routes![

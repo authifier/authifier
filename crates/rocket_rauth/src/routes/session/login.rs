@@ -132,7 +132,9 @@ pub async fn login(rauth: &State<RAuth>, data: Json<DataLogin>) -> Result<Json<R
                 // Check whether an MFA step is required
                 if account.mfa.is_active() {
                     // Create a new ticket
-                    let ticket = MFATicket::new(rauth, account.id, false).await?;
+                    let mut ticket = MFATicket::new(account.id, false);
+                    ticket.populate(&account.mfa).await;
+                    ticket.save(rauth).await?;
 
                     // Return applicable methods
                     return Ok(Json(ResponseLogin::MFA {
@@ -162,7 +164,10 @@ pub async fn login(rauth: &State<RAuth>, data: Json<DataLogin>) -> Result<Json<R
             let mut account = rauth.database.find_account(&ticket.account_id).await?;
 
             // Verify the MFA response
-            account.consume_mfa_response(rauth, mfa_response).await?;
+            account
+                .consume_mfa_response(rauth, mfa_response, Some(ticket))
+                .await?;
+
             (account, friendly_name)
         }
     };
@@ -187,6 +192,8 @@ mod tests {
     use iso8601_timestamp::Timestamp;
 
     use crate::test::*;
+
+    use super::ResponseLogin;
 
     #[async_std::test]
     async fn success() {
@@ -219,6 +226,173 @@ mod tests {
 
         assert_eq!(res.status(), Status::Ok);
         assert!(serde_json::from_str::<Session>(&res.into_string().await.unwrap()).is_ok());
+    }
+
+    #[async_std::test]
+    async fn success_totp_mfa() {
+        let (rauth, _, mut account) =
+            for_test_authenticated("create_ticket::success_totp_mfa").await;
+
+        let totp = Totp::Enabled {
+            secret: "secret".to_string(),
+        };
+
+        account.mfa.totp_token = totp.clone();
+        account.save(&rauth).await.unwrap();
+
+        let client =
+            bootstrap_rocket_with_auth(rauth, routes![crate::routes::session::login::login]).await;
+
+        let res = client
+            .post("/login")
+            .header(ContentType::JSON)
+            .body(
+                json!({
+                    "email": "email@revolt.chat",
+                    "password": "password_insecure"
+                })
+                .to_string(),
+            )
+            .dispatch()
+            .await;
+
+        assert_eq!(res.status(), Status::Ok);
+        let response = serde_json::from_str::<crate::routes::session::login::ResponseLogin>(
+            &res.into_string().await.unwrap(),
+        )
+        .expect("`ResponseLogin`");
+
+        if let ResponseLogin::MFA {
+            ticket,
+            allowed_methods,
+        } = response
+        {
+            assert!(allowed_methods.contains(&MFAMethod::Totp));
+
+            let res = client
+                .post("/login")
+                .header(ContentType::JSON)
+                .body(
+                    json!({
+                        "mfa_ticket": ticket,
+                        "mfa_response": {
+                            "totp_code": totp.generate_code().expect("totp code")
+                        }
+                    })
+                    .to_string(),
+                )
+                .dispatch()
+                .await;
+
+            assert_eq!(res.status(), Status::Ok);
+            assert!(serde_json::from_str::<Session>(&res.into_string().await.unwrap()).is_ok());
+        } else {
+            panic!("expected `ResponseLogin::MFA`")
+        }
+    }
+
+    #[async_std::test]
+    async fn success_totp_stored_mfa() {
+        let (rauth, _, mut account) =
+            for_test_authenticated("create_ticket::success_totp_stored_mfa").await;
+
+        let totp = Totp::Enabled {
+            secret: "secret".to_string(),
+        };
+
+        account.mfa.totp_token = totp.clone();
+        account.save(&rauth).await.unwrap();
+
+        let mut ticket = MFATicket::new(account.id.to_string(), true);
+        ticket.last_totp_code = Some("token from earlier".into());
+        ticket.save(&rauth).await.unwrap();
+
+        let client =
+            bootstrap_rocket_with_auth(rauth, routes![crate::routes::session::login::login]).await;
+
+        let res = client
+            .post("/login")
+            .header(ContentType::JSON)
+            .body(
+                json!({
+                    "mfa_ticket": ticket.token,
+                    "mfa_response": {
+                        "totp_code": "token from earlier"
+                    }
+                })
+                .to_string(),
+            )
+            .dispatch()
+            .await;
+
+        assert_eq!(res.status(), Status::Ok);
+        assert!(serde_json::from_str::<Session>(&res.into_string().await.unwrap()).is_ok());
+    }
+
+    #[async_std::test]
+    async fn fail_totp_invalid_mfa() {
+        let (rauth, _, mut account) =
+            for_test_authenticated("create_ticket::fail_totp_invalid_mfa").await;
+
+        let totp = Totp::Enabled {
+            secret: "secret".to_string(),
+        };
+
+        account.mfa.totp_token = totp.clone();
+        account.save(&rauth).await.unwrap();
+
+        let client =
+            bootstrap_rocket_with_auth(rauth, routes![crate::routes::session::login::login]).await;
+
+        let res = client
+            .post("/login")
+            .header(ContentType::JSON)
+            .body(
+                json!({
+                    "email": "email@revolt.chat",
+                    "password": "password_insecure"
+                })
+                .to_string(),
+            )
+            .dispatch()
+            .await;
+
+        assert_eq!(res.status(), Status::Ok);
+        let response = serde_json::from_str::<crate::routes::session::login::ResponseLogin>(
+            &res.into_string().await.unwrap(),
+        )
+        .expect("`ResponseLogin`");
+
+        if let ResponseLogin::MFA {
+            ticket,
+            allowed_methods,
+        } = response
+        {
+            assert!(allowed_methods.contains(&MFAMethod::Totp));
+
+            let res = client
+                .post("/login")
+                .header(ContentType::JSON)
+                .body(
+                    json!({
+                        "mfa_ticket": ticket,
+                        "mfa_response": {
+                            "totp_code": "some random data"
+                        }
+                    })
+                    .to_string(),
+                )
+                .dispatch()
+                .await;
+
+            assert_eq!(res.status(), Status::Unauthorized);
+            assert_eq!(
+                res.into_string().await,
+                Some("{\"type\":\"InvalidToken\"}".into())
+            );
+        } else {
+            panic!("expected `ResponseLogin::MFA`")
+        }
     }
 
     #[async_std::test]

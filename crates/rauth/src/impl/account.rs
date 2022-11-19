@@ -4,7 +4,7 @@ use iso8601_timestamp::Timestamp;
 use crate::{
     config::EmailVerificationConfig,
     models::{
-        totp::Totp, Account, DeletionInfo, EmailVerification, MFAMethod, MFAResponse,
+        totp::Totp, Account, DeletionInfo, EmailVerification, MFAMethod, MFAResponse, MFATicket,
         PasswordReset, Session,
     },
     util::{hash_password, normalise_email},
@@ -236,7 +236,12 @@ impl Account {
     }
 
     /// Validate an MFA response
-    pub async fn consume_mfa_response(&mut self, rauth: &RAuth, response: MFAResponse) -> Success {
+    pub async fn consume_mfa_response(
+        &mut self,
+        rauth: &RAuth,
+        response: MFAResponse,
+        ticket: Option<MFATicket>,
+    ) -> Success {
         let allowed_methods = self.mfa.get_methods();
 
         match response {
@@ -250,6 +255,16 @@ impl Account {
             MFAResponse::Totp { totp_code } => {
                 if allowed_methods.contains(&MFAMethod::Totp) {
                     if let Totp::Enabled { .. } = &self.mfa.totp_token {
+                        // Use TOTP code at generation if applicable
+                        if let Some(ticket) = ticket {
+                            if let Some(code) = ticket.last_totp_code {
+                                if code == totp_code {
+                                    return Ok(());
+                                }
+                            }
+                        }
+
+                        // Otherwise read current TOTP token
                         if self.mfa.totp_token.generate_code()? == totp_code {
                             Ok(())
                         } else {

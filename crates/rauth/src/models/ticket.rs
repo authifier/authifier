@@ -14,6 +14,9 @@ pub struct MFATicket {
 
     /// Whether this ticket has been validated
     pub validated: bool,
+
+    /// TOTP code at time of ticket creation
+    pub last_totp_code: Option<String>,
 }
 
 /// Ticket which is guaranteed to be valid for use

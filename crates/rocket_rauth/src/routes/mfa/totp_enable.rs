@@ -35,9 +35,9 @@ mod tests {
         use rocket::http::Header;
 
         let (rauth, session, account) = for_test_authenticated("totp_enable::success").await;
-        let ticket = MFATicket::new(&rauth, account.id.to_string(), true)
-            .await
-            .unwrap();
+        let ticket = MFATicket::new(account.id.to_string(), true);
+        ticket.save(&rauth).await.unwrap();
+
         let client = bootstrap_rocket_with_auth(
             rauth,
             routes![

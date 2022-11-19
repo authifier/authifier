@@ -1,23 +1,26 @@
 use chrono::{Duration, Utc};
 
 use crate::{
-    models::{MFATicket, UnvalidatedTicket, ValidatedTicket},
-    Error, RAuth, Result, Success,
+    models::{MFATicket, MultiFactorAuthentication, UnvalidatedTicket, ValidatedTicket},
+    Error, RAuth, Success,
 };
 use std::ops::Deref;
 
 impl MFATicket {
     /// Create a new MFA ticket
-    pub async fn new(rauth: &RAuth, account_id: String, validated: bool) -> Result<MFATicket> {
-        let ticket = MFATicket {
+    pub fn new(account_id: String, validated: bool) -> MFATicket {
+        MFATicket {
             id: ulid::Ulid::new().to_string(),
             account_id,
             token: nanoid!(64),
             validated,
-        };
+            last_totp_code: None,
+        }
+    }
 
-        ticket.save(rauth).await?;
-        Ok(ticket)
+    /// Populate an MFA ticket with valid MFA codes
+    pub async fn populate(&mut self, mfa: &MultiFactorAuthentication) {
+        self.last_totp_code = mfa.totp_token.generate_code().ok();
     }
 
     /// Save model

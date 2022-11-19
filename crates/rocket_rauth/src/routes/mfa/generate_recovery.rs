@@ -35,10 +35,12 @@ mod tests {
         use rocket::http::Header;
 
         let (rauth, session, account) = for_test_authenticated("generate_recovery::success").await;
-        let ticket1 = MFATicket::new(&rauth, account.id.to_string(), true)
-            .await
-            .unwrap();
-        let ticket2 = MFATicket::new(&rauth, account.id, true).await.unwrap();
+        let ticket1 = MFATicket::new(account.id.to_string(), true);
+        ticket1.save(&rauth).await.unwrap();
+
+        let ticket2 = MFATicket::new(account.id, true);
+        ticket2.save(&rauth).await.unwrap();
+
         let client = bootstrap_rocket_with_auth(
             rauth,
             routes![

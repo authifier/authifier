@@ -29,11 +29,13 @@ pub async fn create_ticket(
 
     // Validate the MFA response
     account
-        .consume_mfa_response(rauth, data.into_inner())
+        .consume_mfa_response(rauth, data.into_inner(), None)
         .await?;
 
     // Create a new ticket for this account
-    MFATicket::new(rauth, account.id, true).await.map(Json)
+    let ticket = MFATicket::new(account.id, true);
+    ticket.save(rauth).await?;
+    Ok(Json(ticket))
 }
 
 #[cfg(test)]

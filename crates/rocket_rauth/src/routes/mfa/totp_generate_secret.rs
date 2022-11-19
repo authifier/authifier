@@ -43,9 +43,9 @@ mod tests {
 
         let (rauth, session, account) =
             for_test_authenticated("totp_generate_secret::success").await;
-        let ticket = MFATicket::new(&rauth, account.id.to_string(), true)
-            .await
-            .unwrap();
+        let ticket = MFATicket::new(account.id.to_string(), true);
+        ticket.save(&rauth).await.unwrap();
+
         let client = bootstrap_rocket_with_auth(
             rauth.clone(),
             routes![crate::routes::mfa::totp_generate_secret::totp_generate_secret],
