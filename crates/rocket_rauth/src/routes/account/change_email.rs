@@ -43,7 +43,7 @@ pub async fn change_email(
 #[cfg(test)]
 #[cfg(feature = "test")]
 mod tests {
-    use crate::test::*;
+    use crate::{routes::account::verify_email::ResponseVerify, test::*};
 
     #[async_std::test]
     async fn success() {
@@ -117,10 +117,19 @@ mod tests {
             .dispatch()
             .await;
 
-        assert_eq!(res.status(), Status::NoContent);
+        assert_eq!(res.status(), Status::Ok);
 
         let account = rauth.database.find_account(&account.id).await.unwrap();
 
         assert_eq!(account.email, "change_email@smtp.test");
+
+        // Ensure that we did not receive a ticket
+        assert_eq!(
+            ResponseVerify::NoTicket,
+            serde_json::from_str::<crate::routes::account::verify_email::ResponseVerify>(
+                &res.into_string().await.unwrap(),
+            )
+            .expect("`ResponseVerify`")
+        )
     }
 }

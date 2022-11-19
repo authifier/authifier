@@ -14,6 +14,7 @@ impl MFATicket {
             account_id,
             token: nanoid!(64),
             validated,
+            authorised: false,
             last_totp_code: None,
         }
     }

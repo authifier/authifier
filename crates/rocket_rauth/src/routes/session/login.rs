@@ -23,14 +23,14 @@ pub enum DataLogin {
         friendly_name: Option<String>,
     },
     MFA {
-        /// Unvalidated MFA ticket
+        /// Unvalidated or authorised MFA ticket
         ///
         /// Used to resolve the correct account
         mfa_ticket: String,
         /// Valid MFA response
         ///
         /// This will take precedence over the `password` field where applicable
-        mfa_response: MFAResponse,
+        mfa_response: Option<MFAResponse>,
         /// Friendly name used for the session
         friendly_name: Option<String>,
     },
@@ -164,9 +164,13 @@ pub async fn login(rauth: &State<RAuth>, data: Json<DataLogin>) -> Result<Json<R
             let mut account = rauth.database.find_account(&ticket.account_id).await?;
 
             // Verify the MFA response
-            account
-                .consume_mfa_response(rauth, mfa_response, Some(ticket))
-                .await?;
+            if let Some(mfa_response) = mfa_response {
+                account
+                    .consume_mfa_response(rauth, mfa_response, Some(ticket))
+                    .await?;
+            } else if !ticket.authorised {
+                return Err(Error::InvalidToken);
+            }
 
             (account, friendly_name)
         }
