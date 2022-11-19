@@ -101,7 +101,14 @@ impl Account {
             let token = nanoid!(32);
             let url = format!("{}{}", templates.verify.url, token);
 
-            smtp.send_email(self.email.clone(), &templates.verify, json!({ "url": url }))?;
+            smtp.send_email(
+                self.email.clone(),
+                &templates.verify,
+                json!({
+                    "email": self.email.clone(),
+                    "url": url
+                }),
+            )?;
 
             self.verification = EmailVerification::Pending {
                 token,
@@ -136,7 +143,14 @@ impl Account {
             let token = nanoid!(32);
             let url = format!("{}{}", templates.verify.url, token);
 
-            smtp.send_email(new_email.clone(), &templates.verify, json!({ "url": url }))?;
+            smtp.send_email(
+                new_email.clone(),
+                &templates.verify,
+                json!({
+                    "email": self.email.clone(),
+                    "url": url
+                }),
+            )?;
 
             self.verification = EmailVerification::Moving {
                 new_email,
@@ -167,7 +181,14 @@ impl Account {
             let token = nanoid!(32);
             let url = format!("{}{}", templates.reset.url, token);
 
-            smtp.send_email(self.email.clone(), &templates.reset, json!({ "url": url }))?;
+            smtp.send_email(
+                self.email.clone(),
+                &templates.reset,
+                json!({
+                    "email": self.email.clone(),
+                    "url": url
+                }),
+            )?;
 
             self.password_reset = Some(PasswordReset {
                 token,
@@ -201,7 +222,10 @@ impl Account {
             smtp.send_email(
                 self.email.clone(),
                 &templates.deletion,
-                json!({ "url": url }),
+                json!({
+                    "email": self.email.clone(),
+                    "url": url
+                }),
             )?;
 
             self.deletion = Some(DeletionInfo::WaitingForVerification {
