@@ -101,8 +101,7 @@ impl Account {
             let token = nanoid!(32);
             let url = format!("{}{}", templates.verify.url, token);
 
-            smtp.send_email(self.email.clone(), &templates.verify, json!({ "url": url }))
-                .ok();
+            smtp.send_email(self.email.clone(), &templates.verify, json!({ "url": url }))?;
 
             self.verification = EmailVerification::Pending {
                 token,
@@ -137,8 +136,7 @@ impl Account {
             let token = nanoid!(32);
             let url = format!("{}{}", templates.verify.url, token);
 
-            smtp.send_email(new_email.clone(), &templates.verify, json!({ "url": url }))
-                .ok();
+            smtp.send_email(new_email.clone(), &templates.verify, json!({ "url": url }))?;
 
             self.verification = EmailVerification::Moving {
                 new_email,
@@ -169,8 +167,7 @@ impl Account {
             let token = nanoid!(32);
             let url = format!("{}{}", templates.reset.url, token);
 
-            smtp.send_email(self.email.clone(), &templates.reset, json!({ "url": url }))
-                .ok();
+            smtp.send_email(self.email.clone(), &templates.reset, json!({ "url": url }))?;
 
             self.password_reset = Some(PasswordReset {
                 token,
@@ -205,8 +202,7 @@ impl Account {
                 self.email.clone(),
                 &templates.deletion,
                 json!({ "url": url }),
-            )
-            .ok();
+            )?;
 
             self.deletion = Some(DeletionInfo::WaitingForVerification {
                 token,

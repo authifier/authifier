@@ -173,15 +173,17 @@ impl SMTPSettings {
 
         use lettre::Transport;
         let sender = self.create_transport();
-        if let Err(error) = sender.send(&m) {
-            error!(
-                "Failed to send email to {}!\nlettre error: {}",
-                address, error
-            );
 
-            return Err(Error::EmailFailed);
+        match sender.send(&m) {
+            Ok(_) => Ok(()),
+            Err(error) => {
+                error!(
+                    "Failed to send email to {}!\nlettre error: {}",
+                    address, error
+                );
+
+                Err(Error::EmailFailed)
+            }
         }
-
-        Ok(())
     }
 }
