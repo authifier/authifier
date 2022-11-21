@@ -34,6 +34,16 @@ impl AbstractDatabase for MongoDb {
                 self.drop(None).await.unwrap();
             }
             Migration::M2022_06_03EnsureUpToSpec => {
+                if self
+                    .collection::<Document>("mfa_tickets")
+                    .list_index_names()
+                    .await
+                    .expect("list of index names")
+                    .contains(&"token".to_owned())
+                {
+                    return Ok(());
+                }
+
                 // Make sure all collections exist
                 let list = self.list_collection_names(None).await.unwrap();
                 let collections = ["accounts", "sessions", "invites", "mfa_tickets"];
@@ -144,6 +154,16 @@ impl AbstractDatabase for MongoDb {
                 .unwrap();
             }
             Migration::M2022_06_09AddIndexForDeletion => {
+                if self
+                    .collection::<Document>("accounts")
+                    .list_index_names()
+                    .await
+                    .expect("list of index names")
+                    .contains(&"account_deletion".to_owned())
+                {
+                    return Ok(());
+                }
+
                 self.run_command(
                     doc! {
                         "createIndexes": "accounts",

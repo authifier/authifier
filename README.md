@@ -116,7 +116,9 @@ cargo tarpaulin --features test --out html
 
 ## Database Migrations
 
-Migrating the database is easy, you just have to orchestrate it yourself, ideally you have your own versioned migration system which you can slot changes into.
+Migrating the database is easy, you should orchestrate it yourself, ideally you have your own versioned migration system which you can slot changes into.
+
+But, by default, migrations will not run if the system detects that it has probably already been applied.
 
 ```rust
 use rauth::{ Database, Migration };
