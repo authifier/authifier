@@ -1,8 +1,6 @@
 #[macro_use]
 extern crate serde;
 #[macro_use]
-extern crate schemars;
-#[macro_use]
 extern crate lazy_static;
 #[macro_use]
 extern crate async_trait;
@@ -13,6 +11,9 @@ extern crate log;
 #[macro_use]
 extern crate serde_json;
 
+#[cfg(feature = "schemas")]
+#[macro_use]
+extern crate schemars;
 #[cfg(feature = "database-mongodb")]
 #[macro_use]
 extern crate bson;
