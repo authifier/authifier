@@ -1,4 +1,5 @@
-#[derive(Serialize, Debug, JsonSchema, PartialEq, Eq)]
+#[derive(Serialize, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "schemas", derive(JsonSchema))]
 #[serde(tag = "type")]
 pub enum Error {
     IncorrectData {
