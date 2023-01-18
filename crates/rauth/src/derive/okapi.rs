@@ -1,5 +1,5 @@
-use okapi::openapi3::{self, SecurityScheme, SecuritySchemeData};
-use rocket_okapi::{
+use revolt_okapi::openapi3::{self, SecurityScheme, SecuritySchemeData};
+use revolt_rocket_okapi::{
     gen::OpenApiGenerator,
     request::{OpenApiFromRequest, RequestHeaderInput},
     response::OpenApiResponderInner,
@@ -13,8 +13,8 @@ use crate::{
 impl OpenApiResponderInner for Error {
     fn responses(
         gen: &mut OpenApiGenerator,
-    ) -> std::result::Result<openapi3::Responses, rocket_okapi::OpenApiError> {
-        let mut content = okapi::Map::new();
+    ) -> std::result::Result<openapi3::Responses, revolt_rocket_okapi::OpenApiError> {
+        let mut content = revolt_okapi::Map::new();
 
         let settings = schemars::gen::SchemaSettings::default().with(|s| {
             s.option_nullable = true;
@@ -64,7 +64,7 @@ macro_rules! from_request {
                 _gen: &mut OpenApiGenerator,
                 _name: String,
                 _required: bool,
-            ) -> rocket_okapi::Result<RequestHeaderInput> {
+            ) -> revolt_rocket_okapi::Result<RequestHeaderInput> {
                 let mut requirements = schemars::Map::new();
                 requirements.insert($name.to_owned(), vec![]);
 

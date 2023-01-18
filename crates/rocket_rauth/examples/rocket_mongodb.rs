@@ -1,6 +1,6 @@
 //! Run example with `cargo run --example rocket_mongodb --features example`
 
-use okapi::openapi3::OpenApi;
+use revolt_okapi::openapi3::OpenApi;
 
 #[macro_use]
 extern crate rocket;
@@ -11,7 +11,7 @@ async fn rocket() -> _ {
     use mongodb::{options::ClientOptions, Client};
     use rauth::database::MongoDb;
     use rauth::Migration;
-    use rocket_okapi::{mount_endpoints_and_merged_docs, settings::OpenApiSettings};
+    use revolt_rocket_okapi::{mount_endpoints_and_merged_docs, settings::OpenApiSettings};
 
     let client_options = ClientOptions::parse("mongodb://localhost:27017")
         .await
@@ -42,10 +42,12 @@ async fn rocket() -> _ {
 
     rocket.manage(rauth).mount(
         "/swagger/",
-        rocket_okapi::swagger_ui::make_swagger_ui(&rocket_okapi::swagger_ui::SwaggerUIConfig {
-            url: "../openapi.json".to_owned(),
-            ..Default::default()
-        }),
+        revolt_rocket_okapi::swagger_ui::make_swagger_ui(
+            &revolt_rocket_okapi::swagger_ui::SwaggerUIConfig {
+                url: "../openapi.json".to_owned(),
+                ..Default::default()
+            },
+        ),
     )
 }
 

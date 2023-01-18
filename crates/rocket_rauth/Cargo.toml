@@ -17,15 +17,15 @@ rauth = { path = "../rauth", features = [ "rocket_impl", "okapi_impl" ] }
 
 # Rocket
 rocket = { version = "0.5.0-rc.2", default-features = false, features = ["json"] }
-rocket_empty = { git = "https://github.com/insertish/rocket_empty", branch = "master" }
+rocket_empty = { version = "0.1.1", features = [ "schema" ] }
 
 # Serde
 iso8601-timestamp = { version = "0.1.10" }
 serde = { version = "1.0.116", features = [ "derive" ] }
 
 # Schemas
-rocket_okapi = { git = "https://github.com/insertish/okapi", rev = "a1048d0c8cd771e424ec97d33d825c32e06aa120", features = [ "swagger" ] }
-okapi = { git = "https://github.com/insertish/okapi", rev = "a1048d0c8cd771e424ec97d33d825c32e06aa120" }
+revolt_rocket_okapi = { version = "0.9.1", features = [ "swagger" ] }
+revolt_okapi = { version = "0.9.1" }
 schemars = { version = "0.8.8" }
 
 # Testing

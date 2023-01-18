@@ -9,7 +9,7 @@ edition = "2021"
 async-std-runtime = [ "async-std", "mongodb/async-std-runtime" ]
 database-mongodb = [ "mongodb", "bson", "futures" ]
 rocket_impl = [ "rocket" ]
-okapi_impl = [ "rocket_okapi", "okapi", "schemas" ]
+okapi_impl = [ "revolt_rocket_okapi", "revolt_okapi", "schemas" ]
 schemas = [ "schemars" ]
 
 revolt_source_list = []
@@ -48,8 +48,8 @@ mongodb = { version = "2.2.1", default-features = false, optional = true }
 async-std = { version = "1.9.0", features = ["tokio02", "tokio1", "attributes"], optional = true }
 
 # Schemas
-rocket_okapi = { git = "https://github.com/insertish/okapi", rev = "a1048d0c8cd771e424ec97d33d825c32e06aa120", features = [ "swagger" ], optional = true }
-okapi = { git = "https://github.com/insertish/okapi", rev = "a1048d0c8cd771e424ec97d33d825c32e06aa120", optional = true }
+revolt_rocket_okapi = { version = "0.9.1", features = [ "swagger" ], optional = true }
+revolt_okapi = { version = "0.9.1", optional = true }
 schemars = { version = "0.8.8", optional = true }
 
 # Validation

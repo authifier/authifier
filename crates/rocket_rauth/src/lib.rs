@@ -3,7 +3,7 @@ extern crate serde;
 #[macro_use]
 extern crate rocket;
 #[macro_use]
-extern crate rocket_okapi;
+extern crate revolt_rocket_okapi;
 
 // Rust compiler seems to think
 // this isn't used even though
