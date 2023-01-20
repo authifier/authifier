@@ -285,7 +285,7 @@ dependencies = [
 
 [[package]]
 name = "authifier"
-version = "1.0.5"
+version = "1.0.6"
 dependencies = [
  "async-std",
  "async-trait",
@@ -2042,7 +2042,7 @@ dependencies = [
 
 [[package]]
 name = "rocket_authifier"
-version = "1.0.5"
+version = "1.0.6"
 dependencies = [
  "async-std",
  "authifier",
