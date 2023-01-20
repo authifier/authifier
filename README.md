@@ -35,8 +35,8 @@ Getting started is very simple, first add Authifier to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-authifier = { git = "https://github.com/insertish/authifier", features = [ "rocket_impl", "okapi_impl", "async-std-runtime", "database-mongodb" ] }
-rocket_authifier = { git = "https://github.com/insertish/authifier" }
+authifier = { version = "1.0", features = [ "rocket_impl", "okapi_impl", "async-std-runtime", "database-mongodb" ] }
+rocket_authifier = { version = "1.0" }
 
 # For the example below, you also need:
 rocket = { version = "0.5.0-rc.2", default-features = false, features = ["json"] }
@@ -132,9 +132,10 @@ database.run_migration(Migration::[..]).await.unwrap();
 
 The following migrations are available and must be run in order:
 
-| Date       | Migration                   | Description                                                                                          |
-| ---------- | --------------------------- | ---------------------------------------------------------------------------------------------------- |
-| 2022-06-03 | `M2022_06_03EnsureUpToSpec` | Reset and reconstruct indexes to be fully up to date. This will also create any missing collections. |
+| Date       | Migration                        | Description                                                                                          |
+| ---------- | -------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| 2022-06-03 | `M2022_06_03EnsureUpToSpec`      | Reset and reconstruct indexes to be fully up to date. This will also create any missing collections. |
+| 2022-06-09 | `M2022_06_09AddIndexForDeletion` | Add an index for account deletion information.                                                       |
 
 ## How does Authifier work?
 
