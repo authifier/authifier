@@ -47,6 +47,7 @@ pub async fn password_reset(
     // Update the account
     account.password = hash_password(data.password)?;
     account.password_reset = None;
+    account.lockout = None;
 
     // Commit to database
     account.save(rauth).await?;
