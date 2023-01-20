@@ -480,11 +480,16 @@ mod tests {
             .dispatch()
             .await;
 
-        assert_eq!(res.status(), Status::Unauthorized);
-        assert_eq!(
-            res.into_string().await,
-            Some("{\"type\":\"DisabledAccount\"}".into())
-        );
+        assert_eq!(res.status(), Status::Ok);
+        let response = serde_json::from_str::<crate::routes::session::login::ResponseLogin>(
+            &res.into_string().await.unwrap(),
+        )
+        .expect("`ResponseLogin`");
+
+        assert!(matches!(
+            response,
+            crate::routes::session::login::ResponseLogin::Disabled { .. }
+        ));
     }
 
     #[async_std::test]
