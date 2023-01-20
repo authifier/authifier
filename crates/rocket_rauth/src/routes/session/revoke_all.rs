@@ -1,6 +1,9 @@
 //! Revoke all sessions
 //! DELETE /session/all
-use rauth::{models::Session, RAuth, Result};
+use rauth::{
+    models::{Account, Session},
+    RAuth, Result,
+};
 use rocket::State;
 use rocket_empty::EmptyResponse;
 
@@ -12,6 +15,7 @@ use rocket_empty::EmptyResponse;
 pub async fn revoke_all(
     rauth: &State<RAuth>,
     session: Session,
+    account: Account,
     revoke_self: Option<bool>,
 ) -> Result<EmptyResponse> {
     let ignore = if revoke_self.unwrap_or(false) {
@@ -20,9 +24,8 @@ pub async fn revoke_all(
         Some(session.id)
     };
 
-    rauth
-        .database
-        .delete_all_sessions(&session.user_id, ignore)
+    account
+        .delete_all_sessions(rauth, ignore)
         .await
         .map(|_| EmptyResponse)
 }

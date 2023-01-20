@@ -16,11 +16,7 @@ pub async fn revoke(rauth: &State<RAuth>, user: Session, id: String) -> Result<E
         return Err(Error::InvalidToken);
     }
 
-    rauth
-        .database
-        .delete_session(&id)
-        .await
-        .map(|_| EmptyResponse)
+    session.delete(rauth).await.map(|_| EmptyResponse)
 }
 
 #[cfg(test)]

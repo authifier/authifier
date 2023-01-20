@@ -336,20 +336,33 @@ impl Account {
         }
     }
 
-    /// Disable an account
-    pub async fn disable(&mut self, rauth: &RAuth) -> Success {
-        self.disabled = true;
-        rauth.database.delete_all_sessions(&self.id, None).await?;
-        self.save(rauth).await?;
+    /// Delete all sessions for an account
+    pub async fn delete_all_sessions(
+        &self,
+        rauth: &RAuth,
+        exclude_session_id: Option<String>,
+    ) -> Success {
+        rauth
+            .database
+            .delete_all_sessions(&self.id, exclude_session_id.clone())
+            .await?;
 
         // Create and push event
         rauth
-            .publish_event(RAuthEvent::DisableAccount {
+            .publish_event(RAuthEvent::DeleteAllSessions {
                 user_id: self.id.to_string(),
+                exclude_session_id,
             })
             .await;
 
         Ok(())
+    }
+
+    /// Disable an account
+    pub async fn disable(&mut self, rauth: &RAuth) -> Success {
+        self.disabled = true;
+        self.delete_all_sessions(rauth, None).await?;
+        self.save(rauth).await
     }
 
     /// Schedule an account for deletion

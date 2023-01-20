@@ -53,10 +53,7 @@ pub async fn password_reset(
 
     // Delete all sessions if required
     if data.remove_sessions {
-        rauth
-            .database
-            .delete_all_sessions(&account.id, None)
-            .await?;
+        account.delete_all_sessions(rauth, None).await?;
     }
 
     Ok(EmptyResponse)

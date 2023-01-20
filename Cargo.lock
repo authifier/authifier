@@ -1805,7 +1805,7 @@ dependencies = [
 
 [[package]]
 name = "rauth"
-version = "1.0.1"
+version = "1.0.2"
 dependencies = [
  "async-std",
  "async-trait",
@@ -2096,7 +2096,7 @@ dependencies = [
 
 [[package]]
 name = "rocket_rauth"
-version = "1.0.1"
+version = "1.0.2"
 dependencies = [
  "async-std",
  "base32",
