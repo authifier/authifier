@@ -212,6 +212,8 @@ mod tests {
         .await
         .unwrap();
 
+        receiver.try_recv().expect("an event");
+
         let client =
             bootstrap_rocket_with_auth(rauth, routes![crate::routes::session::login::login]).await;
 
