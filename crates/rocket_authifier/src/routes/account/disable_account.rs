@@ -67,7 +67,7 @@ mod tests {
         );
 
         let event = receiver.try_recv().expect("an event");
-        if let AuthifierEvent::DeleteAllSessions { user_id } = event {
+        if let AuthifierEvent::DeleteAllSessions { user_id, .. } = event {
             assert_eq!(user_id, session.user_id);
         } else {
             panic!("Received incorrect event type. {:?}", event);
