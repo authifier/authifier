@@ -1,7 +1,7 @@
 //! Generate a new secret for TOTP.
 //! POST /mfa/totp
-use rauth::models::{Account, MFAResponse};
-use rauth::{RAuth, Result};
+use authifier::models::{Account, MFAResponse};
+use authifier::{Authifier, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 use rocket_empty::EmptyResponse;
@@ -12,7 +12,7 @@ use rocket_empty::EmptyResponse;
 #[openapi(tag = "MFA")]
 #[put("/totp", data = "<data>")]
 pub async fn totp_enable(
-    rauth: &State<RAuth>,
+    authifier: &State<Authifier>,
     mut account: Account,
     data: Json<MFAResponse>,
 ) -> Result<EmptyResponse> {
@@ -20,13 +20,13 @@ pub async fn totp_enable(
     account.mfa.enable_totp(data.into_inner())?;
 
     // Save model to database
-    account.save(rauth).await.map(|_| EmptyResponse)
+    account.save(authifier).await.map(|_| EmptyResponse)
 }
 
 #[cfg(test)]
 #[cfg(feature = "test")]
 mod tests {
-    use rauth::models::totp::Totp;
+    use authifier::models::totp::Totp;
 
     use crate::{routes::session::login::ResponseLogin, test::*};
 
@@ -34,12 +34,12 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, account, _) = for_test_authenticated("totp_enable::success").await;
+        let (authifier, session, account, _) = for_test_authenticated("totp_enable::success").await;
         let ticket = MFATicket::new(account.id.to_string(), true);
-        ticket.save(&rauth).await.unwrap();
+        ticket.save(&authifier).await.unwrap();
 
         let client = bootstrap_rocket_with_auth(
-            rauth,
+            authifier,
             routes![
                 crate::routes::mfa::totp_generate_secret::totp_generate_secret,
                 crate::routes::mfa::totp_enable::totp_enable,

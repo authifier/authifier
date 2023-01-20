@@ -1804,7 +1804,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rauth"
+name = "authifier"
 version = "1.0.4"
 dependencies = [
  "async-std",
@@ -2095,7 +2095,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rocket_rauth"
+name = "rocket_authifier"
 version = "1.0.4"
 dependencies = [
  "async-std",
@@ -2103,7 +2103,7 @@ dependencies = [
  "chrono",
  "iso8601-timestamp",
  "mongodb",
- "rauth",
+ "authifier",
  "regex",
  "reqwest",
  "revolt_okapi",

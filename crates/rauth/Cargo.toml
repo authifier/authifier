@@ -1,5 +1,5 @@
 [package]
-name = "rauth"
+name = "authifier"
 version = "1.0.4"
 edition = "2021"
 

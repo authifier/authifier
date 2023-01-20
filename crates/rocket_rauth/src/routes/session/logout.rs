@@ -1,6 +1,6 @@
 //! Logout of current session
 //! POST /session/logout
-use rauth::{models::Session, RAuth, Result};
+use authifier::{models::Session, Authifier, Result};
 use rocket::State;
 use rocket_empty::EmptyResponse;
 
@@ -9,8 +9,8 @@ use rocket_empty::EmptyResponse;
 /// Delete current session.
 #[openapi(tag = "Session")]
 #[post("/logout")]
-pub async fn logout(rauth: &State<RAuth>, session: Session) -> Result<EmptyResponse> {
-    session.delete(rauth).await.map(|_| EmptyResponse)
+pub async fn logout(authifier: &State<Authifier>, session: Session) -> Result<EmptyResponse> {
+    session.delete(authifier).await.map(|_| EmptyResponse)
 }
 
 #[cfg(test)]
@@ -22,9 +22,9 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, _, receiver) = for_test_authenticated("logout::success").await;
+        let (authifier, session, _, receiver) = for_test_authenticated("logout::success").await;
         let client = bootstrap_rocket_with_auth(
-            rauth.clone(),
+            authifier.clone(),
             routes![crate::routes::session::logout::logout],
         )
         .await;
@@ -37,12 +37,16 @@ mod tests {
 
         assert_eq!(res.status(), Status::NoContent);
         assert_eq!(
-            rauth.database.find_session(&session.id).await.unwrap_err(),
+            authifier
+                .database
+                .find_session(&session.id)
+                .await
+                .unwrap_err(),
             Error::UnknownUser
         );
 
         let event = receiver.try_recv().expect("an event");
-        if let RAuthEvent::DeleteSession {
+        if let AuthifierEvent::DeleteSession {
             user_id,
             session_id,
         } = event

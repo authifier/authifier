@@ -8,7 +8,7 @@ pub use captcha::*;
 pub use email_verification::*;
 pub use passwords::*;
 
-/// rAuth configuration
+/// Authifier configuration
 #[derive(Default, Serialize, Deserialize, Clone)]
 pub struct Config {
     /// Check if passwords are compromised

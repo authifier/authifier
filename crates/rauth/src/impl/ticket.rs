@@ -2,7 +2,7 @@ use chrono::{Duration, Utc};
 
 use crate::{
     models::{MFATicket, MultiFactorAuthentication, UnvalidatedTicket, ValidatedTicket},
-    Error, RAuth, Success,
+    Authifier, Error, Success,
 };
 use std::ops::Deref;
 
@@ -25,8 +25,8 @@ impl MFATicket {
     }
 
     /// Save model
-    pub async fn save(&self, rauth: &RAuth) -> Success {
-        rauth.database.save_ticket(self).await
+    pub async fn save(&self, authifier: &Authifier) -> Success {
+        authifier.database.save_ticket(self).await
     }
 
     /// Check if this MFA ticket has expired
@@ -43,12 +43,12 @@ impl MFATicket {
     }
 
     /// Claim and remove this MFA ticket
-    pub async fn claim(&self, rauth: &RAuth) -> Success {
+    pub async fn claim(&self, authifier: &Authifier) -> Success {
         if self.is_expired() {
             return Err(Error::InvalidToken);
         }
 
-        rauth.database.delete_ticket(&self.id).await
+        authifier.database.delete_ticket(&self.id).await
     }
 }
 

@@ -1,8 +1,8 @@
 //! Change account password.
 //! PATCH /account/change/password
-use rauth::models::Account;
-use rauth::util::hash_password;
-use rauth::{RAuth, Result};
+use authifier::models::Account;
+use authifier::util::hash_password;
+use authifier::{Authifier, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 use rocket_empty::EmptyResponse;
@@ -22,14 +22,14 @@ pub struct DataChangePassword {
 #[openapi(tag = "Account")]
 #[patch("/change/password", data = "<data>")]
 pub async fn change_password(
-    rauth: &State<RAuth>,
+    authifier: &State<Authifier>,
     mut account: Account,
     data: Json<DataChangePassword>,
 ) -> Result<EmptyResponse> {
     let data = data.into_inner();
 
     // Verify password can be used
-    rauth
+    authifier
         .config
         .password_scanning
         .assert_safe(&data.password)
@@ -42,7 +42,7 @@ pub async fn change_password(
     account.password = hash_password(data.password)?;
 
     // Commit to database
-    account.save(rauth).await.map(|_| EmptyResponse)
+    account.save(authifier).await.map(|_| EmptyResponse)
 }
 
 #[cfg(test)]
@@ -54,9 +54,9 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, _, _) = for_test_authenticated("change_password::success").await;
+        let (authifier, session, _, _) = for_test_authenticated("change_password::success").await;
         let client = bootstrap_rocket_with_auth(
-            rauth,
+            authifier,
             routes![crate::routes::account::change_password::change_password],
         )
         .await;

@@ -1,6 +1,6 @@
 //! Confirm an account deletion.
 //! PUT /account/delete
-use rauth::{RAuth, Result};
+use authifier::{Authifier, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 use rocket_empty::EmptyResponse;
@@ -18,20 +18,20 @@ pub struct DataAccountDeletion {
 #[openapi(tag = "Account")]
 #[put("/delete", data = "<data>")]
 pub async fn confirm_deletion(
-    rauth: &State<RAuth>,
+    authifier: &State<Authifier>,
     data: Json<DataAccountDeletion>,
 ) -> Result<EmptyResponse> {
     let data = data.into_inner();
 
     // Find the relevant account
-    let mut account = rauth
+    let mut account = authifier
         .database
         .find_account_with_deletion_token(&data.token)
         .await?;
 
     // Schedule the account for deletion
     account
-        .schedule_deletion(rauth)
+        .schedule_deletion(authifier)
         .await
         .map(|_| EmptyResponse)
 }
@@ -46,7 +46,8 @@ mod tests {
 
     #[async_std::test]
     async fn success() {
-        let (rauth, _, mut account, _) = for_test_authenticated("confirm_deletion::success").await;
+        let (authifier, _, mut account, _) =
+            for_test_authenticated("confirm_deletion::success").await;
 
         account.deletion = Some(DeletionInfo::WaitingForVerification {
             token: "token".into(),
@@ -58,10 +59,10 @@ mod tests {
             ),
         });
 
-        account.save(&rauth).await.unwrap();
+        account.save(&authifier).await.unwrap();
 
         let client = bootstrap_rocket_with_auth(
-            rauth,
+            authifier,
             routes![crate::routes::account::confirm_deletion::confirm_deletion,],
         )
         .await;

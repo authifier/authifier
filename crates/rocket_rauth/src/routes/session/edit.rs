@@ -1,7 +1,7 @@
 //! Edit a session
 //! PATCH /session/:id
-use rauth::models::Session;
-use rauth::{Error, RAuth, Result};
+use authifier::models::Session;
+use authifier::{Authifier, Error, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 
@@ -20,12 +20,12 @@ pub struct DataEditSession {
 #[openapi(tag = "Session")]
 #[patch("/<id>", data = "<data>")]
 pub async fn edit(
-    rauth: &State<RAuth>,
+    authifier: &State<Authifier>,
     user: Session,
     id: String,
     data: Json<DataEditSession>,
 ) -> Result<Json<SessionInfo>> {
-    let mut session = rauth.database.find_session(&id).await?;
+    let mut session = authifier.database.find_session(&id).await?;
 
     // Make sure we own this session
     if user.user_id != session.user_id {
@@ -36,7 +36,7 @@ pub async fn edit(
     session.name = data.into_inner().friendly_name;
 
     // Save session
-    rauth.database.save_session(&session).await?;
+    authifier.database.save_session(&session).await?;
 
     Ok(Json(session.into()))
 }
@@ -50,9 +50,10 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, _, _) = for_test_authenticated("edit::success").await;
+        let (authifier, session, _, _) = for_test_authenticated("edit::success").await;
         let client =
-            bootstrap_rocket_with_auth(rauth, routes![crate::routes::session::edit::edit]).await;
+            bootstrap_rocket_with_auth(authifier, routes![crate::routes::session::edit::edit])
+                .await;
 
         let res = client
             .patch(format!("/{}", session.id))

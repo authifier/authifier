@@ -1,6 +1,6 @@
 //! Fetch recovery codes for an account.
 //! POST /mfa/recovery
-use rauth::{
+use authifier::{
     models::{Account, ValidatedTicket},
     Result,
 };
@@ -27,12 +27,13 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, account, _) = for_test_authenticated("fetch_recovery::success").await;
+        let (authifier, session, account, _) =
+            for_test_authenticated("fetch_recovery::success").await;
         let ticket = MFATicket::new(account.id, true);
-        ticket.save(&rauth).await.unwrap();
+        ticket.save(&authifier).await.unwrap();
 
         let client = bootstrap_rocket_with_auth(
-            rauth,
+            authifier,
             routes![crate::routes::mfa::fetch_recovery::fetch_recovery],
         )
         .await;

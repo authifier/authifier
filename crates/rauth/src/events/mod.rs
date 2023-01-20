@@ -2,7 +2,7 @@ use crate::models::{Account, Session};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "event_type")]
-pub enum RAuthEvent {
+pub enum AuthifierEvent {
     CreateAccount {
         account: Account,
     },

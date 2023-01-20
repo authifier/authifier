@@ -11,14 +11,14 @@
 - Always confirm any change to security settings using two-factor method if available.
 - Prevent phishing attacks.
 
-## Play around with RAuth API
+## Play around with Authifier API
 
 You can play around with the API by using the provided example and using Swagger:
 
 ```bash
 # Clone the project
-git clone https://github.com/insertish/rauth
-cd rauth
+git clone https://github.com/insertish/authifier
+cd authifier
 
 # Bring up MongoDB
 docker-compose up -d database
@@ -31,27 +31,27 @@ Now you can navigate to http://localhost:8000/swagger!
 
 ## Usage
 
-Getting started is very simple, first add rAuth to your `Cargo.toml`:
+Getting started is very simple, first add Authifier to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-rauth = { git = "https://github.com/insertish/rauth", features = [ "rocket_impl", "okapi_impl", "async-std-runtime", "database-mongodb" ] }
-rocket_rauth = { git = "https://github.com/insertish/rauth" }
+authifier = { git = "https://github.com/insertish/authifier", features = [ "rocket_impl", "okapi_impl", "async-std-runtime", "database-mongodb" ] }
+rocket_authifier = { git = "https://github.com/insertish/authifier" }
 
 # For the example below, you also need:
 rocket = { version = "0.5.0-rc.2", default-features = false, features = ["json"] }
 mongodb = { version = "2.2.1", default-features = false, features = ["async-std-runtime"] }
 ```
 
-Then you can create a new instance of rAuth and mount it on to Rocket.
+Then you can create a new instance of Authifier and mount it on to Rocket.
 
 ```rust
 #[macro_use]
 extern crate rocket;
 
 use mongodb::{options::ClientOptions, Client};
-use rauth::database::MongoDb;
-use rauth::Migration;
+use authifier::database::MongoDb;
+use authifier::Migration;
 
 #[launch]
 async fn rocket() -> _ {
@@ -63,16 +63,16 @@ async fn rocket() -> _ {
   // Connect to MongoDB
   let client = Client::with_options(client_options).expect("MongoDB server");
 
-  // Prepare rAuth database abstraction
-  let database = rauth::Database::MongoDb(MongoDb(client.database("rauth")));
+  // Prepare Authifier database abstraction
+  let database = authifier::Database::MongoDb(MongoDb(client.database("authifier")));
 
   // Run database migrations
   // TODO: you should only run this once and have this as part of your migrations
   // Also keep this up to date with the "migrations" section down below this one.
   database.run_migration(Migration::M2022_06_03EnsureUpToSpec).await.unwrap();
 
-  // Configure rAuth however you need to
-  let rauth = rauth::RAuth {
+  // Configure Authifier however you need to
+  let authifier = authifier::Authifier {
     database,
     ..Default::default()
   };
@@ -80,11 +80,11 @@ async fn rocket() -> _ {
   // Build your web server as usual...
   rocket::build()
     // Attach the configuration as state
-    .manage(rauth)
+    .manage(authifier)
     // Mount authentication routes
-    .mount("/auth/account", rocket_rauth::routes::account::routes().0)
-    .mount("/auth/session", rocket_rauth::routes::session::routes().0)
-    .mount("/auth/mfa", rocket_rauth::routes::mfa::routes().0)
+    .mount("/auth/account", rocket_authifier::routes::account::routes().0)
+    .mount("/auth/session", rocket_authifier::routes::session::routes().0)
+    .mount("/auth/mfa", rocket_authifier::routes::mfa::routes().0)
 }
 ```
 
@@ -121,7 +121,7 @@ Migrating the database is easy, you should orchestrate it yourself, ideally you 
 But, by default, migrations will not run if the system detects that it has probably already been applied.
 
 ```rust
-use rauth::{ Database, Migration };
+use authifier::{ Database, Migration };
 
 // Acquire the database first
 let database = Database::[..];
@@ -136,9 +136,9 @@ The following migrations are available and must be run in order:
 | ---------- | --------------------------- | ---------------------------------------------------------------------------------------------------- |
 | 2022-06-03 | `M2022_06_03EnsureUpToSpec` | Reset and reconstruct indexes to be fully up to date. This will also create any missing collections. |
 
-## How does rAuth work?
+## How does Authifier work?
 
-rAuth uses email / password combinations to authenticate users and nothing else, this might not be what you're looking for but I personally prefer this format.
+Authifier uses email / password combinations to authenticate users and nothing else, this might not be what you're looking for but I personally prefer this format.
 
 - If you need usernames, you need to handle this on your end.
 
@@ -148,7 +148,7 @@ When a user signs in, a new session is created, every single device a user logs 
 
 ![Example from Revolt App](https://img.insrt.uk/xexu7/daLinuSa38.png/raw)
 
-Internally rAuth stores emails with and without special characters, `+.`.
+Internally Authifier stores emails with and without special characters, `+.`.
 
 - This means we can support plus signing without allowing the same email to sign up multiple times.
   - For example, `inbox+a@example.com` and `inbox+b@example.com` are treated as equal.

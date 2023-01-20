@@ -1,6 +1,6 @@
 //! Revoke an active session
 //! DELETE /session/:id
-use rauth::{models::Session, Error, RAuth, Result};
+use authifier::{models::Session, Authifier, Error, Result};
 use rocket::State;
 use rocket_empty::EmptyResponse;
 
@@ -9,14 +9,18 @@ use rocket_empty::EmptyResponse;
 /// Delete a specific active session.
 #[openapi(tag = "Session")]
 #[delete("/<id>")]
-pub async fn revoke(rauth: &State<RAuth>, user: Session, id: String) -> Result<EmptyResponse> {
-    let session = rauth.database.find_session(&id).await?;
+pub async fn revoke(
+    authifier: &State<Authifier>,
+    user: Session,
+    id: String,
+) -> Result<EmptyResponse> {
+    let session = authifier.database.find_session(&id).await?;
 
     if session.user_id != user.user_id {
         return Err(Error::InvalidToken);
     }
 
-    session.delete(rauth).await.map(|_| EmptyResponse)
+    session.delete(authifier).await.map(|_| EmptyResponse)
 }
 
 #[cfg(test)]
@@ -28,9 +32,9 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, _, _) = for_test_authenticated("revoke::success").await;
+        let (authifier, session, _, _) = for_test_authenticated("revoke::success").await;
         let client = bootstrap_rocket_with_auth(
-            rauth.clone(),
+            authifier.clone(),
             routes![crate::routes::session::revoke::revoke],
         )
         .await;
@@ -43,7 +47,11 @@ mod tests {
 
         assert_eq!(res.status(), Status::NoContent);
         assert_eq!(
-            rauth.database.find_session(&session.id).await.unwrap_err(),
+            authifier
+                .database
+                .find_session(&session.id)
+                .await
+                .unwrap_err(),
             Error::UnknownUser
         );
     }

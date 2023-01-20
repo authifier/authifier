@@ -1,8 +1,8 @@
 //! Delete an account.
 //! POST /account/delete
-use rauth::{
+use authifier::{
     models::{Account, ValidatedTicket},
-    RAuth, Result,
+    Authifier, Result,
 };
 use rocket::State;
 use rocket_empty::EmptyResponse;
@@ -13,12 +13,12 @@ use rocket_empty::EmptyResponse;
 #[openapi(tag = "Account")]
 #[post("/delete")]
 pub async fn delete_account(
-    rauth: &State<RAuth>,
+    authifier: &State<Authifier>,
     mut account: Account,
     _ticket: ValidatedTicket,
 ) -> Result<EmptyResponse> {
     account
-        .start_account_deletion(rauth)
+        .start_account_deletion(authifier)
         .await
         .map(|_| EmptyResponse)
 }
@@ -32,18 +32,18 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, mut account, _) =
+        let (authifier, session, mut account, _) =
             for_test_authenticated_with_config("delete_account::success", test_smtp_config().await)
                 .await;
 
         account.email = "delete_account@smtp.test".to_string();
-        account.save(&rauth).await.unwrap();
+        account.save(&authifier).await.unwrap();
 
         let ticket = MFATicket::new(account.id.to_string(), true);
-        ticket.save(&rauth).await.unwrap();
+        ticket.save(&authifier).await.unwrap();
 
         let client = bootstrap_rocket_with_auth(
-            rauth,
+            authifier,
             routes![
                 crate::routes::account::delete_account::delete_account,
                 crate::routes::account::confirm_deletion::confirm_deletion

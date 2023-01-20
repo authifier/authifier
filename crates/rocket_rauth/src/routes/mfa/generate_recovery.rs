@@ -1,7 +1,7 @@
 //! Re-generate recovery codes for an account.
 //! PATCH /mfa/recovery
-use rauth::models::{Account, ValidatedTicket};
-use rauth::{RAuth, Result};
+use authifier::models::{Account, ValidatedTicket};
+use authifier::{Authifier, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 
@@ -11,7 +11,7 @@ use rocket::State;
 #[openapi(tag = "MFA")]
 #[patch("/recovery")]
 pub async fn generate_recovery(
-    rauth: &State<RAuth>,
+    authifier: &State<Authifier>,
     mut account: Account,
     _ticket: ValidatedTicket,
 ) -> Result<Json<Vec<String>>> {
@@ -19,7 +19,7 @@ pub async fn generate_recovery(
     account.mfa.generate_recovery_codes();
 
     // Save account model
-    account.save(rauth).await?;
+    account.save(authifier).await?;
 
     // Return them to the user
     Ok(Json(account.mfa.recovery_codes))
@@ -34,16 +34,16 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, account, _) =
+        let (authifier, session, account, _) =
             for_test_authenticated("generate_recovery::success").await;
         let ticket1 = MFATicket::new(account.id.to_string(), true);
-        ticket1.save(&rauth).await.unwrap();
+        ticket1.save(&authifier).await.unwrap();
 
         let ticket2 = MFATicket::new(account.id, true);
-        ticket2.save(&rauth).await.unwrap();
+        ticket2.save(&authifier).await.unwrap();
 
         let client = bootstrap_rocket_with_auth(
-            rauth,
+            authifier,
             routes![
                 crate::routes::mfa::generate_recovery::generate_recovery,
                 crate::routes::mfa::fetch_recovery::fetch_recovery

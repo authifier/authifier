@@ -1,7 +1,7 @@
 //! Fetch all sessions
 //! GET /session/all
-use rauth::models::Session;
-use rauth::{RAuth, Result};
+use authifier::models::Session;
+use authifier::{Authifier, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 
@@ -26,8 +26,11 @@ impl From<Session> for SessionInfo {
 /// Fetch all sessions associated with this account.
 #[openapi(tag = "Session")]
 #[get("/all")]
-pub async fn fetch_all(rauth: &State<RAuth>, session: Session) -> Result<Json<Vec<SessionInfo>>> {
-    rauth
+pub async fn fetch_all(
+    authifier: &State<Authifier>,
+    session: Session,
+) -> Result<Json<Vec<SessionInfo>>> {
+    authifier
         .database
         .find_sessions(&session.user_id)
         .await
@@ -44,17 +47,17 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, account, _) = for_test_authenticated("fetch_all::success").await;
+        let (authifier, session, account, _) = for_test_authenticated("fetch_all::success").await;
 
         for i in 1..=3 {
             account
-                .create_session(&rauth, format!("session{}", i))
+                .create_session(&authifier, format!("session{}", i))
                 .await
                 .unwrap();
         }
 
         let client = bootstrap_rocket_with_auth(
-            rauth,
+            authifier,
             routes![crate::routes::session::fetch_all::fetch_all],
         )
         .await;

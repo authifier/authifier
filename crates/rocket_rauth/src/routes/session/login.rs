@@ -3,10 +3,10 @@
 use std::ops::Add;
 use std::time::Duration;
 
+use authifier::models::{EmailVerification, Lockout, MFAMethod, MFAResponse, MFATicket, Session};
+use authifier::util::normalise_email;
+use authifier::{Authifier, Error, Result};
 use iso8601_timestamp::Timestamp;
-use rauth::models::{EmailVerification, Lockout, MFAMethod, MFAResponse, MFATicket, Session};
-use rauth::util::normalise_email;
-use rauth::{Error, RAuth, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 
@@ -54,7 +54,10 @@ pub enum ResponseLogin {
 /// Login to an account.
 #[openapi(tag = "Session")]
 #[post("/login", data = "<data>")]
-pub async fn login(rauth: &State<RAuth>, data: Json<DataLogin>) -> Result<Json<ResponseLogin>> {
+pub async fn login(
+    authifier: &State<Authifier>,
+    data: Json<DataLogin>,
+) -> Result<Json<ResponseLogin>> {
     let (account, name) = match data.into_inner() {
         DataLogin::Email {
             email,
@@ -65,7 +68,7 @@ pub async fn login(rauth: &State<RAuth>, data: Json<DataLogin>) -> Result<Json<R
             let email_normalised = normalise_email(email);
 
             // Lookup the email in database
-            if let Some(mut account) = rauth
+            if let Some(mut account) = authifier
                 .database
                 .find_account_by_normalised_email(&email_normalised)
                 .await?
@@ -76,7 +79,7 @@ pub async fn login(rauth: &State<RAuth>, data: Json<DataLogin>) -> Result<Json<R
                 }
 
                 // Make sure password has not been compromised
-                rauth
+                authifier
                     .config
                     .password_scanning
                     .assert_safe(&password)
@@ -122,14 +125,14 @@ pub async fn login(rauth: &State<RAuth>, data: Json<DataLogin>) -> Result<Json<R
                         });
                     }
 
-                    account.save(rauth).await?;
+                    account.save(authifier).await?;
                     return Err(err);
                 }
 
                 // Clear lockout information if present
                 if account.lockout.is_some() {
                     account.lockout = None;
-                    account.save(rauth).await?;
+                    account.save(authifier).await?;
                 }
 
                 // Check whether an MFA step is required
@@ -137,7 +140,7 @@ pub async fn login(rauth: &State<RAuth>, data: Json<DataLogin>) -> Result<Json<R
                     // Create a new ticket
                     let mut ticket = MFATicket::new(account.id, false);
                     ticket.populate(&account.mfa).await;
-                    ticket.save(rauth).await?;
+                    ticket.save(authifier).await?;
 
                     // Return applicable methods
                     return Ok(Json(ResponseLogin::MFA {
@@ -157,19 +160,19 @@ pub async fn login(rauth: &State<RAuth>, data: Json<DataLogin>) -> Result<Json<R
             friendly_name,
         } => {
             // Resolve the MFA ticket
-            let ticket = rauth
+            let ticket = authifier
                 .database
                 .find_ticket_by_token(&mfa_ticket)
                 .await?
                 .ok_or(Error::InvalidToken)?;
 
             // Find the corresponding account
-            let mut account = rauth.database.find_account(&ticket.account_id).await?;
+            let mut account = authifier.database.find_account(&ticket.account_id).await?;
 
             // Verify the MFA response
             if let Some(mfa_response) = mfa_response {
                 account
-                    .consume_mfa_response(rauth, mfa_response, Some(ticket))
+                    .consume_mfa_response(authifier, mfa_response, Some(ticket))
                     .await?;
             } else if !ticket.authorised {
                 return Err(Error::InvalidToken);
@@ -191,7 +194,7 @@ pub async fn login(rauth: &State<RAuth>, data: Json<DataLogin>) -> Result<Json<R
 
     // Create and return a new session
     Ok(Json(ResponseLogin::Success(
-        account.create_session(rauth, name).await?,
+        account.create_session(authifier, name).await?,
     )))
 }
 
@@ -206,10 +209,10 @@ mod tests {
 
     #[async_std::test]
     async fn success() {
-        let (rauth, receiver) = for_test("login::success").await;
+        let (authifier, receiver) = for_test("login::success").await;
 
         Account::new(
-            &rauth,
+            &authifier,
             "example@validemail.com".into(),
             "password_insecure".into(),
             false,
@@ -220,7 +223,8 @@ mod tests {
         receiver.try_recv().expect("an event");
 
         let client =
-            bootstrap_rocket_with_auth(rauth, routes![crate::routes::session::login::login]).await;
+            bootstrap_rocket_with_auth(authifier, routes![crate::routes::session::login::login])
+                .await;
 
         let res = client
             .post("/login")
@@ -239,14 +243,14 @@ mod tests {
         assert!(serde_json::from_str::<Session>(&res.into_string().await.unwrap()).is_ok());
 
         let event = receiver.try_recv().expect("an event");
-        if !matches!(event, RAuthEvent::CreateSession { .. }) {
+        if !matches!(event, AuthifierEvent::CreateSession { .. }) {
             panic!("Received incorrect event type. {:?}", event);
         }
     }
 
     #[async_std::test]
     async fn success_totp_mfa() {
-        let (rauth, _, mut account, _) =
+        let (authifier, _, mut account, _) =
             for_test_authenticated("create_ticket::success_totp_mfa").await;
 
         let totp = Totp::Enabled {
@@ -254,10 +258,11 @@ mod tests {
         };
 
         account.mfa.totp_token = totp.clone();
-        account.save(&rauth).await.unwrap();
+        account.save(&authifier).await.unwrap();
 
         let client =
-            bootstrap_rocket_with_auth(rauth, routes![crate::routes::session::login::login]).await;
+            bootstrap_rocket_with_auth(authifier, routes![crate::routes::session::login::login])
+                .await;
 
         let res = client
             .post("/login")
@@ -309,7 +314,7 @@ mod tests {
 
     #[async_std::test]
     async fn success_totp_stored_mfa() {
-        let (rauth, _, mut account, _) =
+        let (authifier, _, mut account, _) =
             for_test_authenticated("create_ticket::success_totp_stored_mfa").await;
 
         let totp = Totp::Enabled {
@@ -317,14 +322,15 @@ mod tests {
         };
 
         account.mfa.totp_token = totp.clone();
-        account.save(&rauth).await.unwrap();
+        account.save(&authifier).await.unwrap();
 
         let mut ticket = MFATicket::new(account.id.to_string(), true);
         ticket.last_totp_code = Some("token from earlier".into());
-        ticket.save(&rauth).await.unwrap();
+        ticket.save(&authifier).await.unwrap();
 
         let client =
-            bootstrap_rocket_with_auth(rauth, routes![crate::routes::session::login::login]).await;
+            bootstrap_rocket_with_auth(authifier, routes![crate::routes::session::login::login])
+                .await;
 
         let res = client
             .post("/login")
@@ -347,7 +353,7 @@ mod tests {
 
     #[async_std::test]
     async fn fail_totp_invalid_mfa() {
-        let (rauth, _, mut account, _) =
+        let (authifier, _, mut account, _) =
             for_test_authenticated("create_ticket::fail_totp_invalid_mfa").await;
 
         let totp = Totp::Enabled {
@@ -355,10 +361,11 @@ mod tests {
         };
 
         account.mfa.totp_token = totp.clone();
-        account.save(&rauth).await.unwrap();
+        account.save(&authifier).await.unwrap();
 
         let client =
-            bootstrap_rocket_with_auth(rauth, routes![crate::routes::session::login::login]).await;
+            bootstrap_rocket_with_auth(authifier, routes![crate::routes::session::login::login])
+                .await;
 
         let res = client
             .post("/login")
@@ -442,10 +449,10 @@ mod tests {
 
     #[async_std::test]
     async fn fail_disabled_account() {
-        let (rauth, _) = for_test("login::fail_disabled_account").await;
+        let (authifier, _) = for_test("login::fail_disabled_account").await;
 
         let mut account = Account::new(
-            &rauth,
+            &authifier,
             "example@validemail.com".into(),
             "password_insecure".into(),
             false,
@@ -454,10 +461,11 @@ mod tests {
         .unwrap();
 
         account.disabled = true;
-        account.save(&rauth).await.unwrap();
+        account.save(&authifier).await.unwrap();
 
         let client =
-            bootstrap_rocket_with_auth(rauth, routes![crate::routes::session::login::login]).await;
+            bootstrap_rocket_with_auth(authifier, routes![crate::routes::session::login::login])
+                .await;
 
         let res = client
             .post("/login")
@@ -481,10 +489,10 @@ mod tests {
 
     #[async_std::test]
     async fn fail_unverified_account() {
-        let (rauth, _) = for_test("login::fail_unverified_account").await;
+        let (authifier, _) = for_test("login::fail_unverified_account").await;
 
         let mut account = Account::new(
-            &rauth,
+            &authifier,
             "example@validemail.com".into(),
             "password_insecure".into(),
             false,
@@ -497,10 +505,11 @@ mod tests {
             expiry: Timestamp::now_utc(),
         };
 
-        account.save(&rauth).await.unwrap();
+        account.save(&authifier).await.unwrap();
 
         let client =
-            bootstrap_rocket_with_auth(rauth, routes![crate::routes::session::login::login]).await;
+            bootstrap_rocket_with_auth(authifier, routes![crate::routes::session::login::login])
+                .await;
 
         let res = client
             .post("/login")
@@ -524,10 +533,10 @@ mod tests {
 
     #[async_std::test]
     async fn fail_locked_account() {
-        let (rauth, _) = for_test("login::fail_locked_account").await;
+        let (authifier, _) = for_test("login::fail_locked_account").await;
 
         let mut account = Account::new(
-            &rauth,
+            &authifier,
             "example@validemail.com".into(),
             "password_insecure".into(),
             false,
@@ -535,10 +544,10 @@ mod tests {
         .await
         .unwrap();
 
-        account.save(&rauth).await.unwrap();
+        account.save(&authifier).await.unwrap();
 
         let client = bootstrap_rocket_with_auth(
-            rauth.clone(),
+            authifier.clone(),
             routes![crate::routes::session::login::login],
         )
         .await;
@@ -629,7 +638,7 @@ mod tests {
             expiry: Some(Timestamp::now_utc()),
         });
 
-        account.save(&rauth).await.unwrap();
+        account.save(&authifier).await.unwrap();
 
         // Once it expires, we can log in.
         let res = client

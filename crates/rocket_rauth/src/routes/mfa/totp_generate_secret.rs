@@ -1,7 +1,7 @@
 //! Generate a new secret for TOTP.
 //! POST /mfa/totp
-use rauth::models::{Account, ValidatedTicket};
-use rauth::{RAuth, Result};
+use authifier::models::{Account, ValidatedTicket};
+use authifier::{Authifier, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 
@@ -17,7 +17,7 @@ pub struct ResponseTotpSecret {
 #[openapi(tag = "MFA")]
 #[post("/totp")]
 pub async fn totp_generate_secret(
-    rauth: &State<RAuth>,
+    authifier: &State<Authifier>,
     mut account: Account,
     _ticket: ValidatedTicket,
 ) -> Result<Json<ResponseTotpSecret>> {
@@ -25,7 +25,7 @@ pub async fn totp_generate_secret(
     let secret = account.mfa.generate_new_totp_secret()?;
 
     // Save model to database
-    account.save(rauth).await?;
+    account.save(authifier).await?;
 
     // Send secret to user
     Ok(Json(ResponseTotpSecret { secret }))
@@ -41,13 +41,13 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, account, _) =
+        let (authifier, session, account, _) =
             for_test_authenticated("totp_generate_secret::success").await;
         let ticket = MFATicket::new(account.id.to_string(), true);
-        ticket.save(&rauth).await.unwrap();
+        ticket.save(&authifier).await.unwrap();
 
         let client = bootstrap_rocket_with_auth(
-            rauth.clone(),
+            authifier.clone(),
             routes![crate::routes::mfa::totp_generate_secret::totp_generate_secret],
         )
         .await;
@@ -64,7 +64,7 @@ mod tests {
         let ResponseTotpSecret { secret } =
             serde_json::from_str::<ResponseTotpSecret>(&res.into_string().await.unwrap()).unwrap();
 
-        let account = rauth.database.find_account(&account.id).await.unwrap();
+        let account = authifier.database.find_account(&account.id).await.unwrap();
         assert_eq!(account.mfa.totp_token, Totp::Pending { secret });
     }
 }

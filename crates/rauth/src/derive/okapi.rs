@@ -31,7 +31,7 @@ impl OpenApiResponderInner for Error {
         }
 
         definitions.insert(
-            "RAuth Error".to_string(),
+            "Authifier Error".to_string(),
             schemars::schema::Schema::Object(schema.schema),
         );
 

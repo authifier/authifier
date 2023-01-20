@@ -1,6 +1,6 @@
 //! Fetch available MFA methods.
 //! GET /mfa/methods
-use rauth::models::{Account, MFAMethod};
+use authifier::models::{Account, MFAMethod};
 use rocket::serde::json::Json;
 
 /// # Get MFA Methods
@@ -15,7 +15,7 @@ pub async fn get_mfa_methods(account: Account) -> Json<Vec<MFAMethod>> {
 #[cfg(test)]
 #[cfg(feature = "test")]
 mod tests {
-    use rauth::models::totp::Totp;
+    use authifier::models::totp::Totp;
 
     use crate::test::*;
 
@@ -23,9 +23,9 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, _, _) = for_test_authenticated("get_mfa_methods::success").await;
+        let (authifier, session, _, _) = for_test_authenticated("get_mfa_methods::success").await;
         let client = bootstrap_rocket_with_auth(
-            rauth,
+            authifier,
             routes![crate::routes::mfa::get_mfa_methods::get_mfa_methods],
         )
         .await;
@@ -47,17 +47,17 @@ mod tests {
     async fn success_has_recovery_and_totp() {
         use rocket::http::Header;
 
-        let (rauth, session, mut account, _) =
+        let (authifier, session, mut account, _) =
             for_test_authenticated("get_mfa_methods::success_has_recovery_and_totp").await;
 
         account.mfa.totp_token = Totp::Enabled {
             secret: "some".to_string(),
         };
         account.mfa.generate_recovery_codes();
-        account.save(&rauth).await.unwrap();
+        account.save(&authifier).await.unwrap();
 
         let client = bootstrap_rocket_with_auth(
-            rauth,
+            authifier,
             routes![crate::routes::mfa::get_mfa_methods::get_mfa_methods],
         )
         .await;

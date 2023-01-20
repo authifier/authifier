@@ -1,7 +1,7 @@
 //! Confirm a password reset.
 //! PATCH /account/reset_password
-use rauth::util::hash_password;
-use rauth::{RAuth, Result};
+use authifier::util::hash_password;
+use authifier::{Authifier, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 use rocket_empty::EmptyResponse;
@@ -26,19 +26,19 @@ pub struct DataPasswordReset {
 #[openapi(tag = "Account")]
 #[patch("/reset_password", data = "<data>")]
 pub async fn password_reset(
-    rauth: &State<RAuth>,
+    authifier: &State<Authifier>,
     data: Json<DataPasswordReset>,
 ) -> Result<EmptyResponse> {
     let data = data.into_inner();
 
     // Find the relevant account
-    let mut account = rauth
+    let mut account = authifier
         .database
         .find_account_with_password_reset(&data.token)
         .await?;
 
     // Verify password can be used
-    rauth
+    authifier
         .config
         .password_scanning
         .assert_safe(&data.password)
@@ -50,11 +50,11 @@ pub async fn password_reset(
     account.lockout = None;
 
     // Commit to database
-    account.save(rauth).await?;
+    account.save(authifier).await?;
 
     // Delete all sessions if required
     if data.remove_sessions {
-        account.delete_all_sessions(rauth, None).await?;
+        account.delete_all_sessions(authifier, None).await?;
     }
 
     Ok(EmptyResponse)
@@ -70,7 +70,7 @@ mod tests {
 
     #[async_std::test]
     async fn success() {
-        let (rauth, session, mut account, _) =
+        let (authifier, session, mut account, _) =
             for_test_authenticated("password_reset::success").await;
 
         account.password_reset = Some(PasswordReset {
@@ -83,10 +83,10 @@ mod tests {
             ),
         });
 
-        account.save(&rauth).await.unwrap();
+        account.save(&authifier).await.unwrap();
 
         let client = bootstrap_rocket_with_auth(
-            rauth.clone(),
+            authifier.clone(),
             routes![
                 crate::routes::account::password_reset::password_reset,
                 crate::routes::session::login::login
@@ -111,7 +111,7 @@ mod tests {
         assert_eq!(res.status(), Status::NoContent);
 
         // Make sure it was used and can't be used again
-        assert!(rauth
+        assert!(authifier
             .database
             .find_account_with_password_reset("token")
             .await
@@ -135,17 +135,21 @@ mod tests {
 
         // Ensure sessions were deleted
         assert_eq!(
-            rauth.database.find_session(&session.id).await.unwrap_err(),
+            authifier
+                .database
+                .find_session(&session.id)
+                .await
+                .unwrap_err(),
             Error::UnknownUser
         );
     }
 
     #[async_std::test]
     async fn fail_invalid_token() {
-        let (rauth, _) = for_test("password_reset::fail_invalid_token").await;
+        let (authifier, _) = for_test("password_reset::fail_invalid_token").await;
 
         let client = bootstrap_rocket_with_auth(
-            rauth,
+            authifier,
             routes![crate::routes::account::password_reset::password_reset],
         )
         .await;

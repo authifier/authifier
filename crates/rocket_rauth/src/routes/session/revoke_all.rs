@@ -1,8 +1,8 @@
 //! Revoke all sessions
 //! DELETE /session/all
-use rauth::{
+use authifier::{
     models::{Account, Session},
-    RAuth, Result,
+    Authifier, Result,
 };
 use rocket::State;
 use rocket_empty::EmptyResponse;
@@ -13,7 +13,7 @@ use rocket_empty::EmptyResponse;
 #[openapi(tag = "Session")]
 #[delete("/all?<revoke_self>")]
 pub async fn revoke_all(
-    rauth: &State<RAuth>,
+    authifier: &State<Authifier>,
     session: Session,
     account: Account,
     revoke_self: Option<bool>,
@@ -25,7 +25,7 @@ pub async fn revoke_all(
     };
 
     account
-        .delete_all_sessions(rauth, ignore)
+        .delete_all_sessions(authifier, ignore)
         .await
         .map(|_| EmptyResponse)
 }
@@ -39,17 +39,17 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, account, _) = for_test_authenticated("revoke_all::success").await;
+        let (authifier, session, account, _) = for_test_authenticated("revoke_all::success").await;
 
         for i in 1..=3 {
             account
-                .create_session(&rauth, format!("session{}", i))
+                .create_session(&authifier, format!("session{}", i))
                 .await
                 .unwrap();
         }
 
         let client = bootstrap_rocket_with_auth(
-            rauth.clone(),
+            authifier.clone(),
             routes![crate::routes::session::revoke_all::revoke_all],
         )
         .await;
@@ -61,7 +61,7 @@ mod tests {
             .await;
 
         assert_eq!(res.status(), Status::NoContent);
-        assert!(rauth
+        assert!(authifier
             .database
             .find_sessions(&session.user_id)
             .await
@@ -73,18 +73,18 @@ mod tests {
     async fn success_not_including_self() {
         use rocket::http::Header;
 
-        let (rauth, session, account, _) =
+        let (authifier, session, account, _) =
             for_test_authenticated("revoke_all::success_not_including_self").await;
 
         for i in 1..=3 {
             account
-                .create_session(&rauth, format!("session{}", i))
+                .create_session(&authifier, format!("session{}", i))
                 .await
                 .unwrap();
         }
 
         let client = bootstrap_rocket_with_auth(
-            rauth.clone(),
+            authifier.clone(),
             routes![crate::routes::session::revoke_all::revoke_all],
         )
         .await;
@@ -97,7 +97,7 @@ mod tests {
 
         assert_eq!(res.status(), Status::NoContent);
         assert_eq!(
-            rauth
+            authifier
                 .database
                 .find_sessions(&session.user_id)
                 .await

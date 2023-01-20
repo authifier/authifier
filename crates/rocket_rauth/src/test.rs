@@ -1,8 +1,8 @@
-pub use mongodb::Client;
-pub use rauth::{
-    config::*, database::MongoDb, models::totp::*, models::*, Config, Database, Error, Migration,
-    RAuth, RAuthEvent, Result,
+pub use authifier::{
+    config::*, database::MongoDb, models::totp::*, models::*, Authifier, AuthifierEvent, Config,
+    Database, Error, Migration, Result,
 };
+pub use mongodb::Client;
 pub use rocket::http::{ContentType, Status};
 
 use rocket::Route;
@@ -104,7 +104,10 @@ pub async fn assert_email_sendria(mailbox: String) -> Mail {
     found.unwrap()
 }
 
-pub async fn for_test_with_config(test: &str, config: Config) -> (RAuth, Receiver<RAuthEvent>) {
+pub async fn for_test_with_config(
+    test: &str,
+    config: Config,
+) -> (Authifier, Receiver<AuthifierEvent>) {
     let client = connect_db().await;
 
     let database = Database::MongoDb(MongoDb(client.database(&format!("test::{}", test))));
@@ -120,7 +123,7 @@ pub async fn for_test_with_config(test: &str, config: Config) -> (RAuth, Receive
     let (s, r) = unbounded();
 
     (
-        RAuth {
+        Authifier {
             database,
             config,
             event_channel: Some(s),
@@ -129,18 +132,18 @@ pub async fn for_test_with_config(test: &str, config: Config) -> (RAuth, Receive
     )
 }
 
-pub async fn for_test(test: &str) -> (RAuth, Receiver<RAuthEvent>) {
+pub async fn for_test(test: &str) -> (Authifier, Receiver<AuthifierEvent>) {
     for_test_with_config(test, Config::default()).await
 }
 
 pub async fn for_test_authenticated_with_config(
     test: &str,
     config: Config,
-) -> (RAuth, Session, Account, Receiver<RAuthEvent>) {
-    let (rauth, receiver) = for_test_with_config(test, config).await;
+) -> (Authifier, Session, Account, Receiver<AuthifierEvent>) {
+    let (authifier, receiver) = for_test_with_config(test, config).await;
 
     let account = Account::new(
-        &rauth,
+        &authifier,
         "email@revolt.chat".into(),
         "password_insecure".into(),
         false,
@@ -152,25 +155,27 @@ pub async fn for_test_authenticated_with_config(
     receiver.try_recv().expect("an event");
 
     let session = account
-        .create_session(&rauth, "my session".into())
+        .create_session(&authifier, "my session".into())
         .await
         .unwrap();
 
     // clear this event
     receiver.try_recv().expect("an event");
 
-    (rauth, session, account, receiver)
+    (authifier, session, account, receiver)
 }
 
-pub async fn for_test_authenticated(test: &str) -> (RAuth, Session, Account, Receiver<RAuthEvent>) {
+pub async fn for_test_authenticated(
+    test: &str,
+) -> (Authifier, Session, Account, Receiver<AuthifierEvent>) {
     for_test_authenticated_with_config(test, Config::default()).await
 }
 
 pub async fn bootstrap_rocket_with_auth(
-    rauth: RAuth,
+    authifier: Authifier,
     routes: Vec<Route>,
 ) -> rocket::local::asynchronous::Client {
-    let rocket = rocket::build().manage(rauth).mount("/", routes);
+    let rocket = rocket::build().manage(authifier).mount("/", routes);
     let client = rocket::local::asynchronous::Client::tracked(rocket)
         .await
         .expect("valid `Rocket`");
@@ -182,7 +187,13 @@ pub async fn bootstrap_rocket(
     route: &str,
     test: &str,
     routes: Vec<Route>,
-) -> (rocket::local::asynchronous::Client, Receiver<RAuthEvent>) {
-    let (rauth, receiver) = for_test(&format!("{}::{}", route, test)).await;
-    (bootstrap_rocket_with_auth(rauth, routes).await, receiver)
+) -> (
+    rocket::local::asynchronous::Client,
+    Receiver<AuthifierEvent>,
+) {
+    let (authifier, receiver) = for_test(&format!("{}::{}", route, test)).await;
+    (
+        bootstrap_rocket_with_auth(authifier, routes).await,
+        receiver,
+    )
 }

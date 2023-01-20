@@ -1,6 +1,6 @@
 //! Fetch your account
 //! GET /account
-use rauth::{models::Account, Result};
+use authifier::{models::Account, Result};
 use rocket::serde::json::Json;
 
 #[derive(Serialize, Deserialize, JsonSchema)]
@@ -37,9 +37,9 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, _, _) = for_test_authenticated("fetch_account::success").await;
+        let (authifier, session, _, _) = for_test_authenticated("fetch_account::success").await;
         let client = bootstrap_rocket_with_auth(
-            rauth,
+            authifier,
             routes![crate::routes::account::fetch_account::fetch_account],
         )
         .await;

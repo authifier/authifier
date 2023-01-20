@@ -1,19 +1,19 @@
-use crate::{models::Session, RAuth, RAuthEvent, Success};
+use crate::{models::Session, Authifier, AuthifierEvent, Success};
 
 impl Session {
     /// Save model
-    pub async fn save(&self, rauth: &RAuth) -> Success {
-        rauth.database.save_session(self).await
+    pub async fn save(&self, authifier: &Authifier) -> Success {
+        authifier.database.save_session(self).await
     }
 
     /// Delete session
-    pub async fn delete(self, rauth: &RAuth) -> Success {
+    pub async fn delete(self, authifier: &Authifier) -> Success {
         // Delete from database
-        rauth.database.delete_session(&self.id).await?;
+        authifier.database.delete_session(&self.id).await?;
 
         // Create and push event
-        rauth
-            .publish_event(RAuthEvent::DeleteSession {
+        authifier
+            .publish_event(AuthifierEvent::DeleteSession {
                 user_id: self.user_id,
                 session_id: self.id,
             })

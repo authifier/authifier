@@ -1,6 +1,6 @@
 //! Fetch MFA status of an account.
 //! GET /mfa
-use rauth::{
+use authifier::{
     models::{Account, MultiFactorAuthentication},
     Result,
 };
@@ -48,9 +48,9 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, _, _) = for_test_authenticated("fetch_status::success").await;
+        let (authifier, session, _, _) = for_test_authenticated("fetch_status::success").await;
         let client = bootstrap_rocket_with_auth(
-            rauth,
+            authifier,
             routes![crate::routes::mfa::fetch_status::fetch_status],
         )
         .await;

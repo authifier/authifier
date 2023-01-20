@@ -8,7 +8,7 @@ use rocket::{
 
 use crate::{
     models::{Account, MFATicket, Session, UnvalidatedTicket, ValidatedTicket},
-    Error, RAuth,
+    Authifier, Error,
 };
 
 /// HTTP response builder for Error enum
@@ -70,9 +70,9 @@ impl<'r> FromRequest<'r> for Session {
             .next()
             .map(|x| x.to_string());
 
-        match (request.rocket().state::<RAuth>(), header_session_token) {
-            (Some(rauth), Some(token)) => {
-                if let Ok(session) = rauth.database.find_session_by_token(&token).await {
+        match (request.rocket().state::<Authifier>(), header_session_token) {
+            (Some(authifier), Some(token)) => {
+                if let Ok(session) = authifier.database.find_session_by_token(&token).await {
                     if let Some(session) = session {
                         Outcome::Success(session)
                     } else {
@@ -94,9 +94,9 @@ impl<'r> FromRequest<'r> for Account {
     async fn from_request(request: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
         match request.guard::<Session>().await {
             Outcome::Success(session) => {
-                let rauth = request.rocket().state::<RAuth>().unwrap();
+                let authifier = request.rocket().state::<Authifier>().unwrap();
 
-                if let Ok(account) = rauth.database.find_account(&session.user_id).await {
+                if let Ok(account) = authifier.database.find_account(&session.user_id).await {
                     Outcome::Success(account)
                 } else {
                     Outcome::Failure((Status::InternalServerError, Error::InternalError))
@@ -120,9 +120,9 @@ impl<'r> FromRequest<'r> for MFATicket {
             .next()
             .map(|x| x.to_string());
 
-        match (request.rocket().state::<RAuth>(), header_mfa_ticket) {
-            (Some(rauth), Some(token)) => {
-                if let Ok(ticket) = rauth.database.find_ticket_by_token(&token).await {
+        match (request.rocket().state::<Authifier>(), header_mfa_ticket) {
+            (Some(authifier), Some(token)) => {
+                if let Ok(ticket) = authifier.database.find_ticket_by_token(&token).await {
                     if let Some(ticket) = ticket {
                         Outcome::Success(ticket)
                     } else {
@@ -146,12 +146,12 @@ impl<'r> FromRequest<'r> for ValidatedTicket {
         match request.guard::<MFATicket>().await {
             Outcome::Success(ticket) => {
                 if ticket.validated {
-                    let rauth = request
+                    let authifier = request
                         .rocket()
-                        .state::<RAuth>()
+                        .state::<Authifier>()
                         .expect("This code is unreachable.");
 
-                    if ticket.claim(rauth).await.is_ok() {
+                    if ticket.claim(authifier).await.is_ok() {
                         Outcome::Success(ValidatedTicket(ticket))
                     } else {
                         Outcome::Failure((Status::InternalServerError, Error::InternalError))

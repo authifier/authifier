@@ -1,8 +1,8 @@
 //! Disable an account.
 //! POST /account/disable
-use rauth::{
+use authifier::{
     models::{Account, ValidatedTicket},
-    RAuth, Result,
+    Authifier, Result,
 };
 use rocket::State;
 use rocket_empty::EmptyResponse;
@@ -13,11 +13,11 @@ use rocket_empty::EmptyResponse;
 #[openapi(tag = "Account")]
 #[post("/disable")]
 pub async fn disable_account(
-    rauth: &State<RAuth>,
+    authifier: &State<Authifier>,
     mut account: Account,
     _ticket: ValidatedTicket,
 ) -> Result<EmptyResponse> {
-    account.disable(rauth).await.map(|_| EmptyResponse)
+    account.disable(authifier).await.map(|_| EmptyResponse)
 }
 
 #[cfg(test)]
@@ -29,13 +29,13 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, account, receiver) =
+        let (authifier, session, account, receiver) =
             for_test_authenticated("disable_account::success").await;
         let ticket = MFATicket::new(account.id.to_string(), true);
-        ticket.save(&rauth).await.unwrap();
+        ticket.save(&authifier).await.unwrap();
 
         let client = bootstrap_rocket_with_auth(
-            rauth.clone(),
+            authifier.clone(),
             routes![crate::routes::account::disable_account::disable_account],
         )
         .await;
@@ -50,7 +50,7 @@ mod tests {
 
         assert_eq!(res.status(), Status::NoContent);
         assert!(
-            rauth
+            authifier
                 .database
                 .find_account(&account.id)
                 .await
@@ -58,12 +58,16 @@ mod tests {
                 .disabled
         );
         assert_eq!(
-            rauth.database.find_session(&session.id).await.unwrap_err(),
+            authifier
+                .database
+                .find_session(&session.id)
+                .await
+                .unwrap_err(),
             Error::UnknownUser
         );
 
         let event = receiver.try_recv().expect("an event");
-        if let RAuthEvent::DisableAccount { user_id } = event {
+        if let AuthifierEvent::DisableAccount { user_id } = event {
             assert_eq!(user_id, session.user_id);
         } else {
             panic!("Received incorrect event type. {:?}", event);

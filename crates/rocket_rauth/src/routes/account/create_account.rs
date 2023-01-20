@@ -1,7 +1,7 @@
 //! Create a new account
 //! POST /account/create
-use rauth::models::Account;
-use rauth::{Error, RAuth, Result};
+use authifier::models::Account;
+use authifier::{Authifier, Error, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 use rocket_empty::EmptyResponse;
@@ -25,28 +25,31 @@ pub struct DataCreateAccount {
 #[openapi(tag = "Account")]
 #[post("/create", data = "<data>")]
 pub async fn create_account(
-    rauth: &State<RAuth>,
+    authifier: &State<Authifier>,
     data: Json<DataCreateAccount>,
 ) -> Result<EmptyResponse> {
     let data = data.into_inner();
 
     // Check Captcha token
-    rauth.config.captcha.check(data.captcha).await?;
+    authifier.config.captcha.check(data.captcha).await?;
 
     // Make sure email is valid and not blocked
-    rauth.config.email_block_list.validate_email(&data.email)?;
+    authifier
+        .config
+        .email_block_list
+        .validate_email(&data.email)?;
 
     // Ensure password is safe to use
-    rauth
+    authifier
         .config
         .password_scanning
         .assert_safe(&data.password)
         .await?;
 
     // If required, fetch valid invite
-    let invite = if rauth.config.invite_only {
+    let invite = if authifier.config.invite_only {
         if let Some(invite) = data.invite {
-            Some(rauth.database.find_invite(&invite).await?)
+            Some(authifier.database.find_invite(&invite).await?)
         } else {
             return Err(Error::MissingInvite);
         }
@@ -55,14 +58,14 @@ pub async fn create_account(
     };
 
     // Create account
-    let account = Account::new(rauth, data.email, data.password, true).await?;
+    let account = Account::new(authifier, data.email, data.password, true).await?;
 
     // Use up the invite
     if let Some(mut invite) = invite {
         invite.claimed_by = Some(account.id);
         invite.used = true;
 
-        rauth.database.save_invite(&invite).await?;
+        authifier.database.save_invite(&invite).await?;
     }
 
     Ok(EmptyResponse)
@@ -98,7 +101,7 @@ mod tests {
         assert_eq!(res.status(), Status::NoContent);
 
         let event = receiver.try_recv().expect("an event");
-        if !matches!(event, RAuthEvent::CreateAccount { .. }) {
+        if !matches!(event, AuthifierEvent::CreateAccount { .. }) {
             panic!("Received incorrect event type. {:?}", event);
         }
     }
@@ -168,9 +171,10 @@ mod tests {
             ..Default::default()
         };
 
-        let (rauth, _) = for_test_with_config("create_account::fail_invalid_invite", config).await;
+        let (authifier, _) =
+            for_test_with_config("create_account::fail_invalid_invite", config).await;
         let client = bootstrap_rocket_with_auth(
-            rauth,
+            authifier,
             routes![crate::routes::account::create_account::create_account],
         )
         .await;
@@ -203,9 +207,10 @@ mod tests {
             ..Default::default()
         };
 
-        let (rauth, _) = for_test_with_config("create_account::success_valid_invite", config).await;
+        let (authifier, _) =
+            for_test_with_config("create_account::success_valid_invite", config).await;
         let client = bootstrap_rocket_with_auth(
-            rauth.clone(),
+            authifier.clone(),
             routes![crate::routes::account::create_account::create_account],
         )
         .await;
@@ -216,7 +221,7 @@ mod tests {
             claimed_by: None,
         };
 
-        rauth.database.save_invite(&invite).await.unwrap();
+        authifier.database.save_invite(&invite).await.unwrap();
 
         let res = client
             .post("/create")
@@ -234,7 +239,7 @@ mod tests {
 
         assert_eq!(res.status(), Status::NoContent);
 
-        let invite = rauth
+        let invite = authifier
             .database
             .find_invite("invite")
             .await
@@ -252,9 +257,10 @@ mod tests {
             ..Default::default()
         };
 
-        let (rauth, _) = for_test_with_config("create_account::fail_missing_captcha", config).await;
+        let (authifier, _) =
+            for_test_with_config("create_account::fail_missing_captcha", config).await;
         let client = bootstrap_rocket_with_auth(
-            rauth,
+            authifier,
             routes![crate::routes::account::create_account::create_account],
         )
         .await;
@@ -288,9 +294,10 @@ mod tests {
             ..Default::default()
         };
 
-        let (rauth, _) = for_test_with_config("create_account::fail_invalid_captcha", config).await;
+        let (authifier, _) =
+            for_test_with_config("create_account::fail_invalid_captcha", config).await;
         let client = bootstrap_rocket_with_auth(
-            rauth,
+            authifier,
             routes![crate::routes::account::create_account::create_account],
         )
         .await;
@@ -325,9 +332,9 @@ mod tests {
             ..Default::default()
         };
 
-        let (rauth, _) = for_test_with_config("create_account::success_captcha", config).await;
+        let (authifier, _) = for_test_with_config("create_account::success_captcha", config).await;
         let client = bootstrap_rocket_with_auth(
-            rauth,
+            authifier,
             routes![crate::routes::account::create_account::create_account],
         )
         .await;
@@ -351,13 +358,13 @@ mod tests {
 
     #[async_std::test]
     async fn success_smtp_sent() {
-        let (rauth, _) = for_test_with_config(
+        let (authifier, _) = for_test_with_config(
             "create_account::success_smtp_sent",
             test_smtp_config().await,
         )
         .await;
         let client = bootstrap_rocket_with_auth(
-            rauth,
+            authifier,
             routes![
                 crate::routes::account::create_account::create_account,
                 crate::routes::account::verify_email::verify_email

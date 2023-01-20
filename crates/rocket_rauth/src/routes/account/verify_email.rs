@@ -1,9 +1,9 @@
 //! Verify an account
 //! POST /verify/<code>
-use rauth::{
+use authifier::{
     models::{EmailVerification, MFATicket},
     util::normalise_email,
-    RAuth, Result,
+    Authifier, Result,
 };
 use rocket::{serde::json::Json, State};
 
@@ -22,9 +22,12 @@ pub enum ResponseVerify {
 /// Verify an email address.
 #[openapi(tag = "Account")]
 #[post("/verify/<code>")]
-pub async fn verify_email(rauth: &State<RAuth>, code: String) -> Result<Json<ResponseVerify>> {
+pub async fn verify_email(
+    authifier: &State<Authifier>,
+    code: String,
+) -> Result<Json<ResponseVerify>> {
     // Find the account
-    let mut account = rauth
+    let mut account = authifier
         .database
         .find_account_with_email_verification(&code)
         .await?;
@@ -37,7 +40,7 @@ pub async fn verify_email(rauth: &State<RAuth>, code: String) -> Result<Json<Res
     } else {
         let mut ticket = MFATicket::new(account.id.to_string(), false);
         ticket.authorised = true;
-        ticket.save(rauth).await?;
+        ticket.save(authifier).await?;
         ResponseVerify::WithTicket { ticket }
     };
 
@@ -45,7 +48,7 @@ pub async fn verify_email(rauth: &State<RAuth>, code: String) -> Result<Json<Res
     account.verification = EmailVerification::Verified;
 
     // Save to database
-    account.save(rauth).await?;
+    account.save(authifier).await?;
     Ok(Json(response))
 }
 
@@ -61,7 +64,7 @@ mod tests {
 
     #[async_std::test]
     async fn success() {
-        let (rauth, _, mut account, _) = for_test_authenticated("verify_email::success").await;
+        let (authifier, _, mut account, _) = for_test_authenticated("verify_email::success").await;
 
         account.verification = EmailVerification::Pending {
             token: "token".into(),
@@ -73,10 +76,10 @@ mod tests {
             ),
         };
 
-        account.save(&rauth).await.unwrap();
+        account.save(&authifier).await.unwrap();
 
         let client = bootstrap_rocket_with_auth(
-            rauth.clone(),
+            authifier.clone(),
             routes![
                 crate::routes::account::verify_email::verify_email,
                 crate::routes::session::login::login
@@ -89,7 +92,7 @@ mod tests {
         assert_eq!(res.status(), Status::Ok);
 
         // Make sure it was used and can't be used again
-        assert!(rauth
+        assert!(authifier
             .database
             .find_account_with_email_verification("token")
             .await
@@ -119,10 +122,10 @@ mod tests {
 
     #[async_std::test]
     async fn fail_invalid_token() {
-        let (rauth, _) = for_test("verify_email::fail_invalid_token").await;
+        let (authifier, _) = for_test("verify_email::fail_invalid_token").await;
 
         let client = bootstrap_rocket_with_auth(
-            rauth,
+            authifier,
             routes![crate::routes::account::verify_email::verify_email],
         )
         .await;

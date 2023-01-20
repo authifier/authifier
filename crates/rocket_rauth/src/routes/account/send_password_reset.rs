@@ -1,7 +1,7 @@
 //! Send a password reset email
 //! POST /account/reset_password
-use rauth::util::normalise_email;
-use rauth::{RAuth, Result};
+use authifier::util::normalise_email;
+use authifier::{Authifier, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 use rocket_empty::EmptyResponse;
@@ -21,16 +21,19 @@ pub struct DataSendPasswordReset {
 #[openapi(tag = "Account")]
 #[post("/reset_password", data = "<data>")]
 pub async fn send_password_reset(
-    rauth: &State<RAuth>,
+    authifier: &State<Authifier>,
     data: Json<DataSendPasswordReset>,
 ) -> Result<EmptyResponse> {
     let data = data.into_inner();
 
     // Check Captcha token
-    rauth.config.captcha.check(data.captcha).await?;
+    authifier.config.captcha.check(data.captcha).await?;
 
     // Make sure email is valid and not blocked
-    rauth.config.email_block_list.validate_email(&data.email)?;
+    authifier
+        .config
+        .email_block_list
+        .validate_email(&data.email)?;
 
     // From this point on, do not report failure to the
     // remote client, as this will open us up to user enumeration.
@@ -39,12 +42,12 @@ pub async fn send_password_reset(
     let email_normalised = normalise_email(data.email);
 
     // Try to find the relevant account
-    if let Some(mut account) = rauth
+    if let Some(mut account) = authifier
         .database
         .find_account_by_normalised_email(&email_normalised)
         .await?
     {
-        account.start_password_reset(rauth).await?;
+        account.start_password_reset(authifier).await?;
     }
 
     // Never fail this route, (except for db error)
@@ -59,11 +62,11 @@ mod tests {
 
     #[async_std::test]
     async fn success() {
-        let (rauth, _) =
+        let (authifier, _) =
             for_test_with_config("send_password_reset::success", test_smtp_config().await).await;
 
         Account::new(
-            &rauth,
+            &authifier,
             "password_reset@smtp.test".into(),
             "password".into(),
             false,
@@ -72,7 +75,7 @@ mod tests {
         .unwrap();
 
         let client = bootstrap_rocket_with_auth(
-            rauth,
+            authifier,
             routes![
                 crate::routes::account::password_reset::password_reset,
                 crate::routes::account::send_password_reset::send_password_reset,

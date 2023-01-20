@@ -1,7 +1,7 @@
 //! Create a new MFA ticket or validate an existing one.
 //! PUT /mfa/ticket
-use rauth::models::{Account, MFAResponse, MFATicket, UnvalidatedTicket};
-use rauth::{Error, RAuth, Result};
+use authifier::models::{Account, MFAResponse, MFATicket, UnvalidatedTicket};
+use authifier::{Authifier, Error, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 
@@ -11,7 +11,7 @@ use rocket::State;
 #[openapi(tag = "MFA")]
 #[put("/ticket", data = "<data>")]
 pub async fn create_ticket(
-    rauth: &State<RAuth>,
+    authifier: &State<Authifier>,
     account: Option<Account>,
     existing_ticket: Option<UnvalidatedTicket>,
     data: Json<MFAResponse>,
@@ -21,20 +21,20 @@ pub async fn create_ticket(
         (Some(_), Some(_)) => return Err(Error::OperationFailed),
         (Some(account), _) => account,
         (_, Some(ticket)) => {
-            rauth.database.delete_ticket(&ticket.id).await?;
-            rauth.database.find_account(&ticket.account_id).await?
+            authifier.database.delete_ticket(&ticket.id).await?;
+            authifier.database.find_account(&ticket.account_id).await?
         }
         _ => return Err(Error::InvalidToken),
     };
 
     // Validate the MFA response
     account
-        .consume_mfa_response(rauth, data.into_inner(), None)
+        .consume_mfa_response(authifier, data.into_inner(), None)
         .await?;
 
     // Create a new ticket for this account
     let ticket = MFATicket::new(account.id, true);
-    ticket.save(rauth).await?;
+    ticket.save(authifier).await?;
     Ok(Json(ticket))
 }
 
@@ -47,9 +47,9 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, _, _) = for_test_authenticated("create_ticket::success").await;
+        let (authifier, session, _, _) = for_test_authenticated("create_ticket::success").await;
         let client = bootstrap_rocket_with_auth(
-            rauth,
+            authifier,
             routes![crate::routes::mfa::create_ticket::create_ticket,],
         )
         .await;
@@ -74,16 +74,16 @@ mod tests {
     async fn success_totp() {
         use rocket::http::Header;
 
-        let (rauth, session, mut account, _) =
+        let (authifier, session, mut account, _) =
             for_test_authenticated("create_ticket::success_totp").await;
 
         account.mfa.totp_token = Totp::Enabled {
             secret: "secret".to_string(),
         };
-        account.save(&rauth).await.unwrap();
+        account.save(&authifier).await.unwrap();
 
         let client = bootstrap_rocket_with_auth(
-            rauth,
+            authifier,
             routes![crate::routes::mfa::create_ticket::create_ticket,],
         )
         .await;
@@ -110,16 +110,16 @@ mod tests {
     async fn failure_totp() {
         use rocket::http::Header;
 
-        let (rauth, session, mut account, _) =
+        let (authifier, session, mut account, _) =
             for_test_authenticated("create_ticket::failure_totp").await;
 
         account.mfa.totp_token = Totp::Enabled {
             secret: "secret".to_string(),
         };
-        account.save(&rauth).await.unwrap();
+        account.save(&authifier).await.unwrap();
 
         let client = bootstrap_rocket_with_auth(
-            rauth,
+            authifier,
             routes![crate::routes::mfa::create_ticket::create_ticket,],
         )
         .await;
@@ -147,16 +147,16 @@ mod tests {
     async fn failure_no_totp() {
         use rocket::http::Header;
 
-        let (rauth, session, mut account, _) =
+        let (authifier, session, mut account, _) =
             for_test_authenticated("create_ticket::failure_no_totp").await;
 
         account.mfa.totp_token = Totp::Enabled {
             secret: "secret".to_string(),
         };
-        account.save(&rauth).await.unwrap();
+        account.save(&authifier).await.unwrap();
 
         let client = bootstrap_rocket_with_auth(
-            rauth,
+            authifier,
             routes![crate::routes::mfa::create_ticket::create_ticket,],
         )
         .await;

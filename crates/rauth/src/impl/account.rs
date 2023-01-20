@@ -8,18 +8,18 @@ use crate::{
         PasswordReset, Session,
     },
     util::{hash_password, normalise_email},
-    Error, RAuth, RAuthEvent, Result, Success,
+    Authifier, AuthifierEvent, Error, Result, Success,
 };
 
 impl Account {
     /// Save model
-    pub async fn save(&self, rauth: &RAuth) -> Success {
-        rauth.database.save_account(self).await
+    pub async fn save(&self, authifier: &Authifier) -> Success {
+        authifier.database.save_account(self).await
     }
 
     /// Create a new account
     pub async fn new(
-        rauth: &RAuth,
+        authifier: &Authifier,
         email: String,
         plaintext_password: String,
         verify_email: bool,
@@ -31,16 +31,16 @@ impl Account {
         let email_normalised = normalise_email(email.clone());
 
         // Try to find an existing account
-        if let Some(mut account) = rauth
+        if let Some(mut account) = authifier
             .database
             .find_account_by_normalised_email(&email_normalised)
             .await?
         {
             // Resend account verification or send password reset
             if let EmailVerification::Pending { .. } = &account.verification {
-                account.start_email_verification(rauth).await?;
+                account.start_email_verification(authifier).await?;
             } else {
-                account.start_password_reset(rauth).await?;
+                account.start_password_reset(authifier).await?;
             }
 
             Ok(account)
@@ -64,14 +64,14 @@ impl Account {
 
             // Send email verification
             if verify_email {
-                account.start_email_verification(rauth).await?;
+                account.start_email_verification(authifier).await?;
             } else {
-                account.save(rauth).await?;
+                account.save(authifier).await?;
             }
 
             // Create and push event
-            rauth
-                .publish_event(RAuthEvent::CreateAccount {
+            authifier
+                .publish_event(AuthifierEvent::CreateAccount {
                     account: account.clone(),
                 })
                 .await;
@@ -81,7 +81,7 @@ impl Account {
     }
 
     /// Create a new session
-    pub async fn create_session(&self, rauth: &RAuth, name: String) -> Result<Session> {
+    pub async fn create_session(&self, authifier: &Authifier, name: String) -> Result<Session> {
         let session = Session {
             id: ulid::Ulid::new().to_string(),
             token: nanoid!(64),
@@ -93,11 +93,11 @@ impl Account {
         };
 
         // Save to database
-        rauth.database.save_session(&session).await?;
+        authifier.database.save_session(&session).await?;
 
         // Create and push event
-        rauth
-            .publish_event(RAuthEvent::CreateSession {
+        authifier
+            .publish_event(AuthifierEvent::CreateSession {
                 session: session.clone(),
             })
             .await;
@@ -106,12 +106,12 @@ impl Account {
     }
 
     /// Send account verification email
-    pub async fn start_email_verification(&mut self, rauth: &RAuth) -> Success {
+    pub async fn start_email_verification(&mut self, authifier: &Authifier) -> Success {
         if let EmailVerificationConfig::Enabled {
             templates,
             expiry,
             smtp,
-        } = &rauth.config.email_verification
+        } = &authifier.config.email_verification
         {
             let token = nanoid!(32);
             let url = format!("{}{}", templates.verify.url, token);
@@ -138,11 +138,11 @@ impl Account {
             self.verification = EmailVerification::Verified;
         }
 
-        self.save(rauth).await
+        self.save(authifier).await
     }
 
     /// Send account verification to new email
-    pub async fn start_email_move(&mut self, rauth: &RAuth, new_email: String) -> Success {
+    pub async fn start_email_move(&mut self, authifier: &Authifier, new_email: String) -> Success {
         // This method should and will never be called on an unverified account,
         // but just validate this just in case.
         if let EmailVerification::Pending { .. } = self.verification {
@@ -153,7 +153,7 @@ impl Account {
             templates,
             expiry,
             smtp,
-        } = &rauth.config.email_verification
+        } = &authifier.config.email_verification
         {
             let token = nanoid!(32);
             let url = format!("{}{}", templates.verify.url, token);
@@ -182,16 +182,16 @@ impl Account {
             self.email = new_email;
         }
 
-        self.save(rauth).await
+        self.save(authifier).await
     }
 
     /// Send password reset email
-    pub async fn start_password_reset(&mut self, rauth: &RAuth) -> Success {
+    pub async fn start_password_reset(&mut self, authifier: &Authifier) -> Success {
         if let EmailVerificationConfig::Enabled {
             templates,
             expiry,
             smtp,
-        } = &rauth.config.email_verification
+        } = &authifier.config.email_verification
         {
             let token = nanoid!(32);
             let url = format!("{}{}", templates.reset.url, token);
@@ -218,18 +218,18 @@ impl Account {
             return Err(Error::OperationFailed);
         }
 
-        self.save(rauth).await
+        self.save(authifier).await
     }
 
     /// Begin account deletion process by sending confirmation email
     ///
     /// If email verification is not on, the account will be marked for deletion instantly
-    pub async fn start_account_deletion(&mut self, rauth: &RAuth) -> Success {
+    pub async fn start_account_deletion(&mut self, authifier: &Authifier) -> Success {
         if let EmailVerificationConfig::Enabled {
             templates,
             expiry,
             smtp,
-        } = &rauth.config.email_verification
+        } = &authifier.config.email_verification
         {
             let token = nanoid!(32);
             let url = format!("{}{}", templates.deletion.url, token);
@@ -253,9 +253,9 @@ impl Account {
                 ),
             });
 
-            self.save(rauth).await
+            self.save(authifier).await
         } else {
-            self.schedule_deletion(rauth).await
+            self.schedule_deletion(authifier).await
         }
     }
 
@@ -277,7 +277,7 @@ impl Account {
     /// Validate an MFA response
     pub async fn consume_mfa_response(
         &mut self,
-        rauth: &RAuth,
+        authifier: &Authifier,
         response: MFAResponse,
         ticket: Option<MFATicket>,
     ) -> Success {
@@ -325,7 +325,7 @@ impl Account {
                         .position(|x| x == &recovery_code)
                     {
                         self.mfa.recovery_codes.remove(index);
-                        self.save(rauth).await
+                        self.save(authifier).await
                     } else {
                         Err(Error::InvalidToken)
                     }
@@ -339,17 +339,17 @@ impl Account {
     /// Delete all sessions for an account
     pub async fn delete_all_sessions(
         &self,
-        rauth: &RAuth,
+        authifier: &Authifier,
         exclude_session_id: Option<String>,
     ) -> Success {
-        rauth
+        authifier
             .database
             .delete_all_sessions(&self.id, exclude_session_id.clone())
             .await?;
 
         // Create and push event
-        rauth
-            .publish_event(RAuthEvent::DeleteAllSessions {
+        authifier
+            .publish_event(AuthifierEvent::DeleteAllSessions {
                 user_id: self.id.to_string(),
                 exclude_session_id,
             })
@@ -359,14 +359,14 @@ impl Account {
     }
 
     /// Disable an account
-    pub async fn disable(&mut self, rauth: &RAuth) -> Success {
+    pub async fn disable(&mut self, authifier: &Authifier) -> Success {
         self.disabled = true;
-        self.delete_all_sessions(rauth, None).await?;
-        self.save(rauth).await
+        self.delete_all_sessions(authifier, None).await?;
+        self.save(authifier).await
     }
 
     /// Schedule an account for deletion
-    pub async fn schedule_deletion(&mut self, rauth: &RAuth) -> Success {
+    pub async fn schedule_deletion(&mut self, authifier: &Authifier) -> Success {
         self.deletion = Some(DeletionInfo::Scheduled {
             after: Timestamp::from_unix_timestamp_ms(
                 chrono::Utc::now()
@@ -376,6 +376,6 @@ impl Account {
             ),
         });
 
-        self.disable(rauth).await
+        self.disable(authifier).await
     }
 }

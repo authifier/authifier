@@ -1,6 +1,6 @@
 //! Resend account verification email
 //! POST /account/reverify
-use rauth::{models::EmailVerification, util::normalise_email, RAuth, Result};
+use authifier::{models::EmailVerification, util::normalise_email, Authifier, Result};
 use rocket::{serde::json::Json, State};
 use rocket_empty::EmptyResponse;
 
@@ -19,16 +19,19 @@ pub struct DataResendVerification {
 #[openapi(tag = "Account")]
 #[post("/reverify", data = "<data>")]
 pub async fn resend_verification(
-    rauth: &State<RAuth>,
+    authifier: &State<Authifier>,
     data: Json<DataResendVerification>,
 ) -> Result<EmptyResponse> {
     let data = data.into_inner();
 
     // Check Captcha token
-    rauth.config.captcha.check(data.captcha).await?;
+    authifier.config.captcha.check(data.captcha).await?;
 
     // Make sure email is valid and not blocked
-    rauth.config.email_block_list.validate_email(&data.email)?;
+    authifier
+        .config
+        .email_block_list
+        .validate_email(&data.email)?;
 
     // From this point on, do not report failure to the
     // remote client, as this will open us up to user enumeration.
@@ -37,7 +40,7 @@ pub async fn resend_verification(
     let email_normalised = normalise_email(data.email);
 
     // Try to find the relevant account
-    if let Some(mut account) = rauth
+    if let Some(mut account) = authifier
         .database
         .find_account_by_normalised_email(&email_normalised)
         .await?
@@ -45,11 +48,11 @@ pub async fn resend_verification(
         match account.verification {
             EmailVerification::Verified => {
                 // Send password reset if already verified
-                account.start_password_reset(rauth).await?;
+                account.start_password_reset(authifier).await?;
             }
             EmailVerification::Pending { .. } => {
                 // Resend if not verified yet
-                account.start_email_verification(rauth).await?;
+                account.start_email_verification(authifier).await?;
             }
             // Ignore if pending for another email,
             // this should be re-initiated from settings.
@@ -71,11 +74,11 @@ mod tests {
 
     #[async_std::test]
     async fn success() {
-        let (rauth, _) =
+        let (authifier, _) =
             for_test_with_config("resend_verification::success", test_smtp_config().await).await;
 
         let mut account = Account::new(
-            &rauth,
+            &authifier,
             "resend_verification@smtp.test".into(),
             "password".into(),
             false,
@@ -88,10 +91,10 @@ mod tests {
             expiry: Timestamp::now_utc(),
         };
 
-        account.save(&rauth).await.unwrap();
+        account.save(&authifier).await.unwrap();
 
         let client = bootstrap_rocket_with_auth(
-            rauth,
+            authifier,
             routes![
                 crate::routes::account::resend_verification::resend_verification,
                 crate::routes::account::verify_email::verify_email
@@ -124,13 +127,13 @@ mod tests {
 
     #[async_std::test]
     async fn success_unknown() {
-        let (rauth, _) = for_test_with_config(
+        let (authifier, _) = for_test_with_config(
             "resend_verification::success_unknown",
             test_smtp_config().await,
         )
         .await;
         let client = bootstrap_rocket_with_auth(
-            rauth,
+            authifier,
             routes![crate::routes::account::resend_verification::resend_verification],
         )
         .await;

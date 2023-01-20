@@ -60,7 +60,7 @@ pub struct Account {
 
     /// Normalised email
     ///
-    /// (see https://github.com/insertish/rauth/#how-does-rauth-work)
+    /// (see https://github.com/insertish/authifier/#how-does-authifier-work)
     pub email_normalised: String,
 
     /// Argon2 hashed password

@@ -1,7 +1,7 @@
 //! Change account email.
 //! PATCH /account/change/email
-use rauth::models::Account;
-use rauth::{RAuth, Result};
+use authifier::models::Account;
+use authifier::{Authifier, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 use rocket_empty::EmptyResponse;
@@ -21,21 +21,24 @@ pub struct DataChangeEmail {
 #[openapi(tag = "Account")]
 #[patch("/change/email", data = "<data>")]
 pub async fn change_email(
-    rauth: &State<RAuth>,
+    authifier: &State<Authifier>,
     mut account: Account,
     data: Json<DataChangeEmail>,
 ) -> Result<EmptyResponse> {
     let data = data.into_inner();
 
     // Make sure email is valid and not blocked
-    rauth.config.email_block_list.validate_email(&data.email)?;
+    authifier
+        .config
+        .email_block_list
+        .validate_email(&data.email)?;
 
     // Ensure given password is correct
     account.verify_password(&data.current_password)?;
 
     // Send email verification for new email
     account
-        .start_email_move(rauth, data.email)
+        .start_email_move(authifier, data.email)
         .await
         .map(|_| EmptyResponse)
 }
@@ -49,9 +52,10 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, account, _) = for_test_authenticated("change_email::success").await;
+        let (authifier, session, account, _) =
+            for_test_authenticated("change_email::success").await;
         let client = bootstrap_rocket_with_auth(
-            rauth.clone(),
+            authifier.clone(),
             routes![crate::routes::account::change_email::change_email],
         )
         .await;
@@ -72,7 +76,7 @@ mod tests {
 
         assert_eq!(res.status(), Status::NoContent);
 
-        let account = rauth.database.find_account(&account.id).await.unwrap();
+        let account = authifier.database.find_account(&account.id).await.unwrap();
 
         assert_eq!(account.email, "validexample@valid.com");
     }
@@ -81,13 +85,13 @@ mod tests {
     async fn success_smtp() {
         use rocket::http::Header;
 
-        let (rauth, session, account, _) = for_test_authenticated_with_config(
+        let (authifier, session, account, _) = for_test_authenticated_with_config(
             "change_email::success_smtp",
             test_smtp_config().await,
         )
         .await;
         let client = bootstrap_rocket_with_auth(
-            rauth.clone(),
+            authifier.clone(),
             routes![
                 crate::routes::account::change_email::change_email,
                 crate::routes::account::verify_email::verify_email
@@ -119,7 +123,7 @@ mod tests {
 
         assert_eq!(res.status(), Status::Ok);
 
-        let account = rauth.database.find_account(&account.id).await.unwrap();
+        let account = authifier.database.find_account(&account.id).await.unwrap();
 
         assert_eq!(account.email, "change_email@smtp.test");
 

@@ -1,8 +1,8 @@
 //! Disable TOTP 2FA.
 //! DELETE /mfa/totp
-use rauth::models::totp::Totp;
-use rauth::models::{Account, ValidatedTicket};
-use rauth::{RAuth, Result};
+use authifier::models::totp::Totp;
+use authifier::models::{Account, ValidatedTicket};
+use authifier::{Authifier, Result};
 use rocket::State;
 use rocket_empty::EmptyResponse;
 
@@ -12,7 +12,7 @@ use rocket_empty::EmptyResponse;
 #[openapi(tag = "MFA")]
 #[delete("/totp")]
 pub async fn totp_disable(
-    rauth: &State<RAuth>,
+    authifier: &State<Authifier>,
     mut account: Account,
     _ticket: ValidatedTicket,
 ) -> Result<EmptyResponse> {
@@ -20,7 +20,7 @@ pub async fn totp_disable(
     account.mfa.totp_token = Totp::Disabled;
 
     // Save model to database
-    account.save(rauth).await.map(|_| EmptyResponse)
+    account.save(authifier).await.map(|_| EmptyResponse)
 }
 
 #[cfg(test)]
@@ -32,12 +32,13 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, account, _) = for_test_authenticated("totp_disable::success").await;
+        let (authifier, session, account, _) =
+            for_test_authenticated("totp_disable::success").await;
         let ticket = MFATicket::new(account.id, true);
-        ticket.save(&rauth).await.unwrap();
+        ticket.save(&authifier).await.unwrap();
 
         let client = bootstrap_rocket_with_auth(
-            rauth,
+            authifier,
             routes![crate::routes::mfa::totp_disable::totp_disable],
         )
         .await;
