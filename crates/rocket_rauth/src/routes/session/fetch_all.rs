@@ -44,7 +44,7 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, account) = for_test_authenticated("fetch_all::success").await;
+        let (rauth, session, account, _) = for_test_authenticated("fetch_all::success").await;
 
         for i in 1..=3 {
             account

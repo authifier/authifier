@@ -59,7 +59,7 @@ mod tests {
 
     #[async_std::test]
     async fn success() {
-        let rauth =
+        let (rauth, _) =
             for_test_with_config("send_password_reset::success", test_smtp_config().await).await;
 
         Account::new(

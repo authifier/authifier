@@ -1,5 +1,5 @@
 /// Web Push subscription
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[cfg_attr(feature = "schemas", derive(JsonSchema))]
 pub struct WebPushSubscription {
     pub endpoint: String,
@@ -8,7 +8,7 @@ pub struct WebPushSubscription {
 }
 
 /// Session information
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[cfg_attr(feature = "schemas", derive(JsonSchema))]
 pub struct Session {
     /// Unique Id

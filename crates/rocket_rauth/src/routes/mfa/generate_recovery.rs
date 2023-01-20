@@ -34,7 +34,8 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, account) = for_test_authenticated("generate_recovery::success").await;
+        let (rauth, session, account, _) =
+            for_test_authenticated("generate_recovery::success").await;
         let ticket1 = MFATicket::new(account.id.to_string(), true);
         ticket1.save(&rauth).await.unwrap();
 

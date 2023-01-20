@@ -75,7 +75,7 @@ mod tests {
 
     #[async_std::test]
     async fn success() {
-        let client = bootstrap_rocket(
+        let (client, receiver) = bootstrap_rocket(
             "create_account",
             "success",
             routes![crate::routes::account::create_account::create_account],
@@ -96,11 +96,16 @@ mod tests {
             .await;
 
         assert_eq!(res.status(), Status::NoContent);
+
+        let event = receiver.try_recv().expect("an event");
+        if !matches!(event, RAuthEvent::CreateAccount { .. }) {
+            panic!("Received incorrect event type. {:?}", event);
+        }
     }
 
     #[async_std::test]
     async fn fail_invalid_email() {
-        let client = bootstrap_rocket(
+        let (client, _) = bootstrap_rocket(
             "create_account",
             "fail_invalid_email",
             routes![crate::routes::account::create_account::create_account],
@@ -129,7 +134,7 @@ mod tests {
 
     #[async_std::test]
     async fn fail_invalid_password() {
-        let client = bootstrap_rocket(
+        let (client, _) = bootstrap_rocket(
             "create_account",
             "fail_invalid_password",
             routes![crate::routes::account::create_account::create_account],
@@ -163,7 +168,7 @@ mod tests {
             ..Default::default()
         };
 
-        let rauth = for_test_with_config("create_account::fail_invalid_invite", config).await;
+        let (rauth, _) = for_test_with_config("create_account::fail_invalid_invite", config).await;
         let client = bootstrap_rocket_with_auth(
             rauth,
             routes![crate::routes::account::create_account::create_account],
@@ -198,7 +203,7 @@ mod tests {
             ..Default::default()
         };
 
-        let rauth = for_test_with_config("create_account::success_valid_invite", config).await;
+        let (rauth, _) = for_test_with_config("create_account::success_valid_invite", config).await;
         let client = bootstrap_rocket_with_auth(
             rauth.clone(),
             routes![crate::routes::account::create_account::create_account],
@@ -247,7 +252,7 @@ mod tests {
             ..Default::default()
         };
 
-        let rauth = for_test_with_config("create_account::fail_missing_captcha", config).await;
+        let (rauth, _) = for_test_with_config("create_account::fail_missing_captcha", config).await;
         let client = bootstrap_rocket_with_auth(
             rauth,
             routes![crate::routes::account::create_account::create_account],
@@ -283,7 +288,7 @@ mod tests {
             ..Default::default()
         };
 
-        let rauth = for_test_with_config("create_account::fail_invalid_captcha", config).await;
+        let (rauth, _) = for_test_with_config("create_account::fail_invalid_captcha", config).await;
         let client = bootstrap_rocket_with_auth(
             rauth,
             routes![crate::routes::account::create_account::create_account],
@@ -320,7 +325,7 @@ mod tests {
             ..Default::default()
         };
 
-        let rauth = for_test_with_config("create_account::success_captcha", config).await;
+        let (rauth, _) = for_test_with_config("create_account::success_captcha", config).await;
         let client = bootstrap_rocket_with_auth(
             rauth,
             routes![crate::routes::account::create_account::create_account],
@@ -346,7 +351,7 @@ mod tests {
 
     #[async_std::test]
     async fn success_smtp_sent() {
-        let rauth = for_test_with_config(
+        let (rauth, _) = for_test_with_config(
             "create_account::success_smtp_sent",
             test_smtp_config().await,
         )

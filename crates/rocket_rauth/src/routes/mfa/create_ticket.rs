@@ -47,7 +47,7 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, _) = for_test_authenticated("create_ticket::success").await;
+        let (rauth, session, _, _) = for_test_authenticated("create_ticket::success").await;
         let client = bootstrap_rocket_with_auth(
             rauth,
             routes![crate::routes::mfa::create_ticket::create_ticket,],
@@ -74,7 +74,7 @@ mod tests {
     async fn success_totp() {
         use rocket::http::Header;
 
-        let (rauth, session, mut account) =
+        let (rauth, session, mut account, _) =
             for_test_authenticated("create_ticket::success_totp").await;
 
         account.mfa.totp_token = Totp::Enabled {
@@ -110,7 +110,7 @@ mod tests {
     async fn failure_totp() {
         use rocket::http::Header;
 
-        let (rauth, session, mut account) =
+        let (rauth, session, mut account, _) =
             for_test_authenticated("create_ticket::failure_totp").await;
 
         account.mfa.totp_token = Totp::Enabled {
@@ -147,7 +147,7 @@ mod tests {
     async fn failure_no_totp() {
         use rocket::http::Header;
 
-        let (rauth, session, mut account) =
+        let (rauth, session, mut account, _) =
             for_test_authenticated("create_ticket::failure_no_totp").await;
 
         account.mfa.totp_token = Totp::Enabled {

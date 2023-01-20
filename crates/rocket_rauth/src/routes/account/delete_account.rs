@@ -32,7 +32,7 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, mut account) =
+        let (rauth, session, mut account, _) =
             for_test_authenticated_with_config("delete_account::success", test_smtp_config().await)
                 .await;
 

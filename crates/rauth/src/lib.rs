@@ -24,16 +24,31 @@ pub use result::*;
 pub mod config;
 pub mod database;
 pub mod derive;
+pub mod events;
 pub mod r#impl;
 pub mod models;
 pub mod util;
 
 pub use config::Config;
 pub use database::{Database, Migration};
+pub use events::RAuthEvent;
+
+use async_std::channel::Sender;
 
 /// rAuth state
 #[derive(Default, Clone)]
 pub struct RAuth {
     pub config: Config,
     pub database: Database,
+    pub event_channel: Option<Sender<RAuthEvent>>,
+}
+
+impl RAuth {
+    pub async fn publish_event(&self, event: RAuthEvent) {
+        if let Some(sender) = &self.event_channel {
+            if let Err(err) = sender.send(event).await {
+                error!("Failed to publish an RAuth event: {:?}", err);
+            }
+        }
+    }
 }

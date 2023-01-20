@@ -36,7 +36,7 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, account) = for_test_authenticated("revoke_all::success").await;
+        let (rauth, session, account, _) = for_test_authenticated("revoke_all::success").await;
 
         for i in 1..=3 {
             account
@@ -70,7 +70,7 @@ mod tests {
     async fn success_not_including_self() {
         use rocket::http::Header;
 
-        let (rauth, session, account) =
+        let (rauth, session, account, _) =
             for_test_authenticated("revoke_all::success_not_including_self").await;
 
         for i in 1..=3 {

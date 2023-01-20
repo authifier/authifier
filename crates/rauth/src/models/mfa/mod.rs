@@ -8,7 +8,7 @@ pub mod totp;
 // }
 
 /// MFA configuration
-#[derive(Default, Debug, Serialize, Deserialize)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone)]
 pub struct MultiFactorAuthentication {
     /// Allow password-less email OTP login
     /// (1-Factor)

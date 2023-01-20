@@ -61,7 +61,7 @@ mod tests {
 
     #[async_std::test]
     async fn success() {
-        let (rauth, _, mut account) = for_test_authenticated("verify_email::success").await;
+        let (rauth, _, mut account, _) = for_test_authenticated("verify_email::success").await;
 
         account.verification = EmailVerification::Pending {
             token: "token".into(),
@@ -119,7 +119,7 @@ mod tests {
 
     #[async_std::test]
     async fn fail_invalid_token() {
-        let rauth = for_test("verify_email::fail_invalid_token").await;
+        let (rauth, _) = for_test("verify_email::fail_invalid_token").await;
 
         let client = bootstrap_rocket_with_auth(
             rauth,

@@ -71,7 +71,7 @@ mod tests {
 
     #[async_std::test]
     async fn success() {
-        let rauth =
+        let (rauth, _) =
             for_test_with_config("resend_verification::success", test_smtp_config().await).await;
 
         let mut account = Account::new(
@@ -124,7 +124,7 @@ mod tests {
 
     #[async_std::test]
     async fn success_unknown() {
-        let rauth = for_test_with_config(
+        let (rauth, _) = for_test_with_config(
             "resend_verification::success_unknown",
             test_smtp_config().await,
         )
@@ -152,7 +152,7 @@ mod tests {
 
     #[async_std::test]
     async fn fail_bad_email() {
-        let client = bootstrap_rocket(
+        let (client, _) = bootstrap_rocket(
             "resend_verification",
             "fail_bad_email",
             routes![crate::routes::account::resend_verification::resend_verification],

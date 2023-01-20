@@ -10,11 +10,7 @@ use rocket_empty::EmptyResponse;
 #[openapi(tag = "Session")]
 #[post("/logout")]
 pub async fn logout(rauth: &State<RAuth>, session: Session) -> Result<EmptyResponse> {
-    rauth
-        .database
-        .delete_session(&session.id)
-        .await
-        .map(|_| EmptyResponse)
+    session.delete(rauth).await.map(|_| EmptyResponse)
 }
 
 #[cfg(test)]
@@ -26,7 +22,7 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, _) = for_test_authenticated("logout::success").await;
+        let (rauth, session, _, receiver) = for_test_authenticated("logout::success").await;
         let client = bootstrap_rocket_with_auth(
             rauth.clone(),
             routes![crate::routes::session::logout::logout],
@@ -44,13 +40,25 @@ mod tests {
             rauth.database.find_session(&session.id).await.unwrap_err(),
             Error::UnknownUser
         );
+
+        let event = receiver.try_recv().expect("an event");
+        if let RAuthEvent::DeleteSession {
+            user_id,
+            session_id,
+        } = event
+        {
+            assert_eq!(user_id, session.user_id);
+            assert_eq!(session_id, session.id);
+        } else {
+            panic!("Received incorrect event type. {:?}", event);
+        }
     }
 
     #[async_std::test]
     async fn fail_invalid_session() {
         use rocket::http::Header;
 
-        let client = bootstrap_rocket(
+        let (client, _) = bootstrap_rocket(
             "logout",
             "fail_invalid_session",
             routes![crate::routes::session::logout::logout],
@@ -68,7 +76,7 @@ mod tests {
 
     #[async_std::test]
     async fn fail_no_session() {
-        let client = bootstrap_rocket(
+        let (client, _) = bootstrap_rocket(
             "logout",
             "fail_no_session",
             routes![crate::routes::session::logout::logout],

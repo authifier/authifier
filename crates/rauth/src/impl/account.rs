@@ -8,7 +8,7 @@ use crate::{
         PasswordReset, Session,
     },
     util::{hash_password, normalise_email},
-    Error, RAuth, Result, Success,
+    Error, RAuth, RAuthEvent, Result, Success,
 };
 
 impl Account {
@@ -69,6 +69,13 @@ impl Account {
                 account.save(rauth).await?;
             }
 
+            // Create and push event
+            rauth
+                .publish_event(RAuthEvent::CreateAccount {
+                    account: account.clone(),
+                })
+                .await;
+
             Ok(account)
         }
     }
@@ -85,7 +92,15 @@ impl Account {
             subscription: None,
         };
 
+        // Save to database
         rauth.database.save_session(&session).await?;
+
+        // Create and push event
+        rauth
+            .publish_event(RAuthEvent::CreateSession {
+                session: session.clone(),
+            })
+            .await;
 
         Ok(session)
     }
@@ -325,7 +340,16 @@ impl Account {
     pub async fn disable(&mut self, rauth: &RAuth) -> Success {
         self.disabled = true;
         rauth.database.delete_all_sessions(&self.id, None).await?;
-        self.save(rauth).await
+        self.save(rauth).await?;
+
+        // Create and push event
+        rauth
+            .publish_event(RAuthEvent::DisableAccount {
+                user_id: self.id.to_string(),
+            })
+            .await;
+
+        Ok(())
     }
 
     /// Schedule an account for deletion

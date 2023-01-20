@@ -201,7 +201,7 @@ mod tests {
 
     #[async_std::test]
     async fn success() {
-        let rauth = for_test("login::success").await;
+        let (rauth, receiver) = for_test("login::success").await;
 
         Account::new(
             &rauth,
@@ -230,11 +230,16 @@ mod tests {
 
         assert_eq!(res.status(), Status::Ok);
         assert!(serde_json::from_str::<Session>(&res.into_string().await.unwrap()).is_ok());
+
+        let event = receiver.try_recv().expect("an event");
+        if !matches!(event, RAuthEvent::CreateSession { .. }) {
+            panic!("Received incorrect event type. {:?}", event);
+        }
     }
 
     #[async_std::test]
     async fn success_totp_mfa() {
-        let (rauth, _, mut account) =
+        let (rauth, _, mut account, _) =
             for_test_authenticated("create_ticket::success_totp_mfa").await;
 
         let totp = Totp::Enabled {
@@ -297,7 +302,7 @@ mod tests {
 
     #[async_std::test]
     async fn success_totp_stored_mfa() {
-        let (rauth, _, mut account) =
+        let (rauth, _, mut account, _) =
             for_test_authenticated("create_ticket::success_totp_stored_mfa").await;
 
         let totp = Totp::Enabled {
@@ -335,7 +340,7 @@ mod tests {
 
     #[async_std::test]
     async fn fail_totp_invalid_mfa() {
-        let (rauth, _, mut account) =
+        let (rauth, _, mut account, _) =
             for_test_authenticated("create_ticket::fail_totp_invalid_mfa").await;
 
         let totp = Totp::Enabled {
@@ -401,7 +406,7 @@ mod tests {
 
     #[async_std::test]
     async fn fail_invalid_user() {
-        let client = bootstrap_rocket(
+        let (client, _) = bootstrap_rocket(
             "create_account",
             "fail_invalid_user",
             routes![crate::routes::session::login::login],
@@ -430,7 +435,7 @@ mod tests {
 
     #[async_std::test]
     async fn fail_disabled_account() {
-        let rauth = for_test("login::fail_disabled_account").await;
+        let (rauth, _) = for_test("login::fail_disabled_account").await;
 
         let mut account = Account::new(
             &rauth,
@@ -469,7 +474,7 @@ mod tests {
 
     #[async_std::test]
     async fn fail_unverified_account() {
-        let rauth = for_test("login::fail_unverified_account").await;
+        let (rauth, _) = for_test("login::fail_unverified_account").await;
 
         let mut account = Account::new(
             &rauth,
@@ -512,7 +517,7 @@ mod tests {
 
     #[async_std::test]
     async fn fail_locked_account() {
-        let rauth = for_test("login::fail_locked_account").await;
+        let (rauth, _) = for_test("login::fail_locked_account").await;
 
         let mut account = Account::new(
             &rauth,

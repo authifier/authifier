@@ -46,7 +46,7 @@ mod tests {
 
     #[async_std::test]
     async fn success() {
-        let (rauth, _, mut account) = for_test_authenticated("confirm_deletion::success").await;
+        let (rauth, _, mut account, _) = for_test_authenticated("confirm_deletion::success").await;
 
         account.deletion = Some(DeletionInfo::WaitingForVerification {
             token: "token".into(),

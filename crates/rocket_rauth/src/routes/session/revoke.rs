@@ -32,7 +32,7 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, _) = for_test_authenticated("revoke::success").await;
+        let (rauth, session, _, _) = for_test_authenticated("revoke::success").await;
         let client = bootstrap_rocket_with_auth(
             rauth.clone(),
             routes![crate::routes::session::revoke::revoke],

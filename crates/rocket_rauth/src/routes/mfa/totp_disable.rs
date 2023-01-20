@@ -32,7 +32,7 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, account) = for_test_authenticated("totp_disable::success").await;
+        let (rauth, session, account, _) = for_test_authenticated("totp_disable::success").await;
         let ticket = MFATicket::new(account.id, true);
         ticket.save(&rauth).await.unwrap();
 

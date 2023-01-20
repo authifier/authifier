@@ -48,7 +48,7 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, _) = for_test_authenticated("fetch_status::success").await;
+        let (rauth, session, _, _) = for_test_authenticated("fetch_status::success").await;
         let client = bootstrap_rocket_with_auth(
             rauth,
             routes![crate::routes::mfa::fetch_status::fetch_status],

@@ -3,7 +3,7 @@ use iso8601_timestamp::Timestamp;
 use super::MultiFactorAuthentication;
 
 /// Email verification status
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "status")]
 pub enum EmailVerification {
     /// Account is verified
@@ -19,7 +19,7 @@ pub enum EmailVerification {
 }
 
 /// Password reset information
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PasswordReset {
     /// Token required to change password
     pub token: String,
@@ -28,7 +28,7 @@ pub struct PasswordReset {
 }
 
 /// Account deletion information
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "status")]
 pub enum DeletionInfo {
     /// The user must confirm deletion by email
@@ -40,7 +40,7 @@ pub enum DeletionInfo {
 }
 
 /// Lockout information
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Lockout {
     /// Attempt counter
     pub attempts: i32,
@@ -49,7 +49,7 @@ pub struct Lockout {
 }
 
 /// Account model
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Account {
     /// Unique Id
     #[serde(rename = "_id")]

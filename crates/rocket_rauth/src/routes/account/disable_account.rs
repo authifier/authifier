@@ -29,7 +29,8 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, account) = for_test_authenticated("disable_account::success").await;
+        let (rauth, session, account, receiver) =
+            for_test_authenticated("disable_account::success").await;
         let ticket = MFATicket::new(account.id.to_string(), true);
         ticket.save(&rauth).await.unwrap();
 
@@ -60,5 +61,12 @@ mod tests {
             rauth.database.find_session(&session.id).await.unwrap_err(),
             Error::UnknownUser
         );
+
+        let event = receiver.try_recv().expect("an event");
+        if let RAuthEvent::DisableAccount { user_id } = event {
+            assert_eq!(user_id, session.user_id);
+        } else {
+            panic!("Received incorrect event type. {:?}", event);
+        }
     }
 }

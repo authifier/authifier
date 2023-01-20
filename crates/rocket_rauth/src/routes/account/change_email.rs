@@ -49,7 +49,7 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, account) = for_test_authenticated("change_email::success").await;
+        let (rauth, session, account, _) = for_test_authenticated("change_email::success").await;
         let client = bootstrap_rocket_with_auth(
             rauth.clone(),
             routes![crate::routes::account::change_email::change_email],
@@ -81,7 +81,7 @@ mod tests {
     async fn success_smtp() {
         use rocket::http::Header;
 
-        let (rauth, session, account) = for_test_authenticated_with_config(
+        let (rauth, session, account, _) = for_test_authenticated_with_config(
             "change_email::success_smtp",
             test_smtp_config().await,
         )

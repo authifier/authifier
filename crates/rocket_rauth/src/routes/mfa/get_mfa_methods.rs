@@ -23,7 +23,7 @@ mod tests {
     async fn success() {
         use rocket::http::Header;
 
-        let (rauth, session, _) = for_test_authenticated("get_mfa_methods::success").await;
+        let (rauth, session, _, _) = for_test_authenticated("get_mfa_methods::success").await;
         let client = bootstrap_rocket_with_auth(
             rauth,
             routes![crate::routes::mfa::get_mfa_methods::get_mfa_methods],
@@ -47,7 +47,7 @@ mod tests {
     async fn success_has_recovery_and_totp() {
         use rocket::http::Header;
 
-        let (rauth, session, mut account) =
+        let (rauth, session, mut account, _) =
             for_test_authenticated("get_mfa_methods::success_has_recovery_and_totp").await;
 
         account.mfa.totp_token = Totp::Enabled {

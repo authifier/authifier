@@ -72,7 +72,8 @@ mod tests {
 
     #[async_std::test]
     async fn success() {
-        let (rauth, session, mut account) = for_test_authenticated("password_reset::success").await;
+        let (rauth, session, mut account, _) =
+            for_test_authenticated("password_reset::success").await;
 
         account.password_reset = Some(PasswordReset {
             token: "token".into(),
@@ -143,7 +144,7 @@ mod tests {
 
     #[async_std::test]
     async fn fail_invalid_token() {
-        let rauth = for_test("password_reset::fail_invalid_token").await;
+        let (rauth, _) = for_test("password_reset::fail_invalid_token").await;
 
         let client = bootstrap_rocket_with_auth(
             rauth,
