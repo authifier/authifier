@@ -38,7 +38,7 @@ impl AbstractDatabase for MongoDb {
                     .collection::<Document>("mfa_tickets")
                     .list_index_names()
                     .await
-                    .expect("list of index names")
+                    .unwrap_or_default()
                     .contains(&"token".to_owned())
                 {
                     return Ok(());
