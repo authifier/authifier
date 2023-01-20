@@ -27,7 +27,6 @@ pub enum Error {
     InvalidCredentials,
 
     CompromisedPassword,
-    DisabledAccount,
     ShortPassword,
     Blacklisted,
     LockedOut,

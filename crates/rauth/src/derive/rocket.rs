@@ -31,7 +31,6 @@ impl<'r> Responder<'r, 'static> for Error {
             Error::MissingInvite => Status::BadRequest,
             Error::InvalidInvite => Status::BadRequest,
             Error::CompromisedPassword => Status::BadRequest,
-            Error::DisabledAccount => Status::Unauthorized,
             Error::ShortPassword => Status::BadRequest,
             Error::Blacklisted => {
                 // Fail blacklisted email addresses.

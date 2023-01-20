@@ -44,6 +44,9 @@ pub enum ResponseLogin {
         ticket: String,
         allowed_methods: Vec<MFAMethod>,
     },
+    Disabled {
+        user_id: String,
+    },
 }
 
 /// # Login
@@ -181,7 +184,9 @@ pub async fn login(rauth: &State<RAuth>, data: Json<DataLogin>) -> Result<Json<R
 
     // Prevent disabled accounts from logging in
     if account.disabled {
-        return Err(Error::DisabledAccount);
+        return Ok(Json(ResponseLogin::Disabled {
+            user_id: account.id,
+        }));
     }
 
     // Create and return a new session

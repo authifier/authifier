@@ -1,6 +1,6 @@
 [package]
 name = "rauth"
-version = "1.0.3"
+version = "1.0.4"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -16,7 +16,7 @@ revolt_source_list = []
 pwned100k = []
 have_i_been_pwned = []
 hcaptcha = [ "reqwest" ]
-default_inbuilts = [ "revolt_source_list", "pwned100k", "hcaptcha" ]
+default_inbuilts = [ "pwned100k", "hcaptcha" ]
 # default_inbuilts = []
 
 default = [ "async-std-runtime", "database-mongodb", "default_inbuilts" ]
