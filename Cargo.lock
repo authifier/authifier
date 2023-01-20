@@ -284,6 +284,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "authifier"
+version = "1.0.4"
+dependencies = [
+ "async-std",
+ "async-trait",
+ "base32",
+ "bson",
+ "chrono",
+ "futures",
+ "handlebars",
+ "iso8601-timestamp",
+ "lazy_static",
+ "lettre",
+ "log",
+ "mongodb",
+ "nanoid",
+ "rand",
+ "regex",
+ "reqwest",
+ "revolt_okapi",
+ "revolt_rocket_okapi",
+ "rocket",
+ "rust-argon2",
+ "schemars",
+ "serde",
+ "serde_json",
+ "totp-lite",
+ "ulid",
+ "validator",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1804,38 +1836,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "authifier"
-version = "1.0.4"
-dependencies = [
- "async-std",
- "async-trait",
- "base32",
- "bson",
- "chrono",
- "futures",
- "handlebars",
- "iso8601-timestamp",
- "lazy_static",
- "lettre",
- "log",
- "mongodb",
- "nanoid",
- "rand",
- "regex",
- "reqwest",
- "revolt_okapi",
- "revolt_rocket_okapi",
- "rocket",
- "rust-argon2",
- "schemars",
- "serde",
- "serde_json",
- "totp-lite",
- "ulid",
- "validator",
-]
-
-[[package]]
 name = "redox_syscall"
 version = "0.2.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2041,6 +2041,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "rocket_authifier"
+version = "1.0.4"
+dependencies = [
+ "async-std",
+ "authifier",
+ "base32",
+ "chrono",
+ "iso8601-timestamp",
+ "mongodb",
+ "regex",
+ "reqwest",
+ "revolt_okapi",
+ "revolt_rocket_okapi",
+ "rocket",
+ "rocket_empty",
+ "schemars",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "rocket_codegen"
 version = "0.5.0-rc.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2092,27 +2113,6 @@ dependencies = [
  "time 0.3.9",
  "tokio 1.18.2",
  "uncased",
-]
-
-[[package]]
-name = "rocket_authifier"
-version = "1.0.4"
-dependencies = [
- "async-std",
- "base32",
- "chrono",
- "iso8601-timestamp",
- "mongodb",
- "authifier",
- "regex",
- "reqwest",
- "revolt_okapi",
- "revolt_rocket_okapi",
- "rocket",
- "rocket_empty",
- "schemars",
- "serde",
- "serde_json",
 ]
 
 [[package]]

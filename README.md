@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.png" height="180px" />
+  <img src="https://github.com/authifier/authifier/blob/master/assets/Logo_GithubAutoTheme.svg" height="180px" />
 </p>
 
 ## Goals

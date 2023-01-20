@@ -2,6 +2,10 @@
 name = "rocket_authifier"
 version = "1.0.4"
 edition = "2021"
+license = "Apache-2.0"
+authors = ["Pawel Makles <me@insrt.uk>"]
+description = "rocket.rs implementation of authifier"
+repository = "https://github.com/authifier/authifier"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -13,7 +17,7 @@ default = [ ]
 
 [dependencies]
 # Authifier
-authifier = { path = "../authifier", features = [ "rocket_impl", "okapi_impl" ] }
+authifier = { version = "1.0.4", path = "../authifier", features = [ "rocket_impl", "okapi_impl" ] }
 
 # Rocket
 rocket = { version = "0.5.0-rc.2", default-features = false, features = ["json"] }
