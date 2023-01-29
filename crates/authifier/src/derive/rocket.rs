@@ -7,6 +7,7 @@ use rocket::{
 };
 
 use crate::{
+    config::{ResolveIp, ShieldValidationInput},
     models::{Account, MFATicket, Session, UnvalidatedTicket, ValidatedTicket},
     Authifier, Error,
 };
@@ -22,6 +23,7 @@ impl<'r> Responder<'r, 'static> for Error {
             Error::RenderFail => Status::InternalServerError,
             Error::MissingHeaders => Status::BadRequest,
             Error::CaptchaFailed => Status::BadRequest,
+            Error::BlockedByShield => Status::BadRequest,
             Error::InvalidSession => Status::Unauthorized,
             Error::UnverifiedAccount => Status::Forbidden,
             Error::UnknownUser => Status::NotFound,
@@ -182,6 +184,44 @@ impl<'r> FromRequest<'r> for UnvalidatedTicket {
             }
             Outcome::Forward(f) => Outcome::Forward(f),
             Outcome::Failure(err) => Outcome::Failure(err),
+        }
+    }
+}
+
+fn resolve_ip(request: &'_ Request<'_>, config: &ResolveIp) -> String {
+    match config {
+        ResolveIp::Remote => request
+            .remote()
+            .map(|x| x.ip().to_string())
+            .unwrap_or_default(),
+        ResolveIp::Cloudflare => request
+            .headers()
+            .get_one("CF-Connecting-IP")
+            .map(|x| x.to_string())
+            .unwrap_or_else(|| resolve_ip(request, &ResolveIp::Remote)),
+    }
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for ShieldValidationInput {
+    type Error = Error;
+
+    #[allow(clippy::collapsible_match)]
+    async fn from_request(request: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
+        if let Some(authifier) = request.rocket().state::<Authifier>() {
+            Outcome::Success(ShieldValidationInput {
+                ip: Some(resolve_ip(request, &authifier.config.resolve_ip)),
+                headers: Some(
+                    request
+                        .headers()
+                        .iter()
+                        .map(|entry| (entry.name.to_string(), entry.value.to_string()))
+                        .collect(),
+                ),
+                ..Default::default()
+            })
+        } else {
+            Outcome::Failure((Status::InternalServerError, Error::InternalError))
         }
     }
 }

@@ -15,6 +15,7 @@ pub enum Error {
     RenderFail,
     MissingHeaders,
     CaptchaFailed,
+    BlockedByShield,
 
     InvalidSession,
     UnverifiedAccount,

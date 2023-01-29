@@ -1,5 +1,6 @@
 //! Create a new account
 //! POST /account/create
+use authifier::config::ShieldValidationInput;
 use authifier::models::Account;
 use authifier::{Authifier, Error, Result};
 use rocket::serde::json::Json;
@@ -27,11 +28,16 @@ pub struct DataCreateAccount {
 pub async fn create_account(
     authifier: &State<Authifier>,
     data: Json<DataCreateAccount>,
+    mut shield: ShieldValidationInput,
 ) -> Result<EmptyResponse> {
     let data = data.into_inner();
 
     // Check Captcha token
     authifier.config.captcha.check(data.captcha).await?;
+
+    // Validate the request
+    shield.email = Some(data.email.to_string());
+    authifier.config.shield.validate(shield).await?;
 
     // Make sure email is valid and not blocked
     authifier

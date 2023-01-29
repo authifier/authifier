@@ -6,6 +6,7 @@ use revolt_rocket_okapi::{
 };
 
 use crate::{
+    config::ShieldValidationInput,
     models::{Account, MFATicket, Session, UnvalidatedTicket, ValidatedTicket},
     Error,
 };
@@ -54,6 +55,16 @@ impl OpenApiResponderInner for Error {
             })),
             ..Default::default()
         })
+    }
+}
+
+impl<'r> OpenApiFromRequest<'r> for ShieldValidationInput {
+    fn from_request_input(
+        _gen: &mut OpenApiGenerator,
+        _name: String,
+        _required: bool,
+    ) -> revolt_rocket_okapi::Result<RequestHeaderInput> {
+        Ok(RequestHeaderInput::None)
     }
 }
 
