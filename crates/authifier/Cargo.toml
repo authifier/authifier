@@ -1,6 +1,6 @@
 [package]
 name = "authifier"
-version = "1.0.7"
+version = "1.0.8"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Pawel Makles <me@insrt.uk>"]
@@ -10,21 +10,21 @@ repository = "https://github.com/authifier/authifier"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-async-std-runtime = [ "async-std", "mongodb/async-std-runtime" ]
-database-mongodb = [ "mongodb", "bson" ]
-rocket_impl = [ "rocket" ]
-okapi_impl = [ "revolt_rocket_okapi", "revolt_okapi", "schemas" ]
-schemas = [ "schemars" ]
+async-std-runtime = ["async-std", "mongodb/async-std-runtime"]
+database-mongodb = ["mongodb", "bson"]
+rocket_impl = ["rocket"]
+okapi_impl = ["revolt_rocket_okapi", "revolt_okapi", "schemas"]
+schemas = ["schemars"]
 
 revolt_source_list = []
 pwned100k = []
 have_i_been_pwned = []
-hcaptcha = [ "reqwest" ]
-shield = [ "reqwest" ]
-default_inbuilts = [ "pwned100k", "hcaptcha", "shield" ]
+hcaptcha = ["reqwest"]
+shield = ["reqwest"]
+default_inbuilts = ["pwned100k", "hcaptcha", "shield"]
 # default_inbuilts = []
 
-default = [ "async-std-runtime", "database-mongodb", "default_inbuilts" ]
+default = ["async-std-runtime", "database-mongodb", "default_inbuilts"]
 
 [dependencies]
 # Lang
@@ -43,17 +43,23 @@ futures = { version = "0.3.21" }
 # Serde
 serde_json = { version = "1.0.81" }
 iso8601-timestamp = { version = "0.1.10" }
-serde = { version = "1.0.116", features = [ "derive" ] }
+serde = { version = "1.0.116", features = ["derive"] }
 
 # MongoDB
 bson = { version = "2.2.0", optional = true }
 mongodb = { version = "2.2.1", default-features = false, optional = true }
 
 # Async runtime
-async-std = { version = "1.9.0", features = ["tokio02", "tokio1", "attributes"], optional = true }
+async-std = { version = "1.9.0", features = [
+    "tokio02",
+    "tokio1",
+    "attributes",
+], optional = true }
 
 # Schemas
-revolt_rocket_okapi = { version = "0.9.1", features = [ "swagger" ], optional = true }
+revolt_rocket_okapi = { version = "0.9.1", features = [
+    "swagger",
+], optional = true }
 revolt_okapi = { version = "0.9.1", optional = true }
 schemars = { version = "0.8.8", optional = true }
 
@@ -64,7 +70,9 @@ validator = "0.15.0"
 reqwest = { version = "0.11.10", features = ["json"], optional = true }
 
 # Rocket
-rocket = { version = "0.5.0-rc.2", default-features = false, features = ["json"], optional = true }
+rocket = { version = "0.5.0-rc.2", default-features = false, features = [
+    "json",
+], optional = true }
 
 # Security
 totp-lite = "2.0.0"
