@@ -2,25 +2,22 @@ use std::collections::HashSet;
 
 use crate::{Error, Result};
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Default, Serialize, Deserialize, Clone)]
 pub enum PasswordScanning {
     /// Disable password scanning
+    #[cfg_attr(not(feature = "pwned100k"), default)]
     None,
     /// Use a custom password list
     Custom { passwords: HashSet<String> },
     /// Block the top 100k passwords from HIBP
     #[cfg(feature = "pwned100k")]
+    #[default]
     Top100k,
     /// Use the Have I Been Pwned? API
     #[cfg(feature = "have_i_been_pwned")]
     HIBP { api_key: String },
 }
 
-impl Default for PasswordScanning {
-    fn default() -> PasswordScanning {
-        PasswordScanning::Top100k
-    }
-}
 
 #[cfg(feature = "pwned100k")]
 lazy_static! {

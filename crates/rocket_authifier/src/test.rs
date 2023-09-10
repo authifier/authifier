@@ -1,5 +1,5 @@
 pub use authifier::{
-    config::*, database::MongoDb, models::totp::*, models::*, Authifier, AuthifierEvent, Config,
+    config::*, database::{MongoDb, DummyDb}, models::totp::*, models::*, Authifier, AuthifierEvent, Config,
     Database, Error, Migration, Result,
 };
 pub use mongodb::Client;
@@ -108,9 +108,12 @@ pub async fn for_test_with_config(
     test: &str,
     config: Config,
 ) -> (Authifier, Receiver<AuthifierEvent>) {
-    let client = connect_db().await;
-
-    let database = Database::MongoDb(MongoDb(client.database(&format!("test::{}", test))));
+    let database = if std::env::var("TEST_DB_DUMMY").is_ok() {
+        Database::Dummy(Default::default())
+    } else {
+        let client = connect_db().await;
+        Database::MongoDb(MongoDb(client.database(&format!("test::{}", test))))
+    };
 
     for migration in [
         Migration::WipeAll,

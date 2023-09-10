@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-use self::{definition::AbstractDatabase, dummy::DummyDb};
+use self::{definition::AbstractDatabase};
 
 pub mod definition;
 
@@ -13,6 +13,8 @@ pub enum Migration {
 }
 
 mod dummy;
+
+pub use dummy::DummyDb;
 
 #[cfg(feature = "database-mongodb")]
 mod mongo;
@@ -29,7 +31,7 @@ pub enum Database {
 
 impl Default for Database {
     fn default() -> Self {
-        Self::Dummy(DummyDb)
+        Self::Dummy(Default::default())
     }
 }
 

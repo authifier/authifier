@@ -2,9 +2,10 @@ use std::collections::HashMap;
 
 use crate::{Error, Result};
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Default, Serialize, Deserialize, Clone)]
 pub enum Shield {
     /// Disable Authifier Shield
+    #[default]
     Disabled,
 
     /// Use Authifier Shield to block malicious actors
@@ -15,12 +16,6 @@ pub enum Shield {
         /// Whether to always fail if HTTP request fails
         strict: bool,
     },
-}
-
-impl Default for Shield {
-    fn default() -> Shield {
-        Shield::Disabled
-    }
 }
 
 #[derive(Serialize, Deserialize, Default)]

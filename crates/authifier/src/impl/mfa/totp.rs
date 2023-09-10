@@ -31,9 +31,3 @@ impl Totp {
         }
     }
 }
-
-impl Default for Totp {
-    fn default() -> Totp {
-        Totp::Disabled
-    }
-}

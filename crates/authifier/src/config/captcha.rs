@@ -2,19 +2,14 @@ use std::collections::HashMap;
 
 use crate::{Error, Result};
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Default, Serialize, Deserialize, Clone)]
 pub enum Captcha {
     /// Don't require captcha verification
+    #[default]
     Disabled,
     /// Use hCaptcha to validate sensitive requests
     #[cfg(feature = "hcaptcha")]
     HCaptcha { secret: String },
-}
-
-impl Default for Captcha {
-    fn default() -> Captcha {
-        Captcha::Disabled
-    }
 }
 
 impl Captcha {
