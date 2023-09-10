@@ -11,7 +11,7 @@ repository = "https://github.com/authifier/authifier"
 
 [features]
 async-std-runtime = [ "async-std", "mongodb/async-std-runtime" ]
-database-mongodb = [ "mongodb", "bson", "futures" ]
+database-mongodb = [ "mongodb", "bson" ]
 rocket_impl = [ "rocket" ]
 okapi_impl = [ "revolt_rocket_okapi", "revolt_okapi", "schemas" ]
 schemas = [ "schemars" ]
@@ -38,7 +38,7 @@ chrono = "0.4.19"
 lazy_static = "1.4.0"
 async-trait = "0.1.56"
 
-futures = { version = "0.3.21", optional = true }
+futures = { version = "0.3.21" }
 
 # Serde
 serde_json = { version = "1.0.81" }

@@ -3,7 +3,7 @@ fn is_false(t: &bool) -> bool {
 }
 
 /// Invite ticket
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Invite {
     /// Invite code
     #[serde(rename = "_id")]

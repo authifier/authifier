@@ -1,14 +1,9 @@
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Default, Serialize, Deserialize, Clone)]
 pub enum ResolveIp {
     /// Use remote IP
+    #[default]
     Remote,
 
     /// Use Cloudflare headers
     Cloudflare,
-}
-
-impl Default for ResolveIp {
-    fn default() -> ResolveIp {
-        ResolveIp::Remote
-    }
 }

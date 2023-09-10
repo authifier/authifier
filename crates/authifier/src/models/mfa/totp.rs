@@ -1,8 +1,9 @@
 /// Time-based one-time password configuration
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+#[derive(Default, Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 #[serde(tag = "status")]
 pub enum Totp {
     /// Disabled
+    #[default]
     Disabled,
     /// Waiting for user activation
     Pending { secret: String },

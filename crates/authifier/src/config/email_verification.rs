@@ -86,10 +86,11 @@ impl Default for EmailExpiryConfig {
 }
 
 /// Email verification config
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Default, Serialize, Deserialize, Clone)]
 #[allow(clippy::large_enum_variant)]
 pub enum EmailVerificationConfig {
     /// Don't require email verification
+    #[default]
     Disabled,
     /// Use email verification
     Enabled {
@@ -97,12 +98,6 @@ pub enum EmailVerificationConfig {
         templates: Templates,
         expiry: EmailExpiryConfig,
     },
-}
-
-impl Default for EmailVerificationConfig {
-    fn default() -> EmailVerificationConfig {
-        EmailVerificationConfig::Disabled
-    }
 }
 
 impl SMTPSettings {
