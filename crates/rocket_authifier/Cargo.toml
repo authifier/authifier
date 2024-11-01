@@ -22,7 +22,7 @@ default = []
 
 [dependencies]
 # Authifier
-authifier = { version = "1.0.5", path = "../authifier", features = [
+authifier = { version = "1.0.9", path = "../authifier", features = [
     "rocket_impl",
     "okapi_impl",
 ] }
