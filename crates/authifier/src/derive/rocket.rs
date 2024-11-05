@@ -78,13 +78,13 @@ impl<'r> FromRequest<'r> for Session {
                     if let Some(session) = session {
                         Outcome::Success(session)
                     } else {
-                        Outcome::Failure((Status::Unauthorized, Error::InvalidSession))
+                        Outcome::Error((Status::Unauthorized, Error::InvalidSession))
                     }
                 } else {
-                    Outcome::Failure((Status::Unauthorized, Error::InvalidSession))
+                    Outcome::Error((Status::Unauthorized, Error::InvalidSession))
                 }
             }
-            (_, _) => Outcome::Failure((Status::Unauthorized, Error::MissingHeaders)),
+            (_, _) => Outcome::Error((Status::Unauthorized, Error::MissingHeaders)),
         }
     }
 }
@@ -101,11 +101,11 @@ impl<'r> FromRequest<'r> for Account {
                 if let Ok(account) = authifier.database.find_account(&session.user_id).await {
                     Outcome::Success(account)
                 } else {
-                    Outcome::Failure((Status::InternalServerError, Error::InternalError))
+                    Outcome::Error((Status::InternalServerError, Error::InternalError))
                 }
             }
             Outcome::Forward(_) => unreachable!(),
-            Outcome::Failure(err) => Outcome::Failure(err),
+            Outcome::Error(err) => Outcome::Error(err),
         }
     }
 }
@@ -128,13 +128,13 @@ impl<'r> FromRequest<'r> for MFATicket {
                     if let Some(ticket) = ticket {
                         Outcome::Success(ticket)
                     } else {
-                        Outcome::Failure((Status::Unauthorized, Error::InvalidToken))
+                        Outcome::Error((Status::Unauthorized, Error::InvalidToken))
                     }
                 } else {
-                    Outcome::Failure((Status::Unauthorized, Error::InternalError))
+                    Outcome::Error((Status::Unauthorized, Error::InternalError))
                 }
             }
-            (_, _) => Outcome::Failure((Status::Unauthorized, Error::MissingHeaders)),
+            (_, _) => Outcome::Error((Status::Unauthorized, Error::MissingHeaders)),
         }
     }
 }
@@ -156,14 +156,14 @@ impl<'r> FromRequest<'r> for ValidatedTicket {
                     if ticket.claim(authifier).await.is_ok() {
                         Outcome::Success(ValidatedTicket(ticket))
                     } else {
-                        Outcome::Failure((Status::InternalServerError, Error::InternalError))
+                        Outcome::Error((Status::InternalServerError, Error::InternalError))
                     }
                 } else {
-                    Outcome::Failure((Status::Forbidden, Error::InvalidToken))
+                    Outcome::Error((Status::Forbidden, Error::InvalidToken))
                 }
             }
             Outcome::Forward(f) => Outcome::Forward(f),
-            Outcome::Failure(err) => Outcome::Failure(err),
+            Outcome::Error(err) => Outcome::Error(err),
         }
     }
 }
@@ -179,11 +179,11 @@ impl<'r> FromRequest<'r> for UnvalidatedTicket {
                 if !ticket.validated {
                     Outcome::Success(UnvalidatedTicket(ticket))
                 } else {
-                    Outcome::Failure((Status::Forbidden, Error::InvalidToken))
+                    Outcome::Error((Status::Forbidden, Error::InvalidToken))
                 }
             }
             Outcome::Forward(f) => Outcome::Forward(f),
-            Outcome::Failure(err) => Outcome::Failure(err),
+            Outcome::Error(err) => Outcome::Error(err),
         }
     }
 }
@@ -221,7 +221,7 @@ impl<'r> FromRequest<'r> for ShieldValidationInput {
                 ..Default::default()
             })
         } else {
-            Outcome::Failure((Status::InternalServerError, Error::InternalError))
+            Outcome::Error((Status::InternalServerError, Error::InternalError))
         }
     }
 }
