@@ -57,7 +57,7 @@ impl MultiFactorAuthentication {
         }
 
         let secret: [u8; 10] = rand::random();
-        let secret = base32::encode(base32::Alphabet::RFC4648 { padding: false }, &secret);
+        let secret = base32::encode(base32::Alphabet::Rfc4648 { padding: false }, &secret);
 
         self.totp_token = Totp::Pending {
             secret: secret.clone(),

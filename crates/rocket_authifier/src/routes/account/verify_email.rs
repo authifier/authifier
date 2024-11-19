@@ -55,25 +55,21 @@ pub async fn verify_email(
 #[cfg(test)]
 #[cfg(feature = "test")]
 mod tests {
-    use chrono::Duration;
-    use iso8601_timestamp::Timestamp;
+    use iso8601_timestamp::{Duration, Timestamp};
 
     use crate::test::*;
 
     use super::ResponseVerify;
 
-    #[async_std::test]
+    #[tokio::test]
     async fn success() {
         let (authifier, _, mut account, _) = for_test_authenticated("verify_email::success").await;
 
         account.verification = EmailVerification::Pending {
             token: "token".into(),
-            expiry: Timestamp::from_unix_timestamp_ms(
-                chrono::Utc::now()
-                    .checked_add_signed(Duration::seconds(100))
-                    .expect("failed to checked_add_signed")
-                    .timestamp_millis(),
-            ),
+            expiry: Timestamp::now_utc()
+                .checked_add(Duration::seconds(100))
+                .expect("failed to checked_add"),
         };
 
         account.save(&authifier).await.unwrap();
@@ -120,7 +116,7 @@ mod tests {
         }
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn fail_invalid_token() {
         let (authifier, _) = for_test("verify_email::fail_invalid_token").await;
 

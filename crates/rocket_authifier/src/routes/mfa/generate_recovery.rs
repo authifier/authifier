@@ -30,7 +30,7 @@ pub async fn generate_recovery(
 mod tests {
     use crate::test::*;
 
-    #[async_std::test]
+    #[tokio::test]
     async fn success() {
         use rocket::http::Header;
 

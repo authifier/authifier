@@ -1,5 +1,4 @@
-use chrono::Duration;
-use iso8601_timestamp::Timestamp;
+use iso8601_timestamp::{Duration, Timestamp};
 
 use crate::{
     config::EmailVerificationConfig,
@@ -127,12 +126,9 @@ impl Account {
 
             self.verification = EmailVerification::Pending {
                 token,
-                expiry: Timestamp::from_unix_timestamp_ms(
-                    chrono::Utc::now()
-                        .checked_add_signed(Duration::seconds(expiry.expire_verification))
-                        .expect("failed to checked_add_signed")
-                        .timestamp_millis(),
-                ),
+                expiry: Timestamp::now_utc()
+                    .checked_add(Duration::seconds(expiry.expire_verification))
+                    .expect("failed to checked_add"),
             };
         } else {
             self.verification = EmailVerification::Verified;
@@ -170,12 +166,9 @@ impl Account {
             self.verification = EmailVerification::Moving {
                 new_email,
                 token,
-                expiry: Timestamp::from_unix_timestamp_ms(
-                    chrono::Utc::now()
-                        .checked_add_signed(Duration::seconds(expiry.expire_verification))
-                        .expect("failed to checked_add_signed")
-                        .timestamp_millis(),
-                ),
+                expiry: Timestamp::now_utc()
+                    .checked_add(Duration::seconds(expiry.expire_verification))
+                    .expect("failed to checked_add"),
             };
         } else {
             self.email_normalised = normalise_email(new_email.clone());
@@ -207,12 +200,9 @@ impl Account {
 
             self.password_reset = Some(PasswordReset {
                 token,
-                expiry: Timestamp::from_unix_timestamp_ms(
-                    chrono::Utc::now()
-                        .checked_add_signed(Duration::seconds(expiry.expire_password_reset))
-                        .expect("failed to checked_add_signed")
-                        .timestamp_millis(),
-                ),
+                expiry: Timestamp::now_utc()
+                    .checked_add(Duration::seconds(expiry.expire_password_reset))
+                    .expect("failed to checked_add"),
             });
         } else {
             return Err(Error::OperationFailed);
@@ -245,12 +235,9 @@ impl Account {
 
             self.deletion = Some(DeletionInfo::WaitingForVerification {
                 token,
-                expiry: Timestamp::from_unix_timestamp_ms(
-                    chrono::Utc::now()
-                        .checked_add_signed(Duration::seconds(expiry.expire_password_reset))
-                        .expect("failed to checked_add_signed")
-                        .timestamp_millis(),
-                ),
+                expiry: Timestamp::now_utc()
+                    .checked_add(Duration::seconds(expiry.expire_password_reset))
+                    .expect("failed to checked_add"),
             });
 
             self.save(authifier).await
@@ -368,12 +355,9 @@ impl Account {
     /// Schedule an account for deletion
     pub async fn schedule_deletion(&mut self, authifier: &Authifier) -> Success {
         self.deletion = Some(DeletionInfo::Scheduled {
-            after: Timestamp::from_unix_timestamp_ms(
-                chrono::Utc::now()
-                    .checked_add_signed(Duration::weeks(1))
-                    .expect("failed to checked_add_signed")
-                    .timestamp_millis(),
-            ),
+            after: Timestamp::now_utc()
+                .checked_add(Duration::weeks(1))
+                .expect("failed to checked_add"),
         });
 
         self.disable(authifier).await

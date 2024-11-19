@@ -25,11 +25,11 @@ pub async fn disable_account(
 mod tests {
     use crate::test::*;
 
-    #[async_std::test]
+    #[tokio::test]
     async fn success() {
         use rocket::http::Header;
 
-        let (authifier, session, account, receiver) =
+        let (authifier, session, account, mut receiver) =
             for_test_authenticated("disable_account::success").await;
         let ticket = MFATicket::new(account.id.to_string(), true);
         ticket.save(&authifier).await.unwrap();

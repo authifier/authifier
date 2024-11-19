@@ -37,7 +37,7 @@ mod tests {
     use crate::routes::mfa::totp_generate_secret::ResponseTotpSecret;
     use crate::test::*;
 
-    #[async_std::test]
+    #[tokio::test]
     async fn success() {
         use rocket::http::Header;
 

@@ -82,9 +82,9 @@ pub async fn create_account(
 mod tests {
     use crate::test::*;
 
-    #[async_std::test]
+    #[tokio::test]
     async fn success() {
-        let (client, receiver) = bootstrap_rocket(
+        let (client, mut receiver) = bootstrap_rocket(
             "create_account",
             "success",
             routes![crate::routes::account::create_account::create_account],
@@ -112,7 +112,7 @@ mod tests {
         }
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn fail_invalid_email() {
         let (client, _) = bootstrap_rocket(
             "create_account",
@@ -141,7 +141,7 @@ mod tests {
         );
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn fail_invalid_password() {
         let (client, _) = bootstrap_rocket(
             "create_account",
@@ -170,7 +170,7 @@ mod tests {
         );
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn fail_invalid_invite() {
         let config = Config {
             invite_only: true,
@@ -206,7 +206,7 @@ mod tests {
         );
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn success_valid_invite() {
         let config = Config {
             invite_only: true,
@@ -254,7 +254,7 @@ mod tests {
         assert!(invite.used);
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn fail_missing_captcha() {
         let config = Config {
             captcha: Captcha::HCaptcha {
@@ -291,7 +291,7 @@ mod tests {
         );
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn fail_captcha_invalid() {
         let config = Config {
             captcha: Captcha::HCaptcha {
@@ -329,7 +329,7 @@ mod tests {
         );
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn success_captcha_valid() {
         let config = Config {
             captcha: Captcha::HCaptcha {
@@ -362,7 +362,7 @@ mod tests {
         assert_eq!(res.status(), Status::NoContent);
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn success_smtp_sent() {
         let (authifier, _) = for_test_with_config(
             "create_account::success_smtp_sent",

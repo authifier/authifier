@@ -18,7 +18,6 @@ pub enum PasswordScanning {
     HIBP { api_key: String },
 }
 
-
 #[cfg(feature = "pwned100k")]
 lazy_static! {
     /// Top 100k compromised passwords
@@ -70,13 +69,13 @@ mod tests {
 
     use std::collections::HashSet;
 
-    #[async_std::test]
+    #[tokio::test]
     async fn it_accepts_any_passwords() {
         let passwords = PasswordScanning::None;
         assert_eq!(passwords.assert_safe("example123").await, Ok(()));
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn it_accepts_some_passwords() {
         let passwords = PasswordScanning::Custom {
             passwords: HashSet::from(["abc".to_string()]),
@@ -85,7 +84,7 @@ mod tests {
         assert_eq!(passwords.assert_safe("example123").await, Ok(()));
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn it_rejects_some_passwords() {
         let passwords = PasswordScanning::Custom {
             passwords: HashSet::from(["example123".to_string()]),

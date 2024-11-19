@@ -1,13 +1,16 @@
 pub use authifier::{
-    config::*, database::{MongoDb, DummyDb}, models::totp::*, models::*, Authifier, AuthifierEvent, Config,
-    Database, Error, Migration, Result,
+    config::*,
+    database::{DummyDb, MongoDb},
+    models::totp::*,
+    models::*,
+    Authifier, AuthifierEvent, Config, Database, Error, Migration, Result,
 };
 pub use mongodb::Client;
 pub use rocket::http::{ContentType, Status};
 
 use rocket::Route;
 
-use async_std::channel::{unbounded, Receiver};
+use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver};
 
 pub async fn connect_db() -> Client {
     Client::with_uri_str("mongodb://localhost:27017/")
@@ -70,7 +73,7 @@ pub struct Mail {
 
 pub async fn assert_email_sendria(mailbox: String) -> Mail {
     // Wait a moment for sendira to catch the email
-    async_std::task::sleep(std::time::Duration::from_secs(1)).await;
+    tokio::time::sleep(std::time::Duration::from_secs(10)).await;
 
     let client = reqwest::Client::new();
     let resp = client
@@ -107,7 +110,7 @@ pub async fn assert_email_sendria(mailbox: String) -> Mail {
 pub async fn for_test_with_config(
     test: &str,
     config: Config,
-) -> (Authifier, Receiver<AuthifierEvent>) {
+) -> (Authifier, UnboundedReceiver<AuthifierEvent>) {
     let database = if std::env::var("TEST_DB_DUMMY").is_ok() {
         Database::Dummy(Default::default())
     } else {
@@ -123,7 +126,7 @@ pub async fn for_test_with_config(
         database.run_migration(migration).await.unwrap();
     }
 
-    let (s, r) = unbounded();
+    let (s, r) = unbounded_channel();
 
     (
         Authifier {
@@ -135,15 +138,20 @@ pub async fn for_test_with_config(
     )
 }
 
-pub async fn for_test(test: &str) -> (Authifier, Receiver<AuthifierEvent>) {
+pub async fn for_test(test: &str) -> (Authifier, UnboundedReceiver<AuthifierEvent>) {
     for_test_with_config(test, Config::default()).await
 }
 
 pub async fn for_test_authenticated_with_config(
     test: &str,
     config: Config,
-) -> (Authifier, Session, Account, Receiver<AuthifierEvent>) {
-    let (authifier, receiver) = for_test_with_config(test, config).await;
+) -> (
+    Authifier,
+    Session,
+    Account,
+    UnboundedReceiver<AuthifierEvent>,
+) {
+    let (authifier, mut receiver) = for_test_with_config(test, config).await;
 
     let account = Account::new(
         &authifier,
@@ -170,7 +178,12 @@ pub async fn for_test_authenticated_with_config(
 
 pub async fn for_test_authenticated(
     test: &str,
-) -> (Authifier, Session, Account, Receiver<AuthifierEvent>) {
+) -> (
+    Authifier,
+    Session,
+    Account,
+    UnboundedReceiver<AuthifierEvent>,
+) {
     for_test_authenticated_with_config(test, Config::default()).await
 }
 
@@ -192,7 +205,7 @@ pub async fn bootstrap_rocket(
     routes: Vec<Route>,
 ) -> (
     rocket::local::asynchronous::Client,
-    Receiver<AuthifierEvent>,
+    UnboundedReceiver<AuthifierEvent>,
 ) {
     let (authifier, receiver) = for_test(&format!("{}::{}", route, test)).await;
     (

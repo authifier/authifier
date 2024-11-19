@@ -72,7 +72,7 @@ mod tests {
 
     use crate::test::*;
 
-    #[async_std::test]
+    #[tokio::test]
     async fn success() {
         let (authifier, _) =
             for_test_with_config("resend_verification::success", test_smtp_config().await).await;
@@ -125,7 +125,7 @@ mod tests {
         assert_eq!(res.status(), Status::Ok);
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn success_unknown() {
         let (authifier, _) = for_test_with_config(
             "resend_verification::success_unknown",
@@ -153,7 +153,7 @@ mod tests {
         assert_eq!(res.status(), Status::NoContent);
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn fail_bad_email() {
         let (client, _) = bootstrap_rocket(
             "resend_verification",

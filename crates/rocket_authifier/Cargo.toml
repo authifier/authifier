@@ -10,13 +10,8 @@ repository = "https://github.com/authifier/authifier"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-test = ["reqwest", "regex", "serde_json", "chrono", "base32", "example"]
-example = [
-    "authifier/async-std-runtime",
-    "authifier/database-mongodb",
-    "async-std",
-    "mongodb",
-]
+test = ["reqwest", "regex", "serde_json", "base32", "example"]
+example = ["authifier/database-mongodb", "mongodb"]
 
 default = []
 
@@ -32,7 +27,7 @@ rocket = { version = "0.5.1", default-features = false, features = ["json"] }
 rocket_empty = { version = "0.1.2", features = ["schema"] }
 
 # Serde
-iso8601-timestamp = { version = "0.1.10" }
+iso8601-timestamp = { version = "0.3" }
 serde = { version = "1.0.116", features = ["derive"] }
 
 # Schemas
@@ -41,14 +36,12 @@ revolt_okapi = { version = "0.9.1" }
 schemars = { version = "0.8.8" }
 
 # Testing
-base32 = { version = "0.4.0", optional = true }
+base32 = { version = "0.5", optional = true }
 regex = { version = "1.5.6", optional = true }
-chrono = { version = "0.4.19", optional = true }
 serde_json = { version = "1.0.81", optional = true }
 reqwest = { version = "0.11.10", features = ["json"], optional = true }
-mongodb = { version = "2.2.1", default-features = false, optional = true }
-async-std = { version = "1.9.0", features = [
-    "tokio02",
-    "tokio1",
-    "attributes",
-], optional = true }
+tokio = { version = "1", features = ["sync", "time"] }
+mongodb = { version = "3", default-features = false, optional = true, features = [
+    "compat-3-0-0",
+    "rustls-tls",
+] }

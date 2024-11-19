@@ -46,7 +46,7 @@ pub async fn edit(
 mod tests {
     use crate::{routes::session::fetch_all::SessionInfo, test::*};
 
-    #[async_std::test]
+    #[tokio::test]
     async fn success() {
         use rocket::http::Header;
 

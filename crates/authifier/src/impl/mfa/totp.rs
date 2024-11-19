@@ -22,7 +22,7 @@ impl Totp {
             Ok(totp_lite::totp_custom::<totp_lite::Sha1>(
                 totp_lite::DEFAULT_STEP,
                 6,
-                &base32::decode(base32::Alphabet::RFC4648 { padding: false }, secret)
+                &base32::decode(base32::Alphabet::Rfc4648 { padding: false }, secret)
                     .expect("valid base32 secret"),
                 seconds,
             ))

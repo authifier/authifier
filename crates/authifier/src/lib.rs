@@ -32,21 +32,20 @@ pub mod util;
 pub use config::Config;
 pub use database::{Database, Migration};
 pub use events::AuthifierEvent;
-
-use async_std::channel::Sender;
+use tokio::sync::mpsc::UnboundedSender;
 
 /// Authifier state
 #[derive(Default, Clone)]
 pub struct Authifier {
     pub config: Config,
     pub database: Database,
-    pub event_channel: Option<Sender<AuthifierEvent>>,
+    pub event_channel: Option<UnboundedSender<AuthifierEvent>>,
 }
 
 impl Authifier {
     pub async fn publish_event(&self, event: AuthifierEvent) {
         if let Some(sender) = &self.event_channel {
-            if let Err(err) = sender.send(event).await {
+            if let Err(err) = sender.send(event) {
                 error!("Failed to publish an Authifier event: {:?}", err);
             }
         }

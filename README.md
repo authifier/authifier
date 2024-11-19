@@ -35,12 +35,15 @@ Getting started is very simple, first add Authifier to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-authifier = { version = "1.0", features = [ "rocket_impl", "okapi_impl", "async-std-runtime", "database-mongodb" ] }
+authifier = { version = "1.0", features = [ "rocket_impl", "okapi_impl", "database-mongodb" ] }
 rocket_authifier = { version = "1.0" }
 
 # For the example below, you also need:
-rocket = { version = "0.5.0-rc.2", default-features = false, features = ["json"] }
-mongodb = { version = "2.2.1", default-features = false, features = ["async-std-runtime"] }
+rocket = { version = "0.5.1", default-features = false, features = ["json"] }
+mongodb = { version = "3", default-features = false, features = [
+    "compat-3-0-0",
+    "rustls-tls",
+] }
 ```
 
 Then you can create a new instance of Authifier and mount it on to Rocket.

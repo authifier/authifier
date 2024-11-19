@@ -43,7 +43,7 @@ pub async fn create_ticket(
 mod tests {
     use crate::test::*;
 
-    #[async_std::test]
+    #[tokio::test]
     async fn success() {
         use rocket::http::Header;
 
@@ -70,7 +70,7 @@ mod tests {
         serde_json::from_str::<MFATicket>(&res.into_string().await.unwrap()).unwrap();
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn success_totp() {
         use rocket::http::Header;
 
@@ -78,7 +78,7 @@ mod tests {
             for_test_authenticated("create_ticket::success_totp").await;
 
         account.mfa.totp_token = Totp::Enabled {
-            secret: "secret".to_string(),
+            secret: "SECRET".to_string(),
         };
         account.save(&authifier).await.unwrap();
 
@@ -94,7 +94,7 @@ mod tests {
             .body(
                 json!({
                     "totp_code": Totp::Enabled {
-                        secret: "secret".to_string(),
+                        secret: "SECRET".to_string(),
                     }.generate_code().unwrap()
                 })
                 .to_string(),
@@ -106,7 +106,7 @@ mod tests {
         serde_json::from_str::<MFATicket>(&res.into_string().await.unwrap()).unwrap();
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn failure_totp() {
         use rocket::http::Header;
 
@@ -114,7 +114,7 @@ mod tests {
             for_test_authenticated("create_ticket::failure_totp").await;
 
         account.mfa.totp_token = Totp::Enabled {
-            secret: "secret".to_string(),
+            secret: "SECRET".to_string(),
         };
         account.save(&authifier).await.unwrap();
 
@@ -143,7 +143,7 @@ mod tests {
         );
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn failure_no_totp() {
         use rocket::http::Header;
 
@@ -151,7 +151,7 @@ mod tests {
             for_test_authenticated("create_ticket::failure_no_totp").await;
 
         account.mfa.totp_token = Totp::Enabled {
-            secret: "secret".to_string(),
+            secret: "SECRET".to_string(),
         };
         account.save(&authifier).await.unwrap();
 
