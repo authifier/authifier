@@ -48,7 +48,7 @@ pub async fn change_email(
 mod tests {
     use crate::{routes::account::verify_email::ResponseVerify, test::*};
 
-    #[async_std::test]
+    #[tokio::test]
     async fn success() {
         use rocket::http::Header;
 
@@ -81,7 +81,7 @@ mod tests {
         assert_eq!(account.email, "validexample@valid.com");
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn success_smtp() {
         use rocket::http::Header;
 

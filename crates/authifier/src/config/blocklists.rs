@@ -1,5 +1,7 @@
 use std::collections::HashSet;
 
+use validator::ValidateEmail;
+
 use crate::{Error, Result};
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -50,7 +52,7 @@ impl EmailBlockList {
     /// Validate a given email is allowed
     pub fn validate_email(&self, email: &str) -> Result<()> {
         // Make sure this is an actual email
-        if !validator::validate_email(email) {
+        if !email.validate_email() {
             return Err(Error::IncorrectData { with: "email" });
         }
 

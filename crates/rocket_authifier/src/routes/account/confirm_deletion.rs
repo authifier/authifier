@@ -39,24 +39,20 @@ pub async fn confirm_deletion(
 #[cfg(test)]
 #[cfg(feature = "test")]
 mod tests {
-    use chrono::Duration;
-    use iso8601_timestamp::Timestamp;
+    use iso8601_timestamp::{Duration, Timestamp};
 
     use crate::test::*;
 
-    #[async_std::test]
+    #[tokio::test]
     async fn success() {
         let (authifier, _, mut account, _) =
             for_test_authenticated("confirm_deletion::success").await;
 
         account.deletion = Some(DeletionInfo::WaitingForVerification {
             token: "token".into(),
-            expiry: Timestamp::from_unix_timestamp_ms(
-                chrono::Utc::now()
-                    .checked_add_signed(Duration::seconds(100))
-                    .expect("failed to checked_add_signed")
-                    .timestamp_millis(),
-            ),
+            expiry: Timestamp::now_utc()
+                .checked_add(Duration::seconds(100))
+                .expect("failed to checked_add"),
         });
 
         account.save(&authifier).await.unwrap();

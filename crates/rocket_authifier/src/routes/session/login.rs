@@ -88,8 +88,8 @@ pub async fn login(
                 // Check for account lockout
                 if let Some(lockout) = &account.lockout {
                     if let Some(expiry) = lockout.expiry {
-                        if expiry.to_unix_timestamp_ms()
-                            > Timestamp::now_utc().to_unix_timestamp_ms()
+                        if expiry.duration_since(Timestamp::UNIX_EPOCH)
+                            > Timestamp::now_utc().duration_since(Timestamp::UNIX_EPOCH)
                         {
                             return Err(Error::LockedOut);
                         }
@@ -207,9 +207,9 @@ mod tests {
 
     use super::ResponseLogin;
 
-    #[async_std::test]
+    #[tokio::test]
     async fn success() {
-        let (authifier, receiver) = for_test("login::success").await;
+        let (authifier, mut receiver) = for_test("login::success").await;
 
         Account::new(
             &authifier,
@@ -248,13 +248,13 @@ mod tests {
         }
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn success_totp_mfa() {
         let (authifier, _, mut account, _) =
             for_test_authenticated("create_ticket::success_totp_mfa").await;
 
         let totp = Totp::Enabled {
-            secret: "secret".to_string(),
+            secret: "SECRET".to_string(),
         };
 
         account.mfa.totp_token = totp.clone();
@@ -312,13 +312,13 @@ mod tests {
         }
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn success_totp_stored_mfa() {
         let (authifier, _, mut account, _) =
             for_test_authenticated("create_ticket::success_totp_stored_mfa").await;
 
         let totp = Totp::Enabled {
-            secret: "secret".to_string(),
+            secret: "SECRET".to_string(),
         };
 
         account.mfa.totp_token = totp.clone();
@@ -351,13 +351,13 @@ mod tests {
         assert!(serde_json::from_str::<Session>(&res.into_string().await.unwrap()).is_ok());
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn fail_totp_invalid_mfa() {
         let (authifier, _, mut account, _) =
             for_test_authenticated("create_ticket::fail_totp_invalid_mfa").await;
 
         let totp = Totp::Enabled {
-            secret: "secret".to_string(),
+            secret: "SECRET".to_string(),
         };
 
         account.mfa.totp_token = totp.clone();
@@ -418,7 +418,7 @@ mod tests {
         }
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn fail_invalid_user() {
         let (client, _) = bootstrap_rocket(
             "create_account",
@@ -447,7 +447,7 @@ mod tests {
         );
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn fail_disabled_account() {
         let (authifier, _) = for_test("login::fail_disabled_account").await;
 
@@ -492,7 +492,7 @@ mod tests {
         ));
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn fail_unverified_account() {
         let (authifier, _) = for_test("login::fail_unverified_account").await;
 
@@ -536,7 +536,7 @@ mod tests {
         );
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn fail_locked_account() {
         let (authifier, _) = for_test("login::fail_locked_account").await;
 

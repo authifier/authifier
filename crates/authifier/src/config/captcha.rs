@@ -59,14 +59,14 @@ impl Captcha {
 mod tests {
     use super::{Captcha, Error};
 
-    #[async_std::test]
+    #[tokio::test]
     async fn it_accepts_if_no_captcha_service() {
         let captcha = Captcha::Disabled;
         assert_eq!(captcha.check(None).await, Ok(()));
         assert_eq!(captcha.check(Some("token".to_string())).await, Ok(()));
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn it_accepts_if_hcaptcha() {
         let captcha = Captcha::HCaptcha {
             secret: "0x0000000000000000000000000000000000000000".to_string(),
@@ -80,7 +80,7 @@ mod tests {
         );
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn it_rejects_if_hcaptcha_response_is_invalid() {
         let captcha = Captcha::HCaptcha {
             secret: "0x0000000000000000000000000000000000000000".to_string(),
@@ -94,7 +94,7 @@ mod tests {
         );
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn it_rejects_if_no_token() {
         assert_eq!(
             Captcha::HCaptcha {

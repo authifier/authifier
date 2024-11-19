@@ -35,7 +35,7 @@ pub async fn revoke_all(
 mod tests {
     use crate::test::*;
 
-    #[async_std::test]
+    #[tokio::test]
     async fn success() {
         use rocket::http::Header;
 
@@ -69,7 +69,7 @@ mod tests {
             .is_empty());
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn success_not_including_self() {
         use rocket::http::Header;
 

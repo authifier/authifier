@@ -63,24 +63,20 @@ pub async fn password_reset(
 #[cfg(test)]
 #[cfg(feature = "test")]
 mod tests {
-    use chrono::Duration;
-    use iso8601_timestamp::Timestamp;
+    use iso8601_timestamp::{Duration, Timestamp};
 
     use crate::test::*;
 
-    #[async_std::test]
+    #[tokio::test]
     async fn success() {
         let (authifier, session, mut account, _) =
             for_test_authenticated("password_reset::success").await;
 
         account.password_reset = Some(PasswordReset {
             token: "token".into(),
-            expiry: Timestamp::from_unix_timestamp_ms(
-                chrono::Utc::now()
-                    .checked_add_signed(Duration::seconds(100))
-                    .expect("failed to checked_add_signed")
-                    .timestamp_millis(),
-            ),
+            expiry: Timestamp::now_utc()
+                .checked_add(Duration::seconds(100))
+                .expect("failed to checked_add"),
         });
 
         account.save(&authifier).await.unwrap();
@@ -144,7 +140,7 @@ mod tests {
         );
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn fail_invalid_token() {
         let (authifier, _) = for_test("password_reset::fail_invalid_token").await;
 

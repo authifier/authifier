@@ -1,8 +1,11 @@
 use bson::{to_document, DateTime, Document};
-use chrono::{Duration, Utc};
 use futures::stream::TryStreamExt;
-use mongodb::options::{Collation, CollationStrength, FindOneOptions, UpdateOptions};
-use std::{ops::Deref, str::FromStr};
+use mongodb::options::{Collation, CollationStrength};
+use std::{
+    ops::Deref,
+    str::FromStr,
+    time::{Duration, SystemTime},
+};
 use ulid::Ulid;
 
 use crate::{
@@ -31,7 +34,7 @@ impl AbstractDatabase for MongoDb {
             #[cfg(debug_assertions)]
             Migration::WipeAll => {
                 // Drop the entire database
-                self.drop(None).await.unwrap();
+                self.drop().await.unwrap();
             }
             Migration::M2022_06_03EnsureUpToSpec => {
                 if self
@@ -45,111 +48,102 @@ impl AbstractDatabase for MongoDb {
                 }
 
                 // Make sure all collections exist
-                let list = self.list_collection_names(None).await.unwrap();
+                let list = self.list_collection_names().await.unwrap();
                 let collections = ["accounts", "sessions", "invites", "mfa_tickets"];
 
                 for name in collections {
                     if !list.contains(&name.to_string()) {
-                        self.create_collection(name, None).await.unwrap();
+                        self.create_collection(name).await.unwrap();
                     }
                 }
 
                 // Setup index for `accounts`
                 let col = self.collection::<Document>("accounts");
-                col.drop_indexes(None).await.unwrap();
+                col.drop_indexes().await.unwrap();
 
-                self.run_command(
-                    doc! {
-                        "createIndexes": "accounts",
-                        "indexes": [
-                            {
-                                "key": {
-                                    "email": 1
-                                },
-                                "name": "email",
-                                "unique": true,
-                                "collation": {
-                                    "locale": "en",
-                                    "strength": 2
-                                }
+                self.run_command(doc! {
+                    "createIndexes": "accounts",
+                    "indexes": [
+                        {
+                            "key": {
+                                "email": 1
                             },
-                            {
-                                "key": {
-                                    "email_normalised": 1
-                                },
-                                "name": "email_normalised",
-                                "unique": true,
-                                "collation": {
-                                    "locale": "en",
-                                    "strength": 2
-                                }
-                            },
-                            {
-                                "key": {
-                                    "verification.token": 1
-                                },
-                                "name": "email_verification"
-                            },
-                            {
-                                "key": {
-                                    "password_reset.token": 1
-                                },
-                                "name": "password_reset"
+                            "name": "email",
+                            "unique": true,
+                            "collation": {
+                                "locale": "en",
+                                "strength": 2
                             }
-                        ]
-                    },
-                    None,
-                )
+                        },
+                        {
+                            "key": {
+                                "email_normalised": 1
+                            },
+                            "name": "email_normalised",
+                            "unique": true,
+                            "collation": {
+                                "locale": "en",
+                                "strength": 2
+                            }
+                        },
+                        {
+                            "key": {
+                                "verification.token": 1
+                            },
+                            "name": "email_verification"
+                        },
+                        {
+                            "key": {
+                                "password_reset.token": 1
+                            },
+                            "name": "password_reset"
+                        }
+                    ]
+                })
                 .await
                 .unwrap();
 
                 // Setup index for `sessions`
                 let col = self.collection::<Document>("sessions");
-                col.drop_indexes(None).await.unwrap();
+                col.drop_indexes().await.unwrap();
 
-                self.run_command(
-                    doc! {
-                        "createIndexes": "sessions",
-                        "indexes": [
-                            {
-                                "key": {
-                                    "token": 1
-                                },
-                                "name": "token",
-                                "unique": true
+                self.run_command(doc! {
+                    "createIndexes": "sessions",
+                    "indexes": [
+                        {
+                            "key": {
+                                "token": 1
                             },
-                            {
-                                "key": {
-                                    "user_id": 1
-                                },
-                                "name": "user_id"
-                            }
-                        ]
-                    },
-                    None,
-                )
+                            "name": "token",
+                            "unique": true
+                        },
+                        {
+                            "key": {
+                                "user_id": 1
+                            },
+                            "name": "user_id"
+                        }
+                    ]
+                })
                 .await
                 .unwrap();
 
                 // Setup index for `mfa_tickets`
                 let col = self.collection::<Document>("mfa_tickets");
-                col.drop_indexes(None).await.unwrap();
+                col.drop_indexes().await.unwrap();
 
-                self.run_command(
-                    doc! {
-                        "createIndexes": "mfa_tickets",
-                        "indexes": [
-                            {
-                                "key": {
-                                    "token": 1
-                                },
-                                "name": "token",
-                                "unique": true
-                            }
-                        ]
-                    },
-                    None,
-                )
+                self.run_command(doc! {
+                    "createIndexes": "mfa_tickets",
+                    "indexes": [
+                        {
+                            "key": {
+                                "token": 1
+                            },
+                            "name": "token",
+                            "unique": true
+                        }
+                    ]
+                })
                 .await
                 .unwrap();
             }
@@ -164,20 +158,17 @@ impl AbstractDatabase for MongoDb {
                     return Ok(());
                 }
 
-                self.run_command(
-                    doc! {
-                        "createIndexes": "accounts",
-                        "indexes": [
-                            {
-                                "key": {
-                                    "deletion.token": 1
-                                },
-                                "name": "account_deletion"
-                            }
-                        ]
-                    },
-                    None,
-                )
+                self.run_command(doc! {
+                    "createIndexes": "accounts",
+                    "indexes": [
+                        {
+                            "key": {
+                                "deletion.token": 1
+                            },
+                            "name": "account_deletion"
+                        }
+                    ]
+                })
                 .await
                 .unwrap();
             }
@@ -189,12 +180,9 @@ impl AbstractDatabase for MongoDb {
     /// Find account by id
     async fn find_account(&self, id: &str) -> Result<Account> {
         self.collection("accounts")
-            .find_one(
-                doc! {
-                    "_id": id
-                },
-                None,
-            )
+            .find_one(doc! {
+                "_id": id
+            })
             .await
             .map_err(|_| Error::DatabaseError {
                 operation: "find_one",
@@ -209,17 +197,13 @@ impl AbstractDatabase for MongoDb {
         normalised_email: &str,
     ) -> Result<Option<Account>> {
         self.collection("accounts")
-            .find_one(
-                doc! {
-                    "email_normalised": normalised_email
-                },
-                FindOneOptions::builder()
-                    .collation(
-                        Collation::builder()
-                            .locale("en")
-                            .strength(CollationStrength::Secondary)
-                            .build(),
-                    )
+            .find_one(doc! {
+                "email_normalised": normalised_email
+            })
+            .collation(
+                Collation::builder()
+                    .locale("en")
+                    .strength(CollationStrength::Secondary)
                     .build(),
             )
             .await
@@ -232,15 +216,12 @@ impl AbstractDatabase for MongoDb {
     /// Find account with active pending email verification
     async fn find_account_with_email_verification(&self, token: &str) -> Result<Account> {
         self.collection("accounts")
-            .find_one(
-                doc! {
-                    "verification.token": token,
-                    "verification.expiry": {
-                        "$gte": DateTime::now().to_rfc3339_string()
-                    }
-                },
-                None,
-            )
+            .find_one(doc! {
+                "verification.token": token,
+                "verification.expiry": {
+                    "$gte": DateTime::now().try_to_rfc3339_string().unwrap()
+                }
+            })
             .await
             .map_err(|_| Error::DatabaseError {
                 operation: "find_one",
@@ -252,15 +233,12 @@ impl AbstractDatabase for MongoDb {
     /// Find account with active password reset
     async fn find_account_with_password_reset(&self, token: &str) -> Result<Account> {
         self.collection("accounts")
-            .find_one(
-                doc! {
-                    "password_reset.token": token,
-                    "password_reset.expiry": {
-                        "$gte": DateTime::now().to_rfc3339_string()
-                    }
-                },
-                None,
-            )
+            .find_one(doc! {
+                "password_reset.token": token,
+                "password_reset.expiry": {
+                    "$gte": DateTime::now().try_to_rfc3339_string().unwrap()
+                }
+            })
             .await
             .map_err(|_| Error::DatabaseError {
                 operation: "find_one",
@@ -272,15 +250,12 @@ impl AbstractDatabase for MongoDb {
     /// Find account with active deletion token
     async fn find_account_with_deletion_token(&self, token: &str) -> Result<Account> {
         self.collection("accounts")
-            .find_one(
-                doc! {
-                    "deletion.token": token,
-                    "deletion.expiry": {
-                        "$gte": DateTime::now().to_rfc3339_string()
-                    }
-                },
-                None,
-            )
+            .find_one(doc! {
+                "deletion.token": token,
+                "deletion.expiry": {
+                    "$gte": DateTime::now().try_to_rfc3339_string().unwrap()
+                }
+            })
             .await
             .map_err(|_| Error::DatabaseError {
                 operation: "find_one",
@@ -292,12 +267,9 @@ impl AbstractDatabase for MongoDb {
     /// Find invite by id
     async fn find_invite(&self, id: &str) -> Result<Invite> {
         self.collection("invites")
-            .find_one(
-                doc! {
-                    "_id": id
-                },
-                None,
-            )
+            .find_one(doc! {
+                "_id": id
+            })
             .await
             .map_err(|_| Error::DatabaseError {
                 operation: "find_one",
@@ -309,12 +281,9 @@ impl AbstractDatabase for MongoDb {
     /// Find session by id
     async fn find_session(&self, id: &str) -> Result<Session> {
         self.collection("sessions")
-            .find_one(
-                doc! {
-                    "_id": id
-                },
-                None,
-            )
+            .find_one(doc! {
+                "_id": id
+            })
             .await
             .map_err(|_| Error::DatabaseError {
                 operation: "find_one",
@@ -326,12 +295,9 @@ impl AbstractDatabase for MongoDb {
     /// Find sessions by user id
     async fn find_sessions(&self, user_id: &str) -> Result<Vec<Session>> {
         self.collection::<Session>("sessions")
-            .find(
-                doc! {
-                    "user_id": user_id
-                },
-                None,
-            )
+            .find(doc! {
+                "user_id": user_id
+            })
             .await
             .map_err(|_| Error::DatabaseError {
                 operation: "find",
@@ -348,17 +314,14 @@ impl AbstractDatabase for MongoDb {
     /// Find sessions by user ids
     async fn find_sessions_with_subscription(&self, user_ids: &[String]) -> Result<Vec<Session>> {
         self.collection::<Session>("sessions")
-            .find(
-                doc! {
-                    "user_id": {
-                        "$in": user_ids
-                    },
-                    "subscription": {
-                        "$exists": true
-                    }
+            .find(doc! {
+                "user_id": {
+                    "$in": user_ids
                 },
-                None,
-            )
+                "subscription": {
+                    "$exists": true
+                }
+            })
             .await
             .map_err(|_| Error::DatabaseError {
                 operation: "find",
@@ -375,12 +338,9 @@ impl AbstractDatabase for MongoDb {
     /// Find session by token
     async fn find_session_by_token(&self, token: &str) -> Result<Option<Session>> {
         self.collection("sessions")
-            .find_one(
-                doc! {
-                    "token": token
-                },
-                None,
-            )
+            .find_one(doc! {
+                "token": token
+            })
             .await
             .map_err(|_| Error::DatabaseError {
                 operation: "find_one",
@@ -395,12 +355,9 @@ impl AbstractDatabase for MongoDb {
     async fn find_ticket_by_token(&self, token: &str) -> Result<Option<MFATicket>> {
         let ticket: MFATicket = self
             .collection("mfa_tickets")
-            .find_one(
-                doc! {
-                    "token": token
-                },
-                None,
-            )
+            .find_one(doc! {
+                "token": token
+            })
             .await
             .map_err(|_| Error::DatabaseError {
                 operation: "find_one",
@@ -409,7 +366,7 @@ impl AbstractDatabase for MongoDb {
             .ok_or(Error::InvalidToken)?;
 
         if let Ok(ulid) = Ulid::from_str(&ticket.id) {
-            if (ulid.datetime() + Duration::minutes(1)) > Utc::now() {
+            if (ulid.datetime() + Duration::from_secs(60)) > SystemTime::now() {
                 Ok(Some(ticket))
             } else {
                 Err(Error::InvalidToken)
@@ -432,8 +389,8 @@ impl AbstractDatabase for MongoDb {
                         with: "account",
                     })?
                 },
-                UpdateOptions::builder().upsert(true).build(),
             )
+            .upsert(true)
             .await
             .map_err(|_| Error::DatabaseError {
                 operation: "upsert_one",
@@ -455,8 +412,8 @@ impl AbstractDatabase for MongoDb {
                         with: "session",
                     })?,
                 },
-                UpdateOptions::builder().upsert(true).build(),
             )
+            .upsert(true)
             .await
             .map_err(|_| Error::DatabaseError {
                 operation: "upsert_one",
@@ -478,8 +435,8 @@ impl AbstractDatabase for MongoDb {
                         with: "invite",
                     })?,
                 },
-                UpdateOptions::builder().upsert(true).build(),
             )
+            .upsert(true)
             .await
             .map_err(|_| Error::DatabaseError {
                 operation: "upsert_one",
@@ -501,8 +458,8 @@ impl AbstractDatabase for MongoDb {
                         with: "ticket",
                     })?,
                 },
-                UpdateOptions::builder().upsert(true).build(),
             )
+            .upsert(true)
             .await
             .map_err(|_| Error::DatabaseError {
                 operation: "upsert_one",
@@ -514,12 +471,9 @@ impl AbstractDatabase for MongoDb {
     /// Delete session
     async fn delete_session(&self, id: &str) -> Success {
         self.collection::<Session>("sessions")
-            .delete_one(
-                doc! {
-                    "_id": id
-                },
-                None,
-            )
+            .delete_one(doc! {
+                "_id": id
+            })
             .await
             .map_err(|_| Error::DatabaseError {
                 operation: "delete_one",
@@ -544,7 +498,7 @@ impl AbstractDatabase for MongoDb {
         }
 
         self.collection::<Session>("sessions")
-            .delete_many(query, None)
+            .delete_many(query)
             .await
             .map_err(|_| Error::DatabaseError {
                 operation: "delete_one",
@@ -556,12 +510,9 @@ impl AbstractDatabase for MongoDb {
     /// Delete ticket
     async fn delete_ticket(&self, id: &str) -> Success {
         self.collection::<MFATicket>("mfa_tickets")
-            .delete_one(
-                doc! {
-                    "_id": id
-                },
-                None,
-            )
+            .delete_one(doc! {
+                "_id": id
+            })
             .await
             .map_err(|_| Error::DatabaseError {
                 operation: "delete_one",

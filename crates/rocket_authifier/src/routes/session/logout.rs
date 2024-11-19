@@ -18,11 +18,11 @@ pub async fn logout(authifier: &State<Authifier>, session: Session) -> Result<Em
 mod tests {
     use crate::test::*;
 
-    #[async_std::test]
+    #[tokio::test]
     async fn success() {
         use rocket::http::Header;
 
-        let (authifier, session, _, receiver) = for_test_authenticated("logout::success").await;
+        let (authifier, session, _, mut receiver) = for_test_authenticated("logout::success").await;
         let client = bootstrap_rocket_with_auth(
             authifier.clone(),
             routes![crate::routes::session::logout::logout],
@@ -58,7 +58,7 @@ mod tests {
         }
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn fail_invalid_session() {
         use rocket::http::Header;
 
@@ -78,7 +78,7 @@ mod tests {
         assert_eq!(res.status(), Status::Unauthorized);
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn fail_no_session() {
         let (client, _) = bootstrap_rocket(
             "logout",

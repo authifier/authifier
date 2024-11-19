@@ -1,10 +1,11 @@
-use chrono::{Duration, Utc};
-
 use crate::{
     models::{MFATicket, MultiFactorAuthentication, UnvalidatedTicket, ValidatedTicket},
     Authifier, Error, Success,
 };
-use std::ops::Deref;
+use std::{
+    ops::Deref,
+    time::{Duration, SystemTime},
+};
 
 impl MFATicket {
     /// Create a new MFA ticket
@@ -31,12 +32,12 @@ impl MFATicket {
 
     /// Check if this MFA ticket has expired
     pub fn is_expired(&self) -> bool {
-        let now = Utc::now();
+        let now = SystemTime::now();
         let datetime = ulid::Ulid::from_string(&self.id)
             .expect("Valid `ulid`")
             .datetime()
             // MFA tickets last 5 minutes
-            .checked_add_signed(Duration::minutes(5))
+            .checked_add(Duration::from_secs(5 * 60))
             .expect("checked add signed");
 
         now > datetime

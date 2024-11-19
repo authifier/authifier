@@ -44,7 +44,7 @@ pub async fn fetch_status(account: Account) -> Result<Json<MultiFactorStatus>> {
 mod tests {
     use crate::test::*;
 
-    #[async_std::test]
+    #[tokio::test]
     async fn success() {
         use rocket::http::Header;
 

@@ -60,7 +60,7 @@ pub async fn send_password_reset(
 mod tests {
     use crate::test::*;
 
-    #[async_std::test]
+    #[tokio::test]
     async fn success() {
         let (authifier, _) =
             for_test_with_config("send_password_reset::success", test_smtp_config().await).await;

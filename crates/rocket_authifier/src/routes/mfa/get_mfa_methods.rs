@@ -19,7 +19,7 @@ mod tests {
 
     use crate::test::*;
 
-    #[async_std::test]
+    #[tokio::test]
     async fn success() {
         use rocket::http::Header;
 
@@ -43,7 +43,7 @@ mod tests {
         );
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn success_has_recovery_and_totp() {
         use rocket::http::Header;
 
@@ -51,7 +51,7 @@ mod tests {
             for_test_authenticated("get_mfa_methods::success_has_recovery_and_totp").await;
 
         account.mfa.totp_token = Totp::Enabled {
-            secret: "some".to_string(),
+            secret: "SOME".to_string(),
         };
         account.mfa.generate_recovery_codes();
         account.save(&authifier).await.unwrap();

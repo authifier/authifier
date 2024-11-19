@@ -79,7 +79,7 @@ impl Shield {
 mod tests {
     use super::Shield;
 
-    #[async_std::test]
+    #[tokio::test]
     async fn it_accepts_if_no_shield_service() {
         let shield = Shield::Disabled;
         assert_eq!(shield.validate(Default::default()).await, Ok(()));
