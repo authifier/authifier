@@ -1,6 +1,6 @@
 [package]
 name = "authifier"
-version = "1.0.9"
+version = "1.0.10"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Pawel Makles <me@insrt.uk>"]
@@ -10,7 +10,7 @@ repository = "https://github.com/authifier/authifier"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-async-std-runtime = ["async-std", "mongodb/async-std-runtime"]
+async-std-runtime = ["async-std"]
 database-mongodb = ["mongodb", "bson"]
 rocket_impl = ["rocket"]
 okapi_impl = ["revolt_rocket_okapi", "revolt_okapi", "schemas"]
@@ -47,7 +47,7 @@ serde = { version = "1.0.116", features = ["derive"] }
 
 # MongoDB
 bson = { version = "2.2.0", optional = true }
-mongodb = { version = "2.2.1", default-features = false, optional = true }
+mongodb = { version = "3.1", optional = true }
 
 # Async runtime
 async-std = { version = "1.9.0", features = [
