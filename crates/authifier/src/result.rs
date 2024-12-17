@@ -23,6 +23,7 @@ pub enum Error {
 
     EmailFailed,
     InvalidToken,
+    InvalidState,
     MissingInvite,
     InvalidInvite,
     InvalidCredentials,

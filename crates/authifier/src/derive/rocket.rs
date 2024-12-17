@@ -30,6 +30,7 @@ impl<'r> Responder<'r, 'static> for Error {
             Error::EmailFailed => Status::InternalServerError,
             Error::InvalidCredentials => Status::Unauthorized,
             Error::InvalidToken => Status::Unauthorized,
+            Error::InvalidState => Status::Unauthorized,
             Error::MissingInvite => Status::BadRequest,
             Error::InvalidInvite => Status::BadRequest,
             Error::CompromisedPassword => Status::BadRequest,
