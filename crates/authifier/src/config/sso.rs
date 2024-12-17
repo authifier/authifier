@@ -7,7 +7,7 @@ use std::{
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "lowercase", tag = "type")]
 pub enum Endpoints {
     Discoverable,
@@ -18,7 +18,7 @@ pub enum Endpoints {
     },
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "lowercase", tag = "type")]
 pub enum Credentials {
     None {
@@ -44,7 +44,7 @@ impl Credentials {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum Claim {
     Id,
