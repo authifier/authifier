@@ -1,7 +1,7 @@
 //! Generate a new secret for TOTP.
 //! POST /mfa/totp
-use authifier::models::{Account, ValidatedTicket};
-use authifier::{Authifier, Result};
+use authifier::models::{Account, AuthFlow, ValidatedTicket};
+use authifier::{Authifier, Error, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 
@@ -21,8 +21,12 @@ pub async fn totp_generate_secret(
     mut account: Account,
     _ticket: ValidatedTicket,
 ) -> Result<Json<ResponseTotpSecret>> {
+    let AuthFlow::Password(auth) = &mut account.auth_flow else {
+        return Err(Error::NotAvailable);
+    };
+
     // Generate a new secret
-    let secret = account.mfa.generate_new_totp_secret()?;
+    let secret = auth.mfa.generate_new_totp_secret()?;
 
     // Save model to database
     account.save(authifier).await?;

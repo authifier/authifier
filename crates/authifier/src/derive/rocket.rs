@@ -46,6 +46,7 @@ impl<'r> Responder<'r, 'static> for Error {
             Error::LockedOut => Status::Forbidden,
             Error::TotpAlreadyEnabled => Status::BadRequest,
             Error::DisallowedMFAMethod => Status::BadRequest,
+            Error::NotAvailable => Status::NotFound,
         };
 
         // Serialize the error data structure into JSON.

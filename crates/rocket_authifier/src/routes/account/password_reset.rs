@@ -1,7 +1,8 @@
 //! Confirm a password reset.
 //! PATCH /account/reset_password
+use authifier::models::AuthFlow;
 use authifier::util::hash_password;
-use authifier::{Authifier, Result};
+use authifier::{Authifier, Error, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 use rocket_empty::EmptyResponse;
@@ -44,9 +45,13 @@ pub async fn password_reset(
         .assert_safe(&data.password)
         .await?;
 
+    let AuthFlow::Password(auth) = &mut account.auth_flow else {
+        return Err(Error::NotAvailable);
+    };
+
     // Update the account
-    account.password = hash_password(data.password)?;
-    account.password_reset = None;
+    auth.password = hash_password(data.password)?;
+    auth.password_reset = None;
     account.lockout = None;
 
     // Commit to database

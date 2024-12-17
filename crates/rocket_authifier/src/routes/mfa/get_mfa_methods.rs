@@ -1,6 +1,6 @@
 //! Fetch available MFA methods.
 //! GET /mfa/methods
-use authifier::models::{Account, MFAMethod};
+use authifier::models::{Account, AuthFlow, MFAMethod};
 use rocket::serde::json::Json;
 
 /// # Get MFA Methods
@@ -9,7 +9,11 @@ use rocket::serde::json::Json;
 #[openapi(tag = "MFA")]
 #[get("/methods")]
 pub async fn get_mfa_methods(account: Account) -> Json<Vec<MFAMethod>> {
-    Json(account.mfa.get_methods())
+    let AuthFlow::Password(auth) = &account.auth_flow else {
+        return Json(Vec::new());
+    };
+
+    Json(auth.mfa.get_methods())
 }
 
 #[cfg(test)]

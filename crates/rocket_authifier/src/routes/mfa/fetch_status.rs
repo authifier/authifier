@@ -1,8 +1,8 @@
 //! Fetch MFA status of an account.
 //! GET /mfa
 use authifier::{
-    models::{Account, MultiFactorAuthentication},
-    Result,
+    models::{Account, AuthFlow, MultiFactorAuthentication},
+    Error, Result,
 };
 use rocket::serde::json::Json;
 
@@ -36,7 +36,11 @@ impl From<MultiFactorAuthentication> for MultiFactorStatus {
 #[openapi(tag = "MFA")]
 #[get("/")]
 pub async fn fetch_status(account: Account) -> Result<Json<MultiFactorStatus>> {
-    Ok(Json(account.mfa.into()))
+    let AuthFlow::Password(auth) = &account.auth_flow else {
+        return Err(Error::NotAvailable);
+    };
+
+    Ok(Json(auth.mfa.clone().into()))
 }
 
 #[cfg(test)]
