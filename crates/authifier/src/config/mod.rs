@@ -4,6 +4,7 @@ mod email_verification;
 mod ip_resolve;
 mod passwords;
 mod shield;
+mod sso;
 
 pub use blocklists::*;
 pub use captcha::*;
@@ -11,6 +12,7 @@ pub use email_verification::*;
 pub use ip_resolve::*;
 pub use passwords::*;
 pub use shield::*;
+pub use sso::*;
 
 /// Authifier configuration
 #[derive(Default, Serialize, Deserialize, Clone)]
@@ -38,4 +40,7 @@ pub struct Config {
 
     /// Whether this application is running behind Cloudflare
     pub resolve_ip: ResolveIp,
+
+    /// Single sign-on
+    pub sso: SSO,
 }
