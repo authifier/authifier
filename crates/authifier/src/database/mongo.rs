@@ -6,7 +6,7 @@ use std::{ops::Deref, str::FromStr};
 use ulid::Ulid;
 
 use crate::{
-    models::{Account, Callback, Invite, MFATicket, Session},
+    models::{Account, Callback, Invite, MFATicket, Secret, Session},
     Error, Result, Success,
 };
 
@@ -417,6 +417,18 @@ impl AbstractDatabase for MongoDb {
             .ok_or(Error::UnknownUser)
     }
 
+    /// Find secret
+    async fn find_secret(&self) -> Result<Option<Secret>> {
+        Ok(self
+            .collection("secret")
+            .find_one(doc! {}, None)
+            .await
+            .map_err(|_| Error::DatabaseError {
+                operation: "find_one",
+                with: "secret",
+            })?)
+    }
+
     /// Find sessions by user id
     async fn find_sessions(&self, user_id: &str) -> Result<Vec<Session>> {
         self.collection::<Session>("sessions")
@@ -589,6 +601,27 @@ impl AbstractDatabase for MongoDb {
             .map_err(|_| Error::DatabaseError {
                 operation: "upsert_one",
                 with: "invite",
+            })
+            .map(|_| ())
+    }
+
+    /// Save secret
+    async fn save_secret(&self, secret: &Secret) -> Success {
+        self.collection::<Secret>("secret")
+            .update_one(
+                doc! {},
+                doc! {
+                    "$set": to_document(secret).map_err(|_| Error::DatabaseError {
+                        operation: "to_document",
+                        with: "secret",
+                    })?,
+                },
+                UpdateOptions::builder().upsert(true).build(),
+            )
+            .await
+            .map_err(|_| Error::DatabaseError {
+                operation: "upsert_one",
+                with: "secret",
             })
             .map(|_| ())
     }

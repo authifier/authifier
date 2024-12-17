@@ -1,7 +1,7 @@
 use crate::{
     models::{
         Account, AuthFlow, Callback, DeletionInfo, EmailVerification, Invite, MFATicket,
-        PasswordAuth, Session,
+        PasswordAuth, Secret, Session,
     },
     Error, Result, Success,
 };
@@ -17,6 +17,7 @@ pub struct DummyDb {
     pub accounts: Arc<Mutex<HashMap<String, Account>>>,
     pub callbacks: Arc<Mutex<HashMap<String, Callback>>>,
     pub invites: Arc<Mutex<HashMap<String, Invite>>>,
+    pub secrets: Arc<Mutex<HashMap<(), Secret>>>,
     pub sessions: Arc<Mutex<HashMap<String, Session>>>,
     pub tickets: Arc<Mutex<HashMap<String, MFATicket>>>,
 }
@@ -128,6 +129,12 @@ impl AbstractDatabase for DummyDb {
         sessions.get(id).cloned().ok_or(Error::UnknownUser)
     }
 
+    /// Find secret
+    async fn find_secret(&self) -> Result<Option<Secret>> {
+        let secrets = self.secrets.lock().await;
+        Ok(secrets.get(&()).cloned())
+    }
+
     /// Find sessions by user id
     async fn find_sessions(&self, user_id: &str) -> Result<Vec<Session>> {
         let sessions = self.sessions.lock().await;
@@ -177,6 +184,13 @@ impl AbstractDatabase for DummyDb {
     async fn save_callback(&self, callback: &Callback) -> Success {
         let mut callbacks = self.callbacks.lock().await;
         callbacks.insert(callback.id.to_string(), callback.clone());
+        Ok(())
+    }
+
+    /// Save secret
+    async fn save_secret(&self, secret: &Secret) -> Success {
+        let mut secrets = self.secrets.lock().await;
+        secrets.insert((), secret.clone());
         Ok(())
     }
 
