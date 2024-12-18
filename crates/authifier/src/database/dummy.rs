@@ -130,9 +130,17 @@ impl AbstractDatabase for DummyDb {
     }
 
     /// Find secret
-    async fn find_secret(&self) -> Result<Option<Secret>> {
+    async fn find_secret(&self) -> Result<Secret> {
         let secrets = self.secrets.lock().await;
-        Ok(secrets.get(&()).cloned())
+
+        match secrets.get(&()) {
+            Some(secret) => Ok(secret.clone()),
+            None => {
+                let secret = Secret::new();
+
+                self.save_secret(&secret).await.map(|_| secret)
+            }
+        }
     }
 
     /// Find sessions by user id

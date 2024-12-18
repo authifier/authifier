@@ -1,8 +1,14 @@
+use rand::distributions::{Alphanumeric, DistString};
+
 /// Secret model
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Secret(String);
 
 impl Secret {
+    pub fn new() -> Self {
+        Self(Alphanumeric.sample_string(&mut rand::thread_rng(), 512))
+    }
+
     pub fn expose(&self) -> &str {
         &*self.0
     }

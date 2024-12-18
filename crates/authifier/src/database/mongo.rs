@@ -418,15 +418,23 @@ impl AbstractDatabase for MongoDb {
     }
 
     /// Find secret
-    async fn find_secret(&self) -> Result<Option<Secret>> {
-        Ok(self
-            .collection("secret")
+    async fn find_secret(&self) -> Result<Secret> {
+        let res = self
+            .collection::<Secret>("secret")
             .find_one(doc! {}, None)
-            .await
-            .map_err(|_| Error::DatabaseError {
-                operation: "find_one",
-                with: "secret",
-            })?)
+            .await;
+
+        match res.map_err(|_| Error::DatabaseError {
+            operation: "find_one",
+            with: "secret",
+        })? {
+            Some(secret) => Ok(secret),
+            None => {
+                let secret = Secret::new();
+
+                self.save_secret(&secret).await.map(|_| secret)
+            }
+        }
     }
 
     /// Find sessions by user id

@@ -38,7 +38,7 @@ pub trait AbstractDatabase: std::marker::Sync {
     async fn find_invite(&self, id: &str) -> Result<Invite>;
 
     /// Find secret
-    async fn find_secret(&self) -> Result<Option<Secret>>;
+    async fn find_secret(&self) -> Result<Secret>;
 
     /// Find session by id
     async fn find_session(&self, id: &str) -> Result<Session>;

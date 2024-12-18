@@ -37,6 +37,21 @@ pub enum Error {
     DisallowedMFAMethod,
 
     NotAvailable,
+
+    InvalidEndpoints,
+    StateMismatch,
+
+    RequestFailed,
+    InvalidRequest,
+    InvalidClient,
+    InvalidGrant,
+    UnauthorizedClient,
+    UnsupportedGrantType,
+    InvalidScope,
+
+    ContentTypeMismatch,
+    InsufficientScope,
+    InvalidUserinfo,
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;

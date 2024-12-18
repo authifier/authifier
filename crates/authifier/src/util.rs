@@ -1,3 +1,4 @@
+use rand::distributions::{Alphanumeric, DistString};
 use regex::Regex;
 
 use crate::{Error, Result};
@@ -30,4 +31,9 @@ pub fn hash_password(plaintext_password: String) -> Result<String> {
         &ARGON_CONFIG,
     )
     .map_err(|_| Error::InternalError)
+}
+
+/// Generate secure random string
+pub fn secure_random_str(length: usize) -> String {
+    Alphanumeric.sample_string(&mut rand::thread_rng(), length)
 }
