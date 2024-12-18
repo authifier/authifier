@@ -3,10 +3,22 @@
 use std::collections::HashMap;
 
 use authifier::config::Claim;
-use authifier::models::IdProvider;
+use authifier::models::{Account, IdProvider};
+use authifier::util::{normalise_email, secure_random_str};
 use authifier::{Authifier, Error, Result};
+use iso8601_timestamp::Timestamp;
 use rocket::http::{Cookie, CookieJar};
-use rocket::{serde::json::Json, State};
+use rocket::response::Redirect;
+use rocket::time::Duration;
+use rocket::State;
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct LoginToken {
+    pub iss: String,
+    pub aud: String,
+    pub exp: Timestamp,
+    pub sub: String,
+}
 
 #[derive(Serialize, Deserialize, JsonSchema, FromForm)]
 pub struct DataCallback {
@@ -18,12 +30,6 @@ pub struct DataCallback {
     pub id_token: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema)]
-pub struct ResponseCallback {
-    login_token: String,
-    redirect_uri: String,
-}
-
 /// # Handle the callback from the ID provider
 ///
 /// Handle the callback from the ID provider.
@@ -33,8 +39,9 @@ pub async fn callback(
     authifier: &State<Authifier>,
     data: DataCallback,
     cookies: &CookieJar<'_>,
-) -> Result<Json<ResponseCallback>> {
+) -> Result<Redirect> {
     let secret = authifier.database.find_secret().await?;
+
     let cookie = cookies.get("callback-id").map(Cookie::value);
 
     let id: String = match cookie.map(|c| secret.validate_claims(c)).transpose() {
@@ -87,9 +94,65 @@ pub async fn callback(
         claims.extend(values);
     }
 
-    let Some(_sub) = claims.get(&Claim::Id) else {
+    let Some(sub_id) = claims.get(&Claim::Id) else {
         return Err(Error::InvalidIdClaim);
     };
 
-    todo!()
+    let account = match authifier
+        .database
+        .find_account_by_sso_id(&callback.idp_id, &sub_id.to_string())
+        .await?
+    {
+        Some(mut account) => {
+            if let Some(email) = claims.get(&Claim::Email).and_then(|value| value.as_str()) {
+                account.email = email.to_owned();
+                account.email_normalised = normalise_email(email.to_owned());
+            }
+
+            account
+        }
+        None => {
+            let Some(email) = claims.get(&Claim::Email).and_then(|value| value.as_str()) else {
+                todo!()
+            };
+
+            // Get a normalised representation of the user's email
+            let email_normalised = normalise_email(email.to_owned());
+
+            // Try to find an existing account
+            if let Some(_account) = authifier
+                .database
+                .find_account_by_normalised_email(&email_normalised)
+                .await?
+            {
+                todo!()
+            }
+
+            Account::from_claims(
+                authifier,
+                callback.idp_id.clone(),
+                sub_id.to_owned(),
+                email.to_owned(),
+            )
+            .await?
+        }
+    };
+
+    let timestamp = Timestamp::now_utc().checked_add(Duration::seconds(60 * 2));
+
+    let login_token = LoginToken {
+        iss: callback.idp_id.clone(),
+        aud: account.id.clone(),
+        exp: timestamp.map(Into::into).expect("time overflow"),
+        sub: secure_random_str(64),
+    };
+
+    // TODO: will be overwritten?
+    cookies.add(Cookie::build(("callback-id", String::new())));
+
+    Ok(Redirect::found(format!(
+        "{}?redirect_uri={}",
+        callback.redirect_uri,
+        secret.sign_claims(&login_token),
+    )))
 }

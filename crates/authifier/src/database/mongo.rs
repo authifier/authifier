@@ -286,6 +286,11 @@ impl AbstractDatabase for MongoDb {
             })
     }
 
+    /// Find account by SSO ID
+    async fn find_account_by_sso_id(&self, idp_id: &str, sub_id: &str) -> Result<Option<Account>> {
+        todo!()
+    }
+
     /// Find account with active pending email verification
     async fn find_account_with_email_verification(&self, token: &str) -> Result<Account> {
         self.collection("accounts")

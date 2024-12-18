@@ -5,7 +5,7 @@ use crate::{
     config::EmailVerificationConfig,
     models::{
         totp::Totp, Account, AuthFlow, DeletionInfo, EmailVerification, MFAMethod, MFAResponse,
-        MFATicket, PasswordAuth, PasswordReset, Session,
+        MFATicket, PasswordAuth, PasswordReset, SSOAuth, Session,
     },
     util::{hash_password, normalise_email},
     Authifier, AuthifierEvent, Error, Result, Success,
@@ -80,6 +80,40 @@ impl Account {
 
             Ok(account)
         }
+    }
+
+    /// Create a new account from SSO claims
+    pub async fn from_claims(
+        authifier: &Authifier,
+        idp_id: String,
+        sub_id: serde_json::Value,
+        email: String,
+    ) -> Result<Account> {
+        // Create a new account
+        let account = Account {
+            id: ulid::Ulid::new().to_string(),
+
+            email: email.clone(),
+            email_normalised: normalise_email(email),
+
+            disabled: false,
+            verification: EmailVerification::Verified,
+            deletion: None,
+            lockout: None,
+
+            auth_flow: AuthFlow::SSO(SSOAuth { idp_id, sub_id }),
+        };
+
+        account.save(authifier).await?;
+
+        // Create and push event
+        authifier
+            .publish_event(AuthifierEvent::CreateAccount {
+                account: account.clone(),
+            })
+            .await;
+
+        Ok(account)
     }
 
     /// Create a new session
