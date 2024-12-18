@@ -1,0 +1,40 @@
+//! Redirect to authorization interface
+//! GET /sso/authorize
+use authifier::models::IdProvider;
+use authifier::{Authifier, Error, Result};
+use rocket::http::{Cookie, CookieJar};
+use rocket::response::Redirect;
+use rocket::time::Duration;
+use rocket::State;
+
+/// # Redirect to authorization interface
+///
+/// Redirect to authorization interface.
+#[openapi(tag = "SSO")]
+#[get("/sso/authorize/<idp_id>?<redirect_uri>")]
+pub async fn authorize(
+    authifier: &State<Authifier>,
+    idp_id: &str,
+    redirect_uri: &str,
+    cookies: &CookieJar<'_>,
+) -> Result<Redirect> {
+    let Ok(redirect_uri) = redirect_uri.parse() else {
+        return Err(Error::InvalidRedirectUri);
+    };
+
+    let id_provider = match authifier.config.sso.get(idp_id).cloned() {
+        Some(config) => IdProvider::try_from(config).map_err(|_| Error::InvalidIdpConfig)?,
+        None => return Err(Error::InvalidIdpId),
+    };
+
+    let (state, uri) = id_provider
+        .create_authorization_uri(authifier, &redirect_uri)
+        .await?;
+
+    let (path, max_age) = ("/sso/callback", Duration::seconds(60 * 10));
+    let cookie = Cookie::build(("callback-id", state)).http_only(true);
+
+    cookies.add(cookie.path(path).max_age(max_age));
+
+    Ok(Redirect::found(uri.to_string()))
+}

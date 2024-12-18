@@ -48,6 +48,25 @@ impl<'r> Responder<'r, 'static> for Error {
             Error::TotpAlreadyEnabled => Status::BadRequest,
             Error::DisallowedMFAMethod => Status::BadRequest,
             Error::NotAvailable => Status::NotFound,
+
+            Error::InvalidEndpoints => todo!(),
+            Error::StateMismatch => todo!(),
+
+            Error::RequestFailed => todo!(),
+            Error::InvalidRequest => todo!(),
+            Error::InvalidClient => todo!(),
+            Error::InvalidGrant => todo!(),
+            Error::UnauthorizedClient => todo!(),
+            Error::UnsupportedGrantType => todo!(),
+            Error::InvalidScope => todo!(),
+
+            Error::ContentTypeMismatch => todo!(),
+            Error::InsufficientScope => todo!(),
+            Error::InvalidUserinfo => todo!(),
+
+            Error::InvalidRedirectUri => todo!(),
+            Error::InvalidIdpId => todo!(),
+            Error::InvalidIdpConfig => todo!(),
         };
 
         // Serialize the error data structure into JSON.

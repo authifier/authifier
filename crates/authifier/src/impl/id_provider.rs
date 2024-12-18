@@ -85,20 +85,6 @@ impl IdProvider {
 
         let secret = authifier.database.find_secret().await?;
 
-        // let builder = Cookie::build(("callback-state", secret.sign_claims(&state)))
-        //     .secure(true)
-        //     .http_only(true);
-
-        // let (path, same_site, max_age) =
-        //     ("/callback", SameSite::Strict, Duration::seconds(60 * 10));
-        // let cookie = builder
-        //     .path(path)
-        //     .same_site(same_site)
-        //     .max_age(max_age)
-        //     .build();
-
-        // let location = Header::new("Location", authorization_uri.to_string());
-
         let callback = Callback {
             id: state.clone(),
             nonce,
@@ -204,10 +190,10 @@ impl IdProvider {
 
                 let Some((_, error)) = header.and_then(|h| {
                     h.to_str().ok().and_then(|s| {
-                        let it = s.trim_matches("Bearer ").split(',');
+                        let it = s.trim_start_matches("Bearer ").split(',');
 
                         it.filter_map(|s| s.split_once('='))
-                            .find(|(k, v)| k == "error")
+                            .find(|(k, _)| *k == "error")
                     })
                 }) else {
                     return Err(Error::MissingHeaders);

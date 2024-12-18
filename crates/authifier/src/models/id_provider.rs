@@ -6,7 +6,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::config::{Claim, Credentials, Endpoints};
+use crate::config::{Claim, Credentials, Endpoints, IdProvider as IdProviderConfig};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct IdProvider {
@@ -44,5 +44,23 @@ impl Hash for IdProvider {
         H: Hasher,
     {
         self.id.hash(state);
+    }
+}
+
+impl TryFrom<IdProviderConfig> for IdProvider {
+    type Error = <reqwest::Url as std::str::FromStr>::Err;
+
+    fn try_from(config: IdProviderConfig) -> Result<Self, Self::Error> {
+        Ok(Self {
+            id: config.id,
+            issuer: config.issuer.parse()?,
+            name: config.name,
+            icon: config.icon.as_deref().map(str::parse).transpose()?,
+            scopes: config.scopes,
+            endpoints: config.endpoints,
+            credentials: config.credentials,
+            claims: config.claims,
+            code_challenge: config.code_challenge,
+        })
     }
 }

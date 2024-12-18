@@ -52,6 +52,10 @@ pub enum Error {
     ContentTypeMismatch,
     InsufficientScope,
     InvalidUserinfo,
+
+    InvalidRedirectUri,
+    InvalidIdpId,
+    InvalidIdpConfig,
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
