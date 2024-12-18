@@ -67,6 +67,11 @@ impl<'r> Responder<'r, 'static> for Error {
             Error::InvalidRedirectUri => todo!(),
             Error::InvalidIdpId => todo!(),
             Error::InvalidIdpConfig => todo!(),
+
+            Error::MissingCallback => todo!(),
+            Error::InvalidCallback => todo!(),
+            Error::MissingAuthCode => todo!(),
+            Error::InvalidIdClaim => todo!(),
         };
 
         // Serialize the error data structure into JSON.

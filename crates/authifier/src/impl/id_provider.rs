@@ -83,8 +83,6 @@ impl IdProvider {
             ]);
         }
 
-        let secret = authifier.database.find_secret().await?;
-
         let callback = Callback {
             id: state.clone(),
             nonce,
@@ -94,7 +92,7 @@ impl IdProvider {
 
         authifier.database.save_callback(&callback).await?;
 
-        Ok((secret.sign_claims(&state), authorization_uri))
+        Ok((state, authorization_uri))
     }
 
     /// Exchange authorization code for access token

@@ -56,6 +56,11 @@ pub enum Error {
     InvalidRedirectUri,
     InvalidIdpId,
     InvalidIdpConfig,
+
+    MissingCallback,
+    InvalidCallback,
+    MissingAuthCode,
+    InvalidIdClaim,
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
