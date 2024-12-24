@@ -14,9 +14,13 @@ use rocket::State;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LoginToken {
+    // ID provider Id
     pub iss: String,
+    // Account Id
     pub aud: String,
+    // Expiry timestamp
     pub exp: Timestamp,
+    // Login token value
     pub sub: String,
 }
 
