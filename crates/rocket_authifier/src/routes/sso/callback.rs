@@ -40,10 +40,13 @@ pub async fn callback(
     data: DataCallback,
     cookies: &CookieJar<'_>,
 ) -> Result<Redirect> {
+    // Retrieve encoding/decoding secret
     let secret = authifier.database.find_secret().await?;
 
+    // Retrieve cookie provided during authorization
     let cookie = cookies.get("callback-id").map(Cookie::value);
 
+    // Ensure presence and validate integrity
     let id: String = match cookie.map(|c| secret.validate_claims(c)).transpose() {
         Ok(value) => value.ok_or(Error::MissingCallback)?,
         Err(_) => {
@@ -51,26 +54,31 @@ pub async fn callback(
         }
     };
 
+    // Retrieve associated callback
     let callback = authifier.database.find_callback(&id).await?;
     {
         authifier.database.delete_callback(&id).await?;
     }
 
+    // Ensure given ID provider exists
     let id_provider = match authifier.config.sso.get(&*callback.idp_id).cloned() {
         Some(config) => IdProvider::try_from(config).map_err(|_| Error::InvalidIdpConfig)?,
         None => return Err(Error::InvalidIdpId),
     };
 
+    // Ensure authorization code was provided
     let Some(code) = data.code.as_deref() else {
         return Err(Error::MissingAuthCode);
     };
 
+    // Exchange authorization code for access token
     let (response, id_token) = id_provider
         .exchange_authorization_code(authifier, code, &id)
         .await?;
 
     let mut claims = HashMap::with_capacity(id_provider.claims.len());
 
+    // Extract claims for ID token
     if let Some(id_token) = id_token {
         let values = id_provider.claims.iter().filter_map(|(claim, key)| {
             let value = id_token.get(key).cloned()?;
@@ -81,6 +89,7 @@ pub async fn callback(
         claims.extend(values);
     }
 
+    // Extract claims for userinfo JWT
     if let Some(userinfo) = id_provider
         .fetch_userinfo(authifier, &response.access_token)
         .await?
@@ -94,6 +103,7 @@ pub async fn callback(
         claims.extend(values);
     }
 
+    // Ensure either one contained the identifier claim
     let Some(sub_id) = claims.get(&Claim::Id) else {
         return Err(Error::InvalidIdClaim);
     };
@@ -103,8 +113,10 @@ pub async fn callback(
         .find_account_by_sso_id(&callback.idp_id, &sub_id.to_string())
         .await?
     {
+        // Account was previously logged in with through SSO
         Some(mut account) => {
             if let Some(email) = claims.get(&Claim::Email).and_then(|value| value.as_str()) {
+                // Update email if present in claims
                 account.email = email.to_owned();
                 account.email_normalised = normalise_email(email.to_owned());
             }
@@ -112,6 +124,7 @@ pub async fn callback(
             account
         }
         None => {
+            // TODO: no email present in claims?
             let Some(email) = claims.get(&Claim::Email).and_then(|value| value.as_str()) else {
                 todo!()
             };
@@ -125,9 +138,12 @@ pub async fn callback(
                 .find_account_by_normalised_email(&email_normalised)
                 .await?
             {
+                // TODO: convert existing account to SSO?
+
                 todo!()
             }
 
+            // Create new account
             Account::from_claims(
                 authifier,
                 callback.idp_id.clone(),
@@ -140,6 +156,7 @@ pub async fn callback(
 
     let timestamp = Timestamp::now_utc().checked_add(Duration::seconds(60 * 2));
 
+    // Generate login token
     let login_token = LoginToken {
         iss: callback.idp_id.clone(),
         aud: account.id.clone(),
@@ -147,9 +164,10 @@ pub async fn callback(
         sub: secure_random_str(64),
     };
 
-    // TODO: will be overwritten?
+    // TODO: are we sure this will be overwritten?
     cookies.add(Cookie::build(("callback-id", String::new())));
 
+    // TODO: URI encoding?
     Ok(Redirect::found(format!(
         "{}?redirect_uri={}",
         callback.redirect_uri,

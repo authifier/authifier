@@ -90,6 +90,7 @@ impl IdProvider {
             ]);
         }
 
+        // Save callback
         let callback = Callback {
             id: state.clone(),
             nonce,
@@ -97,7 +98,7 @@ impl IdProvider {
             ..Callback::new(self.id.clone(), redirect_uri.clone())
         };
 
-        // TODO: embed callback in cookie as JWT or save callback 
+        // TODO: embed callback in cookie as JWT or save callback
         // server-side using state as identifier?
         authifier.database.save_callback(&callback).await?;
 
@@ -111,9 +112,10 @@ impl IdProvider {
         code: &str,
         state: &str,
     ) -> Result<(AccessTokenResponse, Option<IdToken>)> {
+        // Find callback
         let callback = authifier.database.find_callback(state).await?;
 
-        // validate state
+        // Compare provided state against stored state
         if state != callback.id {
             authifier.database.delete_callback(state).await?;
 
@@ -122,6 +124,7 @@ impl IdProvider {
 
         let endpoint = match &self.endpoints {
             Endpoints::Discoverable => {
+                // Fetch token endpoint for OIDC provider
                 let metadata = self.discover(authifier).await?;
 
                 metadata.token_endpoint().to_owned()
@@ -129,6 +132,7 @@ impl IdProvider {
             Endpoints::Manual { token, .. } => token.parse().unwrap(),
         };
 
+        // Build request for access token with authorization code
         let body = AccessTokenRequest::AuthorizationCode(AuthorizationCodeGrant {
             code: code.to_owned(),
             redirect_uri: Some(callback.redirect_uri.parse().unwrap()),
@@ -139,9 +143,11 @@ impl IdProvider {
 
         match self.request(builder, body).await {
             Ok(res) if res.status().is_success() => {
+                // TODO: ID token deserialization
                 Ok((res.json().await.map_err(|_| Error::RequestFailed)?, None))
             }
             Ok(res) => {
+                // TODO: improve error handling
                 let ErrorResponse { error } = res.json().await.map_err(|_| Error::RequestFailed)?;
 
                 Err(match &*error {
