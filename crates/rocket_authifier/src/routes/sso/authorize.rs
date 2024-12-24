@@ -18,22 +18,27 @@ pub async fn authorize(
     redirect_uri: &str,
     cookies: &CookieJar<'_>,
 ) -> Result<Redirect> {
+    // Make sure the redirect URI is valid
     let Ok(redirect_uri) = redirect_uri.parse() else {
         return Err(Error::InvalidRedirectUri);
     };
 
+    // Ensure given ID provider exists
     let id_provider = match authifier.config.sso.get(idp_id).cloned() {
         Some(config) => IdProvider::try_from(config).map_err(|_| Error::InvalidIdpConfig)?,
         None => return Err(Error::InvalidIdpId),
     };
 
+    // Build authorization URI
     let (state, uri) = id_provider
         .create_authorization_uri(authifier, &redirect_uri)
         .await?;
 
+    // Build cookie that can be retrieved during callback
     let (path, max_age) = ("/sso/callback", Duration::seconds(60 * 10));
     let cookie = Cookie::build(("callback-id", state)).http_only(true);
 
+    // Add the cookie to the response
     cookies.add(cookie.path(path).max_age(max_age));
 
     Ok(Redirect::found(uri.to_string()))

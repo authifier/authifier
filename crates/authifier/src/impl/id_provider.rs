@@ -41,18 +41,22 @@ impl IdProvider {
         authifier: &Authifier,
         redirect_uri: &Url,
     ) -> Result<(String, Url)> {
+        // Generate random state, used as callback identifier
         let state = ulid::Ulid::new().to_string();
 
+        // Generate random nonce, associates session with an ID Token
         let nonce = match &self.endpoints {
             Endpoints::Discoverable => Some(secure_random_str(32)),
             Endpoints::Manual { .. } => None,
         };
 
+        // Generate PKCE challenge and verifier
         let (code_verifier, code_challenge) =
             self.code_challenge.then(create_code_challenge).unzip();
 
         let mut authorization_uri = match &self.endpoints {
             Endpoints::Discoverable => {
+                // Fetch authorization endpoint for OIDC provider
                 let metadata = self.discover(authifier).await?;
 
                 metadata.authorization_endpoint().to_owned()
@@ -60,6 +64,7 @@ impl IdProvider {
             Endpoints::Manual { authorization, .. } => authorization.parse().unwrap(),
         };
 
+        // Append the client ID, redirect URI and state to the authorization URI
         {
             authorization_uri.query_pairs_mut().extend_pairs([
                 ("client_id", self.credentials.client_id()),
@@ -70,12 +75,14 @@ impl IdProvider {
             ]);
         }
 
+        // Append the nonce if present
         if let Some(nonce) = nonce.as_deref() {
             authorization_uri
                 .query_pairs_mut()
                 .extend_pairs([("nonce", nonce)]);
         }
 
+        // Append the PKCE challenge if present
         if let Some(code_challenge) = code_challenge.as_deref() {
             authorization_uri.query_pairs_mut().extend_pairs([
                 ("code_challenge", code_challenge),
@@ -90,6 +97,8 @@ impl IdProvider {
             ..Callback::new(self.id.clone(), redirect_uri.clone())
         };
 
+        // TODO: embed callback in cookie as JWT or save callback 
+        // server-side using state as identifier?
         authifier.database.save_callback(&callback).await?;
 
         Ok((state, authorization_uri))
