@@ -1,6 +1,6 @@
 [package]
 name = "rocket_authifier"
-version = "1.0.9"
+version = "1.0.10"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Pawel Makles <me@insrt.uk>"]
@@ -22,7 +22,7 @@ default = []
 
 [dependencies]
 # Authifier
-authifier = { version = "1.0.9", path = "../authifier", features = [
+authifier = { version = "1.0.10", path = "../authifier", features = [
     "rocket_impl",
     "okapi_impl",
 ] }
@@ -46,7 +46,7 @@ regex = { version = "1.5.6", optional = true }
 chrono = { version = "0.4.19", optional = true }
 serde_json = { version = "1.0.81", optional = true }
 reqwest = { version = "0.11.10", features = ["json"], optional = true }
-mongodb = { version = "2.2.1", default-features = false, optional = true }
+mongodb = { version = "3.1", optional = true }
 async-std = { version = "1.9.0", features = [
     "tokio02",
     "tokio1",
