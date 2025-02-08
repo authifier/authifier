@@ -3,7 +3,9 @@
 use std::ops::Add;
 use std::time::Duration;
 
-use authifier::models::{EmailVerification, Lockout, MFAMethod, MFAResponse, MFATicket, Session};
+use authifier::models::{
+    AuthFlow, EmailVerification, Lockout, MFAMethod, MFAResponse, MFATicket, Session,
+};
 use authifier::util::normalise_email;
 use authifier::{Authifier, Error, Result};
 use iso8601_timestamp::Timestamp;
@@ -73,6 +75,11 @@ pub async fn login(
                 .find_account_by_normalised_email(&email_normalised)
                 .await?
             {
+                // Make sure the account uses password authentication
+                let AuthFlow::Password(auth) = &account.auth_flow else {
+                    return Err(Error::NotAvailable);
+                };
+
                 // Make sure the account has been verified
                 if let EmailVerification::Pending { .. } = account.verification {
                     return Err(Error::UnverifiedAccount);
@@ -136,16 +143,16 @@ pub async fn login(
                 }
 
                 // Check whether an MFA step is required
-                if account.mfa.is_active() {
+                if auth.mfa.is_active() {
                     // Create a new ticket
                     let mut ticket = MFATicket::new(account.id, false);
-                    ticket.populate(&account.mfa).await;
+                    ticket.populate(&auth.mfa).await;
                     ticket.save(authifier).await?;
 
                     // Return applicable methods
                     return Ok(Json(ResponseLogin::MFA {
                         ticket: ticket.token,
-                        allowed_methods: account.mfa.get_methods(),
+                        allowed_methods: auth.mfa.get_methods(),
                     }));
                 }
 

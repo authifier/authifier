@@ -4,8 +4,8 @@ use iso8601_timestamp::Timestamp;
 use crate::{
     config::EmailVerificationConfig,
     models::{
-        totp::Totp, Account, DeletionInfo, EmailVerification, MFAMethod, MFAResponse, MFATicket,
-        PasswordReset, Session,
+        totp::Totp, Account, AuthFlow, DeletionInfo, EmailVerification, MFAMethod, MFAResponse,
+        MFATicket, PasswordAuth, PasswordReset, SSOAuth, Session,
     },
     util::{hash_password, normalise_email},
     Authifier, AuthifierEvent, Error, Result, Success,
@@ -51,15 +51,17 @@ impl Account {
 
                 email,
                 email_normalised,
-                password,
 
                 disabled: false,
                 verification: EmailVerification::Verified,
-                password_reset: None,
                 deletion: None,
                 lockout: None,
 
-                mfa: Default::default(),
+                auth_flow: AuthFlow::Password(PasswordAuth {
+                    password,
+                    mfa: Default::default(),
+                    password_reset: None,
+                }),
             };
 
             // Send email verification
@@ -78,6 +80,40 @@ impl Account {
 
             Ok(account)
         }
+    }
+
+    /// Create a new account from SSO claims
+    pub async fn from_claims(
+        authifier: &Authifier,
+        idp_id: String,
+        sub_id: serde_json::Value,
+        email: String,
+    ) -> Result<Account> {
+        // Create a new account
+        let account = Account {
+            id: ulid::Ulid::new().to_string(),
+
+            email: email.clone(),
+            email_normalised: normalise_email(email),
+
+            disabled: false,
+            verification: EmailVerification::Verified,
+            deletion: None,
+            lockout: None,
+
+            auth_flow: AuthFlow::SSO(SSOAuth { idp_id, sub_id }),
+        };
+
+        account.save(authifier).await?;
+
+        // Create and push event
+        authifier
+            .publish_event(AuthifierEvent::CreateAccount {
+                account: account.clone(),
+            })
+            .await;
+
+        Ok(account)
     }
 
     /// Create a new session
@@ -205,7 +241,11 @@ impl Account {
                 }),
             )?;
 
-            self.password_reset = Some(PasswordReset {
+            let AuthFlow::Password(auth) = &mut self.auth_flow else {
+                return Ok(());
+            };
+
+            auth.password_reset = Some(PasswordReset {
                 token,
                 expiry: Timestamp::from_unix_timestamp_ms(
                     chrono::Utc::now()
@@ -261,7 +301,11 @@ impl Account {
 
     /// Verify a user's password is correct
     pub fn verify_password(&self, plaintext_password: &str) -> Success {
-        argon2::verify_encoded(&self.password, plaintext_password.as_bytes())
+        let AuthFlow::Password(auth) = &self.auth_flow else {
+            return Ok(());
+        };
+
+        argon2::verify_encoded(&auth.password, plaintext_password.as_bytes())
             .map(|v| {
                 if v {
                     Ok(())
@@ -281,7 +325,11 @@ impl Account {
         response: MFAResponse,
         ticket: Option<MFATicket>,
     ) -> Success {
-        let allowed_methods = self.mfa.get_methods();
+        let AuthFlow::Password(auth) = &mut self.auth_flow else {
+            return Ok(());
+        };
+
+        let allowed_methods = auth.mfa.get_methods();
 
         match response {
             MFAResponse::Password { password } => {
@@ -293,7 +341,7 @@ impl Account {
             }
             MFAResponse::Totp { totp_code } => {
                 if allowed_methods.contains(&MFAMethod::Totp) {
-                    if let Totp::Enabled { .. } = &self.mfa.totp_token {
+                    if let Totp::Enabled { .. } = &auth.mfa.totp_token {
                         // Use TOTP code at generation if applicable
                         if let Some(ticket) = ticket {
                             if let Some(code) = ticket.last_totp_code {
@@ -304,7 +352,7 @@ impl Account {
                         }
 
                         // Otherwise read current TOTP token
-                        if self.mfa.totp_token.generate_code()? == totp_code {
+                        if auth.mfa.totp_token.generate_code()? == totp_code {
                             Ok(())
                         } else {
                             Err(Error::InvalidToken)
@@ -318,13 +366,13 @@ impl Account {
             }
             MFAResponse::Recovery { recovery_code } => {
                 if allowed_methods.contains(&MFAMethod::Recovery) {
-                    if let Some(index) = self
+                    if let Some(index) = auth
                         .mfa
                         .recovery_codes
                         .iter()
                         .position(|x| x == &recovery_code)
                     {
-                        self.mfa.recovery_codes.remove(index);
+                        auth.mfa.recovery_codes.remove(index);
                         self.save(authifier).await
                     } else {
                         Err(Error::InvalidToken)

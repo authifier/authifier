@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-use self::{definition::AbstractDatabase};
+use self::definition::AbstractDatabase;
 
 pub mod definition;
 

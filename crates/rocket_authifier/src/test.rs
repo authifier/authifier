@@ -1,6 +1,9 @@
 pub use authifier::{
-    config::*, database::{MongoDb, DummyDb}, models::totp::*, models::*, Authifier, AuthifierEvent, Config,
-    Database, Error, Migration, Result,
+    config::*,
+    database::{DummyDb, MongoDb},
+    models::totp::*,
+    models::*,
+    Authifier, AuthifierEvent, Config, Database, Error, Migration, Result,
 };
 pub use mongodb::Client;
 pub use rocket::http::{ContentType, Status};

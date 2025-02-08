@@ -1,7 +1,7 @@
 //! Generate a new secret for TOTP.
 //! POST /mfa/totp
-use authifier::models::{Account, MFAResponse};
-use authifier::{Authifier, Result};
+use authifier::models::{Account, AuthFlow, MFAResponse};
+use authifier::{Authifier, Error, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 use rocket_empty::EmptyResponse;
@@ -16,8 +16,12 @@ pub async fn totp_enable(
     mut account: Account,
     data: Json<MFAResponse>,
 ) -> Result<EmptyResponse> {
+    let AuthFlow::Password(auth) = &mut account.auth_flow else {
+        return Err(Error::NotAvailable);
+    };
+
     // Enable TOTP 2FA
-    account.mfa.enable_totp(data.into_inner())?;
+    auth.mfa.enable_totp(data.into_inner())?;
 
     // Save model to database
     account.save(authifier).await.map(|_| EmptyResponse)

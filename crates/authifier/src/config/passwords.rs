@@ -18,7 +18,6 @@ pub enum PasswordScanning {
     HIBP { api_key: String },
 }
 
-
 #[cfg(feature = "pwned100k")]
 lazy_static! {
     /// Top 100k compromised passwords

@@ -1,18 +1,23 @@
 use crate::{
-    models::{Account, Invite, MFATicket, Session, EmailVerification, DeletionInfo},
-    Result, Success, Error
+    models::{
+        Account, AuthFlow, Callback, DeletionInfo, EmailVerification, Invite, MFATicket,
+        PasswordAuth, Secret, Session,
+    },
+    Error, Result, Success,
 };
 
 use futures::lock::Mutex;
-use std::sync::Arc;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use super::{definition::AbstractDatabase, Migration};
 
 #[derive(Default, Clone)]
 pub struct DummyDb {
     pub accounts: Arc<Mutex<HashMap<String, Account>>>,
+    pub callbacks: Arc<Mutex<HashMap<String, Callback>>>,
     pub invites: Arc<Mutex<HashMap<String, Invite>>>,
+    pub secrets: Arc<Mutex<HashMap<(), Secret>>>,
     pub sessions: Arc<Mutex<HashMap<String, Session>>>,
     pub tickets: Arc<Mutex<HashMap<String, MFATicket>>>,
 }
@@ -37,18 +42,26 @@ impl AbstractDatabase for DummyDb {
         normalised_email: &str,
     ) -> Result<Option<Account>> {
         let accounts = self.accounts.lock().await;
-        Ok(accounts.values()
+        Ok(accounts
+            .values()
             .find(|account| account.email_normalised == normalised_email)
             .cloned())
+    }
+
+    /// Find account by SSO ID
+    async fn find_account_by_sso_id(&self, idp_id: &str, sub_id: &str) -> Result<Option<Account>> {
+        todo!()
     }
 
     /// Find account with active pending email verification
     async fn find_account_with_email_verification(&self, token_to_match: &str) -> Result<Account> {
         let accounts = self.accounts.lock().await;
-        accounts.values()
+        accounts
+            .values()
             .find(|account| match &account.verification {
-                EmailVerification::Pending { token, .. } | EmailVerification::Moving { token, .. } => token == token_to_match,
-                _ => false
+                EmailVerification::Pending { token, .. }
+                | EmailVerification::Moving { token, .. } => token == token_to_match,
+                _ => false,
             })
             .cloned()
             .ok_or(Error::InvalidToken)
@@ -57,11 +70,18 @@ impl AbstractDatabase for DummyDb {
     /// Find account with active password reset
     async fn find_account_with_password_reset(&self, token: &str) -> Result<Account> {
         let accounts = self.accounts.lock().await;
-        accounts.values()
-            .find(|account| if let Some(reset) = &account.password_reset {
-                reset.token == token
-            } else {
-                false
+        accounts
+            .values()
+            .find(|account| {
+                if let AuthFlow::Password(PasswordAuth {
+                    password_reset: Some(reset),
+                    ..
+                }) = &account.auth_flow
+                {
+                    reset.token == token
+                } else {
+                    false
+                }
             })
             .cloned()
             .ok_or(Error::InvalidToken)
@@ -70,14 +90,24 @@ impl AbstractDatabase for DummyDb {
     /// Find account with active deletion token
     async fn find_account_with_deletion_token(&self, token_to_match: &str) -> Result<Account> {
         let accounts = self.accounts.lock().await;
-        accounts.values()
-            .find(|account| if let Some(DeletionInfo::WaitingForVerification { token, .. }) = &account.deletion {
-                token == token_to_match
-            } else {
-                false
+        accounts
+            .values()
+            .find(|account| {
+                if let Some(DeletionInfo::WaitingForVerification { token, .. }) = &account.deletion
+                {
+                    token == token_to_match
+                } else {
+                    false
+                }
             })
             .cloned()
             .ok_or(Error::InvalidToken)
+    }
+
+    /// Find callback by id
+    async fn find_callback(&self, id: &str) -> Result<Callback> {
+        let callbacks = self.callbacks.lock().await;
+        callbacks.get(id).cloned().ok_or(Error::InvalidState)
     }
 
     /// Find invite by id
@@ -90,6 +120,20 @@ impl AbstractDatabase for DummyDb {
     async fn find_session(&self, id: &str) -> Result<Session> {
         let sessions = self.sessions.lock().await;
         sessions.get(id).cloned().ok_or(Error::UnknownUser)
+    }
+
+    /// Find secret
+    async fn find_secret(&self) -> Result<Secret> {
+        let secrets = self.secrets.lock().await;
+
+        match secrets.get(&()) {
+            Some(secret) => Ok(secret.clone()),
+            None => {
+                let secret = Secret::new();
+
+                self.save_secret(&secret).await.map(|_| secret)
+            }
+        }
     }
 
     /// Find sessions by user id
@@ -115,7 +159,8 @@ impl AbstractDatabase for DummyDb {
     /// Find session by token
     async fn find_session_by_token(&self, token: &str) -> Result<Option<Session>> {
         let sessions = self.sessions.lock().await;
-        Ok(sessions.values()
+        Ok(sessions
+            .values()
             .find(|session| session.token == token)
             .cloned())
     }
@@ -123,7 +168,8 @@ impl AbstractDatabase for DummyDb {
     /// Find ticket by token
     async fn find_ticket_by_token(&self, token: &str) -> Result<Option<MFATicket>> {
         let tickets = self.tickets.lock().await;
-        Ok(tickets.values()
+        Ok(tickets
+            .values()
             .find(|ticket| ticket.token == token)
             .cloned())
     }
@@ -132,6 +178,20 @@ impl AbstractDatabase for DummyDb {
     async fn save_account(&self, account: &Account) -> Success {
         let mut accounts = self.accounts.lock().await;
         accounts.insert(account.id.to_string(), account.clone());
+        Ok(())
+    }
+
+    // Save callback
+    async fn save_callback(&self, callback: &Callback) -> Success {
+        let mut callbacks = self.callbacks.lock().await;
+        callbacks.insert(callback.id.to_string(), callback.clone());
+        Ok(())
+    }
+
+    /// Save secret
+    async fn save_secret(&self, secret: &Secret) -> Success {
+        let mut secrets = self.secrets.lock().await;
+        secrets.insert((), secret.clone());
         Ok(())
     }
 
@@ -156,6 +216,16 @@ impl AbstractDatabase for DummyDb {
         Ok(())
     }
 
+    /// Delete callback
+    async fn delete_callback(&self, id: &str) -> Success {
+        let mut callbacks = self.callbacks.lock().await;
+        if callbacks.remove(id).is_some() {
+            Ok(())
+        } else {
+            Err(Error::InvalidState)
+        }
+    }
+
     /// Delete session
     async fn delete_session(&self, id: &str) -> Success {
         let mut sessions = self.sessions.lock().await;
@@ -169,7 +239,7 @@ impl AbstractDatabase for DummyDb {
     /// Delete session
     async fn delete_all_sessions(&self, user_id: &str, ignore: Option<String>) -> Success {
         let mut sessions = self.sessions.lock().await;
-        sessions.retain(|_, session|
+        sessions.retain(|_, session| {
             if session.user_id == user_id {
                 if let Some(ignore) = &ignore {
                     ignore == &session.id
@@ -179,7 +249,7 @@ impl AbstractDatabase for DummyDb {
             } else {
                 true
             }
-        );
+        });
 
         Ok(())
     }

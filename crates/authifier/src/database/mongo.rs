@@ -6,7 +6,7 @@ use std::{ops::Deref, str::FromStr};
 use ulid::Ulid;
 
 use crate::{
-    models::{Account, Invite, MFATicket, Session},
+    models::{Account, Callback, Invite, MFATicket, Secret, Session},
     Error, Result, Success,
 };
 
@@ -214,6 +214,11 @@ impl AbstractDatabase for MongoDb {
             })
     }
 
+    /// Find account by SSO ID
+    async fn find_account_by_sso_id(&self, idp_id: &str, sub_id: &str) -> Result<Option<Account>> {
+        todo!()
+    }
+
     /// Find account with active pending email verification
     async fn find_account_with_email_verification(&self, token: &str) -> Result<Account> {
         self.collection("accounts")
@@ -265,6 +270,36 @@ impl AbstractDatabase for MongoDb {
             .ok_or(Error::InvalidToken)
     }
 
+    /// Find callback
+    /// <br>
+    /// Callback is only valid for 10 minutes
+    async fn find_callback(&self, id: &str) -> Result<Callback> {
+        let callback: Callback = self
+            .collection("callbacks")
+            .find_one(
+                doc! {
+                    "_id": id
+                },
+                None,
+            )
+            .await
+            .map_err(|_| Error::DatabaseError {
+                operation: "find_one",
+                with: "callback",
+            })?
+            .ok_or(Error::InvalidState)?;
+
+        if let Ok(ulid) = Ulid::from_str(&callback.id) {
+            if (ulid.datetime() + Duration::minutes(10)) > Utc::now() {
+                Ok(callback)
+            } else {
+                Err(Error::InvalidState)
+            }
+        } else {
+            Err(Error::InvalidState)
+        }
+    }
+
     /// Find invite by id
     async fn find_invite(&self, id: &str) -> Result<Invite> {
         self.collection("invites")
@@ -291,6 +326,26 @@ impl AbstractDatabase for MongoDb {
                 with: "session",
             })?
             .ok_or(Error::UnknownUser)
+    }
+
+    /// Find secret
+    async fn find_secret(&self) -> Result<Secret> {
+        let res = self
+            .collection::<Secret>("secret")
+            .find_one(doc! {}, None)
+            .await;
+
+        match res.map_err(|_| Error::DatabaseError {
+            operation: "find_one",
+            with: "secret",
+        })? {
+            Some(secret) => Ok(secret),
+            None => {
+                let secret = Secret::new();
+
+                self.save_secret(&secret).await.map(|_| secret)
+            }
+        }
     }
 
     /// Find sessions by user id
@@ -400,6 +455,29 @@ impl AbstractDatabase for MongoDb {
             .map(|_| ())
     }
 
+    /// Save callback
+    async fn save_callback(&self, callback: &Callback) -> Success {
+        self.collection::<Callback>("callbacks")
+            .update_one(
+                doc! {
+                    "_id": &callback.id
+                },
+                doc! {
+                    "$set": to_document(callback).map_err(|_| Error::DatabaseError {
+                        operation: "to_document",
+                        with: "callback",
+                    })?,
+                },
+                UpdateOptions::builder().upsert(true).build(),
+            )
+            .await
+            .map_err(|_| Error::DatabaseError {
+                operation: "upsert_one",
+                with: "callback",
+            })
+            .map(|_| ())
+    }
+
     /// Save session
     async fn save_session(&self, session: &Session) -> Success {
         self.collection::<Session>("sessions")
@@ -446,6 +524,27 @@ impl AbstractDatabase for MongoDb {
             .map(|_| ())
     }
 
+    /// Save secret
+    async fn save_secret(&self, secret: &Secret) -> Success {
+        self.collection::<Secret>("secret")
+            .update_one(
+                doc! {},
+                doc! {
+                    "$set": to_document(secret).map_err(|_| Error::DatabaseError {
+                        operation: "to_document",
+                        with: "secret",
+                    })?,
+                },
+                UpdateOptions::builder().upsert(true).build(),
+            )
+            .await
+            .map_err(|_| Error::DatabaseError {
+                operation: "upsert_one",
+                with: "secret",
+            })
+            .map(|_| ())
+    }
+
     /// Save ticket
     async fn save_ticket(&self, ticket: &MFATicket) -> Success {
         self.collection::<MFATicket>("mfa_tickets")
@@ -465,6 +564,23 @@ impl AbstractDatabase for MongoDb {
             .map_err(|_| Error::DatabaseError {
                 operation: "upsert_one",
                 with: "ticket",
+            })
+            .map(|_| ())
+    }
+
+    /// Delete callback
+    async fn delete_callback(&self, id: &str) -> Success {
+        self.collection::<Callback>("callbacks")
+            .delete_one(
+                doc! {
+                    "_id": id
+                },
+                None,
+            )
+            .await
+            .map_err(|_| Error::DatabaseError {
+                operation: "delete_one",
+                with: "callback",
             })
             .map(|_| ())
     }

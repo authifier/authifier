@@ -40,6 +40,7 @@ use async_std::channel::Sender;
 pub struct Authifier {
     pub config: Config,
     pub database: Database,
+    pub http_client: reqwest::Client,
     pub event_channel: Option<Sender<AuthifierEvent>>,
 }
 
