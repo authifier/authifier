@@ -1,11 +1,11 @@
 use crate::{
-    models::{Account, Invite, MFATicket, Session, EmailVerification, DeletionInfo},
-    Result, Success, Error
+    models::{Account, DeletionInfo, EmailVerification, Invite, MFATicket, Session},
+    Error, Result, Success,
 };
 
 use futures::lock::Mutex;
-use std::sync::Arc;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use super::{definition::AbstractDatabase, Migration};
 
@@ -37,7 +37,8 @@ impl AbstractDatabase for DummyDb {
         normalised_email: &str,
     ) -> Result<Option<Account>> {
         let accounts = self.accounts.lock().await;
-        Ok(accounts.values()
+        Ok(accounts
+            .values()
             .find(|account| account.email_normalised == normalised_email)
             .cloned())
     }
@@ -45,10 +46,12 @@ impl AbstractDatabase for DummyDb {
     /// Find account with active pending email verification
     async fn find_account_with_email_verification(&self, token_to_match: &str) -> Result<Account> {
         let accounts = self.accounts.lock().await;
-        accounts.values()
+        accounts
+            .values()
             .find(|account| match &account.verification {
-                EmailVerification::Pending { token, .. } | EmailVerification::Moving { token, .. } => token == token_to_match,
-                _ => false
+                EmailVerification::Pending { token, .. }
+                | EmailVerification::Moving { token, .. } => token == token_to_match,
+                _ => false,
             })
             .cloned()
             .ok_or(Error::InvalidToken)
@@ -57,11 +60,14 @@ impl AbstractDatabase for DummyDb {
     /// Find account with active password reset
     async fn find_account_with_password_reset(&self, token: &str) -> Result<Account> {
         let accounts = self.accounts.lock().await;
-        accounts.values()
-            .find(|account| if let Some(reset) = &account.password_reset {
-                reset.token == token
-            } else {
-                false
+        accounts
+            .values()
+            .find(|account| {
+                if let Some(reset) = &account.password_reset {
+                    reset.token == token
+                } else {
+                    false
+                }
             })
             .cloned()
             .ok_or(Error::InvalidToken)
@@ -70,14 +76,34 @@ impl AbstractDatabase for DummyDb {
     /// Find account with active deletion token
     async fn find_account_with_deletion_token(&self, token_to_match: &str) -> Result<Account> {
         let accounts = self.accounts.lock().await;
-        accounts.values()
-            .find(|account| if let Some(DeletionInfo::WaitingForVerification { token, .. }) = &account.deletion {
-                token == token_to_match
-            } else {
-                false
+        accounts
+            .values()
+            .find(|account| {
+                if let Some(DeletionInfo::WaitingForVerification { token, .. }) = &account.deletion
+                {
+                    token == token_to_match
+                } else {
+                    false
+                }
             })
             .cloned()
             .ok_or(Error::InvalidToken)
+    }
+
+    /// Find accounts which are due to be deleted
+    async fn find_accounts_due_for_deletion(&self) -> Result<Vec<Account>> {
+        let accounts = self.accounts.lock().await;
+        Ok(accounts
+            .values()
+            .filter(|account| {
+                if let Some(DeletionInfo::Scheduled { .. }) = &account.deletion {
+                    unimplemented!()
+                } else {
+                    false
+                }
+            })
+            .cloned()
+            .collect())
     }
 
     /// Find invite by id
@@ -115,7 +141,8 @@ impl AbstractDatabase for DummyDb {
     /// Find session by token
     async fn find_session_by_token(&self, token: &str) -> Result<Option<Session>> {
         let sessions = self.sessions.lock().await;
-        Ok(sessions.values()
+        Ok(sessions
+            .values()
             .find(|session| session.token == token)
             .cloned())
     }
@@ -123,7 +150,8 @@ impl AbstractDatabase for DummyDb {
     /// Find ticket by token
     async fn find_ticket_by_token(&self, token: &str) -> Result<Option<MFATicket>> {
         let tickets = self.tickets.lock().await;
-        Ok(tickets.values()
+        Ok(tickets
+            .values()
             .find(|ticket| ticket.token == token)
             .cloned())
     }
@@ -169,7 +197,7 @@ impl AbstractDatabase for DummyDb {
     /// Delete session
     async fn delete_all_sessions(&self, user_id: &str, ignore: Option<String>) -> Success {
         let mut sessions = self.sessions.lock().await;
-        sessions.retain(|_, session|
+        sessions.retain(|_, session| {
             if session.user_id == user_id {
                 if let Some(ignore) = &ignore {
                     ignore == &session.id
@@ -179,7 +207,7 @@ impl AbstractDatabase for DummyDb {
             } else {
                 true
             }
-        );
+        });
 
         Ok(())
     }
