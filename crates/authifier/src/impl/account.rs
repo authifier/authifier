@@ -116,9 +116,15 @@ impl Account {
             let token = nanoid!(32);
             let url = format!("{}{}", templates.verify.url, token);
 
+            let appropriate_template = if let Some(welcome) = &templates.welcome {
+                welcome
+            } else {
+                &templates.verify
+            };
+
             smtp.send_email(
                 self.email.clone(),
-                &templates.verify,
+                &appropriate_template,
                 json!({
                     "email": self.email.clone(),
                     "url": url
