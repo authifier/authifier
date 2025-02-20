@@ -337,6 +337,28 @@ impl AbstractDatabase for MongoDb {
             .ok_or(Error::InvalidToken)
     }
 
+    /// Find accounts which are due to be deleted
+    async fn find_accounts_due_for_deletion(&self) -> Result<Vec<Account>> {
+        self.collection("accounts")
+            .find(doc! {
+                "deletion.status": "Scheduled",
+                "deletion.after": {
+                    "$lte": DateTime::now().try_to_rfc3339_string().expect("failed to convert to rfc3339 time string")
+                }
+            })
+            .await
+            .map_err(|_| Error::DatabaseError {
+                operation: "find",
+                with: "accounts",
+            })?
+            .try_collect()
+            .await
+            .map_err(|_| Error::DatabaseError {
+                operation: "collect",
+                with: "accounts",
+            })
+    }
+
     /// Find invite by id
     async fn find_invite(&self, id: &str) -> Result<Invite> {
         self.collection("invites")

@@ -28,6 +28,9 @@ pub trait AbstractDatabase: std::marker::Sync {
     /// Find account with active deletion token
     async fn find_account_with_deletion_token(&self, token: &str) -> Result<Account>;
 
+    /// Find accounts which are due to be deleted
+    async fn find_accounts_due_for_deletion(&self) -> Result<Vec<Account>>;
+
     /// Find invite by id
     async fn find_invite(&self, id: &str) -> Result<Invite>;
 
