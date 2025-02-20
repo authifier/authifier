@@ -132,10 +132,11 @@ database.run_migration(Migration::[..]).await.unwrap();
 
 The following migrations are available and must be run in order:
 
-| Date       | Migration                        | Description                                                                                          |
-| ---------- | -------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| 2022-06-03 | `M2022_06_03EnsureUpToSpec`      | Reset and reconstruct indexes to be fully up to date. This will also create any missing collections. |
-| 2022-06-09 | `M2022_06_09AddIndexForDeletion` | Add an index for account deletion information.                                                       |
+| Date       | Migration                         | Description                                                                                          |
+| ---------- | --------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| 2022-06-03 | `M2022_06_03EnsureUpToSpec`       | Reset and reconstruct indexes to be fully up to date. This will also create any missing collections. |
+| 2022-06-09 | `M2022_06_09AddIndexForDeletion`  | Add an index for account deletion information.                                                       |
+| 2025-02-20 | `M2025_02_20AddLastSeenToSession` | Add last_seen to sessions table.                                                                     |
 
 ## How does Authifier work?
 

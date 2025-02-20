@@ -89,6 +89,8 @@ impl Account {
             user_id: self.id.clone(),
             name,
 
+            last_seen: Timestamp::now_utc().format().to_string(),
+
             subscription: None,
         };
 
@@ -127,12 +129,11 @@ impl Account {
 
             self.verification = EmailVerification::Pending {
                 token,
-                expiry: Timestamp::from_unix_timestamp_ms(
-                    chrono::Utc::now()
-                        .checked_add_signed(Duration::seconds(expiry.expire_verification))
-                        .expect("failed to checked_add_signed")
-                        .timestamp_millis(),
-                ),
+                expiry: Timestamp::UNIX_EPOCH
+                    + iso8601_timestamp::Duration::milliseconds(
+                        (chrono::Utc::now() + Duration::seconds(expiry.expire_verification))
+                            .timestamp_millis(),
+                    ),
             };
         } else {
             self.verification = EmailVerification::Verified;
@@ -170,12 +171,11 @@ impl Account {
             self.verification = EmailVerification::Moving {
                 new_email,
                 token,
-                expiry: Timestamp::from_unix_timestamp_ms(
-                    chrono::Utc::now()
-                        .checked_add_signed(Duration::seconds(expiry.expire_verification))
-                        .expect("failed to checked_add_signed")
-                        .timestamp_millis(),
-                ),
+                expiry: Timestamp::UNIX_EPOCH
+                    + iso8601_timestamp::Duration::milliseconds(
+                        (chrono::Utc::now() + Duration::seconds(expiry.expire_verification))
+                            .timestamp_millis(),
+                    ),
             };
         } else {
             self.email_normalised = normalise_email(new_email.clone());
@@ -207,12 +207,11 @@ impl Account {
 
             self.password_reset = Some(PasswordReset {
                 token,
-                expiry: Timestamp::from_unix_timestamp_ms(
-                    chrono::Utc::now()
-                        .checked_add_signed(Duration::seconds(expiry.expire_password_reset))
-                        .expect("failed to checked_add_signed")
-                        .timestamp_millis(),
-                ),
+                expiry: Timestamp::UNIX_EPOCH
+                    + iso8601_timestamp::Duration::milliseconds(
+                        (chrono::Utc::now() + Duration::seconds(expiry.expire_password_reset))
+                            .timestamp_millis(),
+                    ),
             });
         } else {
             return Err(Error::OperationFailed);
@@ -245,12 +244,11 @@ impl Account {
 
             self.deletion = Some(DeletionInfo::WaitingForVerification {
                 token,
-                expiry: Timestamp::from_unix_timestamp_ms(
-                    chrono::Utc::now()
-                        .checked_add_signed(Duration::seconds(expiry.expire_password_reset))
-                        .expect("failed to checked_add_signed")
-                        .timestamp_millis(),
-                ),
+                expiry: Timestamp::UNIX_EPOCH
+                    + iso8601_timestamp::Duration::milliseconds(
+                        (chrono::Utc::now() + Duration::seconds(expiry.expire_password_reset))
+                            .timestamp_millis(),
+                    ),
             });
 
             self.save(authifier).await
@@ -368,12 +366,10 @@ impl Account {
     /// Schedule an account for deletion
     pub async fn schedule_deletion(&mut self, authifier: &Authifier) -> Success {
         self.deletion = Some(DeletionInfo::Scheduled {
-            after: Timestamp::from_unix_timestamp_ms(
-                chrono::Utc::now()
-                    .checked_add_signed(Duration::weeks(1))
-                    .expect("failed to checked_add_signed")
-                    .timestamp_millis(),
-            ),
+            after: Timestamp::UNIX_EPOCH
+                + iso8601_timestamp::Duration::milliseconds(
+                    (chrono::Utc::now() + Duration::weeks(1)).timestamp_millis(),
+                ),
         });
 
         self.disable(authifier).await

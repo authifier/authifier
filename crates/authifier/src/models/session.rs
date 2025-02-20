@@ -24,6 +24,9 @@ pub struct Session {
     /// Display name
     pub name: String,
 
+    /// When the session was last logged in (iso8601 timestamp)
+    pub last_seen: String,
+
     /// Web Push subscription
     #[serde(skip_serializing_if = "Option::is_none")]
     pub subscription: Option<WebPushSubscription>,

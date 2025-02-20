@@ -1,6 +1,6 @@
 [package]
 name = "authifier"
-version = "1.0.10"
+version = "1.0.11"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Pawel Makles <me@insrt.uk>"]
@@ -42,7 +42,7 @@ futures = { version = "0.3.21" }
 
 # Serde
 serde_json = { version = "1.0.81" }
-iso8601-timestamp = { version = "0.1.10" }
+iso8601-timestamp = { version = "0.2.10" }
 serde = { version = "1.0.116", features = ["derive"] }
 
 # MongoDB

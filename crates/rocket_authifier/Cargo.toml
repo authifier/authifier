@@ -1,6 +1,6 @@
 [package]
 name = "rocket_authifier"
-version = "1.0.10"
+version = "1.0.11"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Pawel Makles <me@insrt.uk>"]
@@ -22,7 +22,7 @@ default = []
 
 [dependencies]
 # Authifier
-authifier = { version = "1.0.10", path = "../authifier", features = [
+authifier = { version = "1.0.11", path = "../authifier", features = [
     "rocket_impl",
     "okapi_impl",
 ] }
@@ -32,7 +32,7 @@ rocket = { version = "0.5.1", default-features = false, features = ["json"] }
 rocket_empty = { version = "0.1.2", features = ["schema"] }
 
 # Serde
-iso8601-timestamp = { version = "0.1.10" }
+iso8601-timestamp = { version = "0.2.10" }
 serde = { version = "1.0.116", features = ["derive"] }
 
 # Schemas
