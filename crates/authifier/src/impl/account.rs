@@ -91,6 +91,7 @@ impl Account {
 
             last_seen: Timestamp::now_utc().format().to_string(),
 
+            origin: None,
             subscription: None,
         };
 
