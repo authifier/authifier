@@ -39,7 +39,7 @@ pub async fn change_password(
     account.verify_password(&data.current_password)?;
 
     // Hash and replace password
-    account.password = hash_password(data.password)?;
+    account.password = hash_password(data.password).map(Some)?;
 
     // Commit to database
     account.save(authifier).await.map(|_| EmptyResponse)

@@ -26,6 +26,8 @@ pub enum Error {
     MissingInvite,
     InvalidInvite,
     InvalidCredentials,
+    // TODO
+    NoPassword,
 
     CompromisedPassword,
     ShortPassword,

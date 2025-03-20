@@ -51,7 +51,8 @@ impl Account {
 
                 email,
                 email_normalised,
-                password,
+                password: Some(password),
+                providers: Vec::new(),
 
                 disabled: false,
                 verification: EmailVerification::Verified,
@@ -261,7 +262,9 @@ impl Account {
 
     /// Verify a user's password is correct
     pub fn verify_password(&self, plaintext_password: &str) -> Success {
-        argon2::verify_encoded(&self.password, plaintext_password.as_bytes())
+        let password = self.password.as_ref().ok_or(Error::NoPassword)?;
+
+        argon2::verify_encoded(password, plaintext_password.as_bytes())
             .map(|v| {
                 if v {
                     Ok(())
