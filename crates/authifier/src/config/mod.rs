@@ -4,6 +4,7 @@ mod email_verification;
 mod ip_resolve;
 mod passwords;
 mod shield;
+mod sso;
 
 pub use blocklists::*;
 pub use captcha::*;
