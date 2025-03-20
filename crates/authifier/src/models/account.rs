@@ -48,6 +48,16 @@ pub struct Lockout {
     pub expiry: Option<Timestamp>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+/// SSO provider information
+pub struct Provider {
+    /// SSO provider ID
+    pub id: String,
+
+    /// Subject value
+    pub sub: serde_json::Value,
+}
+
 /// Account model
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Account {
@@ -64,7 +74,10 @@ pub struct Account {
     pub email_normalised: String,
 
     /// Argon2 hashed password
-    pub password: String,
+    pub password: Option<String>,
+
+    /// Argon2 hashed password
+    pub providers: Vec<Provider>,
 
     /// Whether the account is disabled
     #[serde(default)]

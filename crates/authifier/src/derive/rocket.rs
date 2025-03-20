@@ -29,6 +29,8 @@ impl<'r> Responder<'r, 'static> for Error {
             Error::UnknownUser => Status::NotFound,
             Error::EmailFailed => Status::InternalServerError,
             Error::InvalidCredentials => Status::Unauthorized,
+            // TODO
+            Error::NoPassword => Status::Forbidden,
             Error::InvalidToken => Status::Unauthorized,
             Error::MissingInvite => Status::BadRequest,
             Error::InvalidInvite => Status::BadRequest,
