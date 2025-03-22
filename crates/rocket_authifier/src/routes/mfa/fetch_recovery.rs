@@ -1,8 +1,8 @@
 //! Fetch recovery codes for an account.
 //! POST /mfa/recovery
 use authifier::{
-    models::{Account, AuthFlow, ValidatedTicket},
-    Error, Result,
+    models::{Account, ValidatedTicket},
+    Result,
 };
 use rocket::serde::json::Json;
 
@@ -15,11 +15,7 @@ pub async fn fetch_recovery(
     account: Account,
     _ticket: ValidatedTicket,
 ) -> Result<Json<Vec<String>>> {
-    let AuthFlow::Password(auth) = &account.auth_flow else {
-        return Err(Error::NotAvailable);
-    };
-
-    Ok(Json(auth.mfa.recovery_codes.clone()))
+    Ok(Json(account.mfa.recovery_codes.clone()))
 }
 
 #[cfg(test)]

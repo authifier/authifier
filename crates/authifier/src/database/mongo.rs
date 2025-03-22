@@ -287,7 +287,11 @@ impl AbstractDatabase for MongoDb {
     }
 
     /// Find account by SSO ID
-    async fn find_account_by_sso_id(&self, idp_id: &str, sub_id: &str) -> Result<Option<Account>> {
+    async fn find_account_by_sso_id(
+        &self,
+        _idp_id: &str,
+        _sub_id: &str,
+    ) -> Result<Option<Account>> {
         todo!()
     }
 

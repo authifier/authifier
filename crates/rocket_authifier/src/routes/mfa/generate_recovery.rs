@@ -1,7 +1,7 @@
 //! Re-generate recovery codes for an account.
 //! PATCH /mfa/recovery
-use authifier::models::{Account, AuthFlow, ValidatedTicket};
-use authifier::{Authifier, Error, Result};
+use authifier::models::{Account, ValidatedTicket};
+use authifier::{Authifier, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 
@@ -15,22 +15,14 @@ pub async fn generate_recovery(
     mut account: Account,
     _ticket: ValidatedTicket,
 ) -> Result<Json<Vec<String>>> {
-    let AuthFlow::Password(auth) = &mut account.auth_flow else {
-        return Err(Error::NotAvailable);
-    };
-
     // Generate new codes
-    auth.mfa.generate_recovery_codes();
+    account.mfa.generate_recovery_codes();
 
     // Save account model
     account.save(authifier).await?;
 
-    let AuthFlow::Password(auth) = &account.auth_flow else {
-        return Err(Error::NotAvailable);
-    };
-
     // Return them to the user
-    Ok(Json(auth.mfa.recovery_codes.clone()))
+    Ok(Json(account.mfa.recovery_codes.clone()))
 }
 
 #[cfg(test)]

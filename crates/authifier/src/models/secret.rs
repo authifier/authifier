@@ -10,7 +10,13 @@ impl Secret {
     }
 
     pub fn expose(&self) -> &str {
-        &*self.0
+        &self.0
+    }
+}
+
+impl Default for Secret {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

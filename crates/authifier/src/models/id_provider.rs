@@ -26,7 +26,7 @@ pub struct IdProvider {
 
 impl Borrow<str> for IdProvider {
     fn borrow(&self) -> &str {
-        &*self.id
+        &self.id
     }
 }
 

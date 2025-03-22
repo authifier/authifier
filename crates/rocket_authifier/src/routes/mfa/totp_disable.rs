@@ -1,8 +1,8 @@
 //! Disable TOTP 2FA.
 //! DELETE /mfa/totp
 use authifier::models::totp::Totp;
-use authifier::models::{Account, AuthFlow, ValidatedTicket};
-use authifier::{Authifier, Error, Result};
+use authifier::models::{Account, ValidatedTicket};
+use authifier::{Authifier, Result};
 use rocket::State;
 use rocket_empty::EmptyResponse;
 
@@ -16,12 +16,8 @@ pub async fn totp_disable(
     mut account: Account,
     _ticket: ValidatedTicket,
 ) -> Result<EmptyResponse> {
-    let AuthFlow::Password(auth) = &mut account.auth_flow else {
-        return Err(Error::NotAvailable);
-    };
-
     // Disable TOTP
-    auth.mfa.totp_token = Totp::Disabled;
+    account.mfa.totp_token = Totp::Disabled;
 
     // Save model to database
     account.save(authifier).await.map(|_| EmptyResponse)

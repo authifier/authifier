@@ -1,6 +1,6 @@
 //! Create a new MFA ticket or validate an existing one.
 //! PUT /mfa/ticket
-use authifier::models::{Account, AuthFlow, MFAResponse, MFATicket, UnvalidatedTicket};
+use authifier::models::{Account, MFAResponse, MFATicket, UnvalidatedTicket};
 use authifier::{Authifier, Error, Result};
 use rocket::serde::json::Json;
 use rocket::State;
@@ -25,10 +25,6 @@ pub async fn create_ticket(
             authifier.database.find_account(&ticket.account_id).await?
         }
         _ => return Err(Error::InvalidToken),
-    };
-
-    let AuthFlow::Password(_) = &account.auth_flow else {
-        return Err(Error::NotAvailable);
     };
 
     // Validate the MFA response

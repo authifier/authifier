@@ -1,8 +1,8 @@
 //! Change account password.
 //! PATCH /account/change/password
-use authifier::models::{Account, AuthFlow};
+use authifier::models::Account;
 use authifier::util::hash_password;
-use authifier::{Authifier, Error, Result};
+use authifier::{Authifier, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 use rocket_empty::EmptyResponse;
@@ -38,12 +38,8 @@ pub async fn change_password(
     // Ensure given password is correct
     account.verify_password(&data.current_password)?;
 
-    let AuthFlow::Password(auth) = &mut account.auth_flow else {
-        return Err(Error::NotAvailable);
-    };
-
     // Hash and replace password
-    auth.password = hash_password(data.password)?;
+    account.password = hash_password(data.password).map(Some)?;
 
     // Commit to database
     account.save(authifier).await.map(|_| EmptyResponse)

@@ -227,9 +227,7 @@ impl IdProvider {
         // TODO: Subject identifier must always be the same
         match res.json().await.map_err(|_| Error::RequestFailed)? {
             serde_json::Value::Object(userinfo) => Ok(Some(userinfo.into_iter().collect())),
-            _ => {
-                return Err(Error::InvalidUserinfo);
-            }
+            _ => Err(Error::InvalidUserinfo),
         }
     }
 
