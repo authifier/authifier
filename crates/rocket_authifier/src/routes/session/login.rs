@@ -88,8 +88,12 @@ pub async fn login(
                 // Check for account lockout
                 if let Some(lockout) = &account.lockout {
                     if let Some(expiry) = lockout.expiry {
-                        if expiry.to_unix_timestamp_ms()
-                            > Timestamp::now_utc().to_unix_timestamp_ms()
+                        if expiry
+                            .duration_since(Timestamp::UNIX_EPOCH)
+                            .whole_milliseconds()
+                            > Timestamp::now_utc()
+                                .duration_since(Timestamp::UNIX_EPOCH)
+                                .whole_milliseconds()
                         {
                             return Err(Error::LockedOut);
                         }

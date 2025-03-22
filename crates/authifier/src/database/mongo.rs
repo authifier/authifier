@@ -1,7 +1,7 @@
 use bson::{to_document, DateTime, Document};
 use chrono::{Duration, Utc};
 use futures::stream::TryStreamExt;
-use mongodb::options::{Collation, CollationStrength, FindOneOptions, UpdateOptions};
+use mongodb::options::{Collation, CollationStrength, FindOneOptions, ReadConcern, UpdateOptions};
 use std::{ops::Deref, str::FromStr};
 use ulid::Ulid;
 
@@ -168,6 +168,78 @@ impl AbstractDatabase for MongoDb {
                 })
                 .await
                 .unwrap();
+            }
+            Migration::M2025_02_20AddLastSeenToSession => {
+                let session: Option<Document> = self
+                    .collection("sessions")
+                    .find_one(doc! {
+                        "last_seen": { "$exists": false }
+                    })
+                    .await
+                    .expect("Failed to fetch a session!"); // since this is a migration if it fails, handle it ungracefully
+
+                if session.is_none() {
+                    return Ok(());
+                }
+
+                let mut session = self
+                    .client()
+                    .start_session()
+                    .await
+                    .expect("Could not start a db session");
+
+                session
+                    .start_transaction()
+                    .read_concern(ReadConcern::snapshot())
+                    .await
+                    .expect("Failed to start transaction for migration");
+
+                let mut iterator: mongodb::SessionCursor<Document> = self
+                    .collection("sessions")
+                    .find(doc! {
+                        "last_seen": { "$exists": false }
+                    })
+                    .batch_size(25)
+                    .session(&mut session)
+                    .await
+                    .expect("Failed to get cursor for migration");
+
+                loop {
+                    let document = iterator.next(&mut session).await;
+                    if let Some(Ok(document)) = document {
+                        let id = document
+                            .get("_id")
+                            .expect("No id present on session!")
+                            .as_str()
+                            .unwrap();
+                        let ulid = Ulid::from_string(id).expect("Invalid ULID on session!");
+
+                        let timestamp = iso8601_timestamp::Timestamp::UNIX_EPOCH
+                            + iso8601_timestamp::Duration::seconds(ulid.datetime().timestamp());
+
+                        self.collection::<Document>("sessions")
+                            .update_one(
+                                doc! {
+                                    "_id": id,
+                                },
+                                doc! {
+                                    "$set": {
+                                        "last_seen": timestamp.format().to_string()
+                                    }
+                                },
+                            )
+                            .session(&mut session)
+                            .await
+                            .expect("Failed to update a session.");
+                    } else {
+                        break;
+                    }
+                }
+
+                session
+                    .commit_transaction()
+                    .await
+                    .expect("Failed to commit the transaction");
             }
         }
 

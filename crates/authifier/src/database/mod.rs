@@ -1,11 +1,12 @@
 use std::ops::Deref;
 
-use self::{definition::AbstractDatabase};
+use self::definition::AbstractDatabase;
 
 pub mod definition;
 
 #[derive(Debug)]
 pub enum Migration {
+    M2025_02_20AddLastSeenToSession,
     M2022_06_03EnsureUpToSpec,
     M2022_06_09AddIndexForDeletion,
     #[cfg(debug_assertions)]

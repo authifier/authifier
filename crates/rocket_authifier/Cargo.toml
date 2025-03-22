@@ -32,7 +32,7 @@ rocket = { version = "0.5.1", default-features = false, features = ["json"] }
 rocket_empty = { version = "0.1.2", features = ["schema"] }
 
 # Serde
-iso8601-timestamp = { version = "0.1.10" }
+iso8601-timestamp = { version = "0.2.10" }
 serde = { version = "1.0.116", features = ["derive"] }
 
 # Schemas

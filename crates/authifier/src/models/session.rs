@@ -24,6 +24,15 @@ pub struct Session {
     /// Display name
     pub name: String,
 
+    /// When the session was last logged in (iso8601 timestamp)
+    pub last_seen: String,
+
+    /// What is the session origin?
+    /// This could be used to differentiate sessions that come from staging/test vs prod, etc.
+    /// Authifier will set this to None by default. The application must fill it in.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub origin: Option<String>,
+
     /// Web Push subscription
     #[serde(skip_serializing_if = "Option::is_none")]
     pub subscription: Option<WebPushSubscription>,
