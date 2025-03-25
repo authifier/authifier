@@ -61,7 +61,7 @@ impl IdProvider {
 
                 metadata.authorization_endpoint().to_owned()
             }
-            Endpoints::Manual { authorization, .. } => authorization.parse().unwrap(),
+            Endpoints::Manual { authorization, .. } => authorization.clone(),
         };
 
         // Append the client ID, redirect URI and state to the authorization URI
@@ -129,7 +129,7 @@ impl IdProvider {
 
                 metadata.token_endpoint().to_owned()
             }
-            Endpoints::Manual { token, .. } => token.parse().unwrap(),
+            Endpoints::Manual { token, .. } => token.clone(),
         };
 
         // Build request for access token with authorization code
@@ -175,7 +175,7 @@ impl IdProvider {
 
                 metadata.userinfo_endpoint.as_ref().cloned()
             }
-            Endpoints::Manual { userinfo, .. } => Some(userinfo.parse().unwrap()),
+            Endpoints::Manual { userinfo, .. } => Some(userinfo.clone()),
         }) else {
             return Ok(None);
         };

@@ -5,6 +5,7 @@ use std::{
     ops::Deref,
 };
 
+use reqwest::Url;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -12,9 +13,9 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 pub enum Endpoints {
     Discoverable,
     Manual {
-        authorization: String,
-        token: String,
-        userinfo: String,
+        authorization: Url,
+        token: Url,
+        userinfo: Url,
     },
 }
 
@@ -53,13 +54,13 @@ pub enum Claim {
     Email,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct IdProvider {
     pub id: String,
 
-    pub issuer: reqwest::Url,
+    pub issuer: Url,
     pub name: Option<String>,
-    pub icon: Option<reqwest::Url>,
+    pub icon: Option<Url>,
 
     pub scopes: Vec<String>,
     pub endpoints: Endpoints,
@@ -92,7 +93,7 @@ impl Hash for IdProvider {
     }
 }
 
-#[derive(Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct SSO(HashSet<IdProvider>);
 
 impl Serialize for SSO {
@@ -111,9 +112,9 @@ impl<'de> Deserialize<'de> for SSO {
     {
         #[derive(Deserialize)]
         pub struct Mock {
-            pub issuer: reqwest::Url,
+            pub issuer: Url,
             pub name: Option<String>,
-            pub icon: Option<reqwest::Url>,
+            pub icon: Option<Url>,
 
             pub scopes: Vec<String>,
             pub endpoints: Endpoints,
@@ -148,5 +149,69 @@ impl Deref for SSO {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn deserialize_sso_config() {
+        let value = serde_json::json!(
+            {
+                "Gitlab": {
+                    "issuer": "https://gitlab.com",
+                    "scopes": ["openid"],
+
+                    "endpoints": {
+                        "type": "discoverable"
+                    },
+                    "credentials": {
+                        "type": "post",
+                        "client_id": "foobar",
+                        "client_secret": "baz"
+                    },
+                    "claims": {
+                        "id": "sub",
+                        "email": "preferred_email"
+                    },
+
+                    "code_challenge": false,
+                }
+            }
+        );
+
+        let result: SSO = serde_json::from_value(value).expect("config deserializes successfully");
+
+        assert_eq!(
+            result,
+            SSO([IdProvider {
+                id: "Gitlab".to_owned(),
+
+                issuer: "https://gitlab.com"
+                    .parse()
+                    .expect("issuer should be valid"),
+                name: None,
+                icon: None,
+
+                scopes: vec!["openid".to_owned()],
+                endpoints: Endpoints::Discoverable,
+                credentials: Credentials::Post {
+                    client_id: "foobar".to_owned(),
+                    client_secret: "baz".to_owned(),
+                },
+                claims: [
+                    (Claim::Id, "sub".to_owned()),
+                    (Claim::Email, "preferred_email".to_owned())
+                ]
+                .into_iter()
+                .collect(),
+
+                code_challenge: false,
+            }]
+            .into_iter()
+            .collect())
+        );
     }
 }
