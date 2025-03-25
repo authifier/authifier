@@ -53,13 +53,13 @@ pub enum Claim {
     Email,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Clone)]
 pub struct IdProvider {
     pub id: String,
 
-    pub issuer: String,
+    pub issuer: reqwest::Url,
     pub name: Option<String>,
-    pub icon: Option<String>,
+    pub icon: Option<reqwest::Url>,
 
     pub scopes: Vec<String>,
     pub endpoints: Endpoints,
@@ -105,11 +105,41 @@ impl Serialize for SSO {
 }
 
 impl<'de> Deserialize<'de> for SSO {
-    fn deserialize<D>(_: D) -> Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        todo!()
+        #[derive(Deserialize)]
+        pub struct Mock {
+            pub issuer: reqwest::Url,
+            pub name: Option<String>,
+            pub icon: Option<reqwest::Url>,
+
+            pub scopes: Vec<String>,
+            pub endpoints: Endpoints,
+            pub credentials: Credentials,
+            pub claims: HashMap<Claim, String>,
+
+            pub code_challenge: bool,
+        }
+
+        let map: HashMap<String, Mock> =
+            HashMap::deserialize(deserializer).map_err(serde::de::Error::custom)?;
+
+        Ok(SSO(map
+            .into_iter()
+            .map(|(id, mock)| IdProvider {
+                id,
+                issuer: mock.issuer,
+                name: mock.name,
+                icon: mock.icon,
+                scopes: mock.scopes,
+                endpoints: mock.endpoints,
+                credentials: mock.credentials,
+                claims: mock.claims,
+                code_challenge: mock.code_challenge,
+            })
+            .collect()))
     }
 }
 

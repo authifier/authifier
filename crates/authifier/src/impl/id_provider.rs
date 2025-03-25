@@ -19,8 +19,8 @@ use serde::Serialize;
 use sha2::{Digest, Sha256};
 
 use crate::{
-    config::{Credentials, Endpoints},
-    models::{Callback, IdProvider},
+    config::{Credentials, Endpoints, IdProvider},
+    models::Callback,
     util::secure_random_str,
     Authifier, Error, Result,
 };

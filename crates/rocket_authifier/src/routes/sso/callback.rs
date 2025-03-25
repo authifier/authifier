@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 
 use authifier::config::Claim;
-use authifier::models::{Account, IdProvider};
+use authifier::models::Account;
 use authifier::util::{normalise_email, secure_random_str};
 use authifier::{Authifier, Error, Result};
 use iso8601_timestamp::Timestamp;
@@ -65,10 +65,11 @@ pub async fn callback(
     }
 
     // Ensure given ID provider exists
-    let id_provider = match authifier.config.sso.get(&*callback.idp_id).cloned() {
-        Some(config) => IdProvider::try_from(config).map_err(|_| Error::InvalidIdpConfig)?,
-        None => return Err(Error::InvalidIdpId),
-    };
+    let id_provider = authifier
+        .config
+        .sso
+        .get(&*callback.idp_id)
+        .ok_or(Error::InvalidIdpId)?;
 
     // Ensure authorization code was provided
     let Some(code) = data.code.as_deref() else {

@@ -1,6 +1,5 @@
 //! Redirect to authorization interface
 //! GET /sso/authorize
-use authifier::models::IdProvider;
 use authifier::{Authifier, Error, Result};
 use rocket::http::{Cookie, CookieJar};
 use rocket::response::Redirect;
@@ -24,10 +23,11 @@ pub async fn authorize(
     };
 
     // Ensure given ID provider exists
-    let id_provider = match authifier.config.sso.get(idp_id).cloned() {
-        Some(config) => IdProvider::try_from(config).map_err(|_| Error::InvalidIdpConfig)?,
-        None => return Err(Error::InvalidIdpId),
-    };
+    let id_provider = authifier
+        .config
+        .sso
+        .get(idp_id)
+        .ok_or(Error::InvalidIdpId)?;
 
     // Build authorization URI
     let (state, uri) = id_provider
