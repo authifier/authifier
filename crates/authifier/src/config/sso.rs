@@ -13,9 +13,9 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 pub enum Endpoints {
     Discoverable,
     Manual {
-        authorization: Url,
-        token: Url,
-        userinfo: Url,
+        authorization: Box<Url>,
+        token: Box<Url>,
+        userinfo: Box<Url>,
     },
 }
 
