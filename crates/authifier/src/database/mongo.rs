@@ -374,12 +374,9 @@ impl AbstractDatabase for MongoDb {
     async fn find_callback(&self, id: &str) -> Result<Callback> {
         let callback: Callback = self
             .collection("callbacks")
-            .find_one(
-                doc! {
-                    "_id": id
-                },
-                None,
-            )
+            .find_one(doc! {
+                "_id": id
+            })
             .await
             .map_err(|_| Error::DatabaseError {
                 operation: "find_one",
@@ -428,10 +425,7 @@ impl AbstractDatabase for MongoDb {
 
     /// Find secret
     async fn find_secret(&self) -> Result<Secret> {
-        let res = self
-            .collection::<Secret>("secret")
-            .find_one(doc! {}, None)
-            .await;
+        let res = self.collection::<Secret>("secret").find_one(doc! {}).await;
 
         match res.map_err(|_| Error::DatabaseError {
             operation: "find_one",
@@ -566,7 +560,6 @@ impl AbstractDatabase for MongoDb {
                         with: "callback",
                     })?,
                 },
-                UpdateOptions::builder().upsert(true).build(),
             )
             .await
             .map_err(|_| Error::DatabaseError {
@@ -633,7 +626,6 @@ impl AbstractDatabase for MongoDb {
                         with: "secret",
                     })?,
                 },
-                UpdateOptions::builder().upsert(true).build(),
             )
             .await
             .map_err(|_| Error::DatabaseError {
@@ -673,7 +665,6 @@ impl AbstractDatabase for MongoDb {
                 doc! {
                     "_id": id
                 },
-                None,
             )
             .await
             .map_err(|_| Error::DatabaseError {

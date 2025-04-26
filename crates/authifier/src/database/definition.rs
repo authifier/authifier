@@ -20,7 +20,8 @@ pub trait AbstractDatabase: std::marker::Sync {
     ) -> Result<Option<Account>>;
 
     /// Find account by SSO ID
-    async fn find_account_by_sso_id(&self, idp_id: &str, sub_id: &str) -> Result<Option<Account>>;
+    async fn find_account_by_sso_id(&self, idp_id: &str, sub_id: &str)
+        -> Result<Option<Account>>;
 
     /// Find account with active pending email verification
     async fn find_account_with_email_verification(&self, token: &str) -> Result<Account>;
@@ -64,9 +65,6 @@ pub trait AbstractDatabase: std::marker::Sync {
     // Save callback
     async fn save_callback(&self, callback: &Callback) -> Success;
 
-    // Save secret
-    async fn save_secret(&self, secret: &Secret) -> Success;
-
     /// Save session
     async fn save_session(&self, session: &Session) -> Success;
 
@@ -75,6 +73,9 @@ pub trait AbstractDatabase: std::marker::Sync {
 
     /// Save ticket
     async fn save_ticket(&self, ticket: &MFATicket) -> Success;
+
+    /// Save secret
+    async fn save_secret(&self, secret: &Secret) -> Success;
 
     /// Delete callback
     async fn delete_callback(&self, id: &str) -> Success;
