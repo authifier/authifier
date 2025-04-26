@@ -45,7 +45,7 @@ pub async fn password_reset(
         .await?;
 
     // Update the account
-    account.password = hash_password(data.password)?;
+    account.password = hash_password(data.password).map(Some)?;
     account.password_reset = None;
     account.lockout = None;
 

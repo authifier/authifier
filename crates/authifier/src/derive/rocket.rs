@@ -30,6 +30,7 @@ impl<'r> Responder<'r, 'static> for Error {
             Error::EmailFailed => Status::InternalServerError,
             Error::InvalidCredentials => Status::Unauthorized,
             Error::InvalidToken => Status::Unauthorized,
+            Error::InvalidState => Status::Unauthorized,
             Error::MissingInvite => Status::BadRequest,
             Error::InvalidInvite => Status::BadRequest,
             Error::CompromisedPassword => Status::BadRequest,
@@ -46,6 +47,33 @@ impl<'r> Responder<'r, 'static> for Error {
             Error::LockedOut => Status::Forbidden,
             Error::TotpAlreadyEnabled => Status::BadRequest,
             Error::DisallowedMFAMethod => Status::BadRequest,
+            Error::NotAvailable => Status::NotFound,
+
+            Error::InvalidEndpoints => Status::BadRequest,
+            Error::StateMismatch => Status::BadRequest,
+
+            Error::RequestFailed => Status::BadRequest,
+            Error::InvalidRequest => Status::BadRequest,
+            Error::InvalidClient => Status::BadRequest,
+            Error::InvalidGrant => Status::BadRequest,
+            Error::UnauthorizedClient => Status::BadRequest,
+            Error::UnsupportedGrantType => Status::BadRequest,
+            Error::InvalidScope => Status::BadRequest,
+
+            Error::ContentTypeMismatch => Status::BadRequest,
+            Error::InsufficientScope => Status::BadRequest,
+            Error::InvalidUserinfo => Status::BadRequest,
+
+            Error::InvalidRedirectUri => Status::BadRequest,
+            Error::InvalidIdpId => Status::BadRequest,
+            Error::InvalidIdpConfig => Status::BadRequest,
+
+            Error::MissingCallback => Status::BadRequest,
+            Error::InvalidCallback => Status::BadRequest,
+            Error::MissingAuthCode => Status::BadRequest,
+            Error::InvalidIdClaim => Status::BadRequest,
+
+            Error::PasswordDisabled => Status::BadRequest,
         };
 
         // Serialize the error data structure into JSON.

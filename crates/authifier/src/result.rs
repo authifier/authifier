@@ -23,6 +23,7 @@ pub enum Error {
 
     EmailFailed,
     InvalidToken,
+    InvalidState,
     MissingInvite,
     InvalidInvite,
     InvalidCredentials,
@@ -34,6 +35,36 @@ pub enum Error {
 
     TotpAlreadyEnabled,
     DisallowedMFAMethod,
+
+    PasswordDisabled,
+
+    InvalidRedirectUri,
+    InvalidIdpId,
+    InvalidIdpConfig,
+
+    // ---
+    NotAvailable,
+
+    InvalidEndpoints,
+    StateMismatch,
+
+    RequestFailed,
+    InvalidRequest,
+    InvalidClient,
+    InvalidGrant,
+    UnauthorizedClient,
+    UnsupportedGrantType,
+    InvalidScope,
+
+    ContentTypeMismatch,
+    InsufficientScope,
+    InvalidUserinfo,
+    // ---
+
+    MissingCallback,
+    InvalidCallback,
+    MissingAuthCode,
+    InvalidIdClaim,
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;

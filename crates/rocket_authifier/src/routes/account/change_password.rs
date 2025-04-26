@@ -2,7 +2,7 @@
 //! PATCH /account/change/password
 use authifier::models::Account;
 use authifier::util::hash_password;
-use authifier::{Authifier, Result};
+use authifier::{Authifier, Error, Result};
 use rocket::serde::json::Json;
 use rocket::State;
 use rocket_empty::EmptyResponse;
@@ -26,6 +26,10 @@ pub async fn change_password(
     mut account: Account,
     data: Json<DataChangePassword>,
 ) -> Result<EmptyResponse> {
+    if !account.id_providers.is_empty() && account.password.is_none() {
+        return Err(Error::PasswordDisabled);
+    }
+
     let data = data.into_inner();
 
     // Verify password can be used
@@ -39,7 +43,7 @@ pub async fn change_password(
     account.verify_password(&data.current_password)?;
 
     // Hash and replace password
-    account.password = hash_password(data.password)?;
+    account.password = hash_password(data.password).map(Some)?;
 
     // Commit to database
     account.save(authifier).await.map(|_| EmptyResponse)

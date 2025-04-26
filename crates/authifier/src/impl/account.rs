@@ -51,7 +51,8 @@ impl Account {
 
                 email,
                 email_normalised,
-                password,
+                password: Some(password),
+                id_providers: Default::default(),
 
                 disabled: false,
                 verification: EmailVerification::Verified,
@@ -78,6 +79,45 @@ impl Account {
 
             Ok(account)
         }
+    }
+
+    /// Create a new account from ID provider claims
+    pub async fn from_claims(
+        authifier: &Authifier,
+        idp_id: &str,
+        sub_id: &serde_json::Value,
+        email: &str,
+    ) -> Result<Account> {
+        // Create a new account
+        let account = Account {
+            id: ulid::Ulid::new().to_string(),
+
+            email: email.to_owned(),
+            email_normalised: normalise_email(email.to_owned()),
+            password: None,
+            id_providers: [(idp_id.to_owned(), sub_id.to_owned())]
+                .into_iter()
+                .collect(),
+
+            disabled: false,
+            verification: EmailVerification::Verified,
+            password_reset: None,
+            deletion: None,
+            lockout: None,
+
+            mfa: Default::default(),
+        };
+
+        account.save(authifier).await?;
+
+        // Create and push event
+        authifier
+            .publish_event(AuthifierEvent::CreateAccount {
+                account: account.clone(),
+            })
+            .await;
+
+        Ok(account)
     }
 
     /// Create a new session
@@ -260,17 +300,22 @@ impl Account {
 
     /// Verify a user's password is correct
     pub fn verify_password(&self, plaintext_password: &str) -> Success {
-        argon2::verify_encoded(&self.password, plaintext_password.as_bytes())
-            .map(|v| {
-                if v {
-                    Ok(())
-                } else {
-                    Err(Error::InvalidCredentials)
-                }
-            })
-            // To prevent user enumeration, we should ignore
-            // the error and pretend the password is wrong.
-            .map_err(|_| Error::InvalidCredentials)?
+        argon2::verify_encoded(
+            self.password
+                .as_ref()
+                .expect("account should have password"),
+            plaintext_password.as_bytes(),
+        )
+        .map(|v| {
+            if v {
+                Ok(())
+            } else {
+                Err(Error::InvalidCredentials)
+            }
+        })
+        // To prevent user enumeration, we should ignore
+        // the error and pretend the password is wrong.
+        .map_err(|_| Error::InvalidCredentials)?
     }
 
     /// Validate an MFA response

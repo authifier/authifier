@@ -1,0 +1,4 @@
+[default]
+address = "0.0.0.0"
+port = 4444
+secret_key = "1234"  # Required for cookies

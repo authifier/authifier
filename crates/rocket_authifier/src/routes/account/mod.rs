@@ -1,5 +1,5 @@
-use rocket::Route;
 use revolt_rocket_okapi::revolt_okapi::openapi3::OpenApi;
+use rocket::Route;
 
 pub mod change_email;
 pub mod change_password;

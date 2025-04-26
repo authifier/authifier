@@ -10,6 +10,8 @@ use iso8601_timestamp::Timestamp;
 use rocket::serde::json::Json;
 use rocket::State;
 
+use crate::routes::sso::callback::LoginToken;
+
 /// # Login Data
 #[derive(Serialize, Deserialize, JsonSchema)]
 #[serde(untagged)]
@@ -34,6 +36,11 @@ pub enum DataLogin {
         /// Friendly name used for the session
         friendly_name: Option<String>,
     },
+}
+
+#[derive(Serialize, Deserialize, JsonSchema, FromForm)]
+pub struct DataToken {
+    login_token: String,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema)]
@@ -73,6 +80,8 @@ pub async fn login(
                 .find_account_by_normalised_email(&email_normalised)
                 .await?
             {
+                // TODO: Make sure the account uses password authentication
+
                 // Make sure the account has been verified
                 if let EmailVerification::Pending { .. } = account.verification {
                     return Err(Error::UnverifiedAccount);
@@ -188,6 +197,54 @@ pub async fn login(
 
     // Generate a session name
     let name = name.unwrap_or_else(|| "Unknown".to_string());
+
+    // Prevent disabled accounts from logging in
+    if account.disabled {
+        return Ok(Json(ResponseLogin::Disabled {
+            user_id: account.id,
+        }));
+    }
+
+    // Create and return a new session
+    Ok(Json(ResponseLogin::Success(
+        account.create_session(authifier, name).await?,
+    )))
+}
+
+/// # Token Login
+///
+/// Login to an account with a token.
+#[openapi(tag = "Session")]
+#[get("/login?<data..>")]
+pub async fn token_login(
+    authifier: &State<Authifier>,
+    data: DataToken,
+) -> Result<Json<ResponseLogin>> {
+    let secret = authifier.database.find_secret().await?;
+
+    let login_token: LoginToken = secret
+        .validate_claims(&data.login_token)
+        .map_err(|_| Error::InvalidToken)?;
+
+    // Lookup the email in database
+    let record = authifier
+        .database
+        .find_account_by_sso_id(&login_token.iss, &login_token.sub)
+        .await?;
+
+    eprintln!("{record:?}");
+
+    let account = record.ok_or(Error::InvalidToken)?;
+
+    // Make sure the account has been verified
+    if let EmailVerification::Pending { .. } = account.verification {
+        return Err(Error::UnverifiedAccount);
+    }
+
+    // Generate a session name
+    let name = login_token
+        .username
+        .unwrap_or_else(|| "Unknown".to_string());
 
     // Prevent disabled accounts from logging in
     if account.disabled {

@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use iso8601_timestamp::Timestamp;
 
 use super::MultiFactorAuthentication;
@@ -64,7 +66,10 @@ pub struct Account {
     pub email_normalised: String,
 
     /// Argon2 hashed password
-    pub password: String,
+    pub password: Option<String>,
+
+    /// Mapping of ID provider to subject ID
+    pub id_providers: HashMap<String, serde_json::Value>,
 
     /// Whether the account is disabled
     #[serde(default)]

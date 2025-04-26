@@ -1,5 +1,7 @@
 use crate::{
-    models::{Account, DeletionInfo, EmailVerification, Invite, MFATicket, Session},
+    models::{
+        Account, Callback, DeletionInfo, EmailVerification, Invite, MFATicket, Secret, Session,
+    },
     Error, Result, Success,
 };
 
@@ -12,7 +14,9 @@ use super::{definition::AbstractDatabase, Migration};
 #[derive(Default, Clone)]
 pub struct DummyDb {
     pub accounts: Arc<Mutex<HashMap<String, Account>>>,
+    pub callbacks: Arc<Mutex<HashMap<String, Callback>>>,
     pub invites: Arc<Mutex<HashMap<String, Invite>>>,
+    pub secrets: Arc<Mutex<HashMap<(), Secret>>>,
     pub sessions: Arc<Mutex<HashMap<String, Session>>>,
     pub tickets: Arc<Mutex<HashMap<String, MFATicket>>>,
 }
@@ -40,6 +44,16 @@ impl AbstractDatabase for DummyDb {
         Ok(accounts
             .values()
             .find(|account| account.email_normalised == normalised_email)
+            .cloned())
+    }
+
+    /// Find account by SSO ID
+    async fn find_account_by_sso_id(&self, idp_id: &str, sub_id: &str) -> Result<Option<Account>> {
+        let accounts = self.accounts.lock().await;
+        let sub_id = serde_json::from_str(sub_id).map_err(|_| Error::InvalidIdClaim)?;
+        Ok(accounts
+            .values()
+            .find(|account| account.id_providers.get(idp_id) == Some(&sub_id))
             .cloned())
     }
 
@@ -106,6 +120,12 @@ impl AbstractDatabase for DummyDb {
             .collect())
     }
 
+    /// Find callback by id
+    async fn find_callback(&self, id: &str) -> Result<Callback> {
+        let callbacks = self.callbacks.lock().await;
+        callbacks.get(id).cloned().ok_or(Error::InvalidState)
+    }
+
     /// Find invite by id
     async fn find_invite(&self, id: &str) -> Result<Invite> {
         let invites = self.invites.lock().await;
@@ -116,6 +136,20 @@ impl AbstractDatabase for DummyDb {
     async fn find_session(&self, id: &str) -> Result<Session> {
         let sessions = self.sessions.lock().await;
         sessions.get(id).cloned().ok_or(Error::UnknownUser)
+    }
+
+    /// Find secret
+    async fn find_secret(&self) -> Result<Secret> {
+        let secrets = self.secrets.lock().await;
+
+        match secrets.get(&()) {
+            Some(secret) => Ok(secret.clone()),
+            None => {
+                let secret = Secret::new();
+
+                self.save_secret(&secret).await.map(|_| secret)
+            }
+        }
     }
 
     /// Find sessions by user id
@@ -163,6 +197,20 @@ impl AbstractDatabase for DummyDb {
         Ok(())
     }
 
+    // Save callback
+    async fn save_callback(&self, callback: &Callback) -> Success {
+        let mut callbacks = self.callbacks.lock().await;
+        callbacks.insert(callback.id.to_string(), callback.clone());
+        Ok(())
+    }
+
+    /// Save secret
+    async fn save_secret(&self, secret: &Secret) -> Success {
+        let mut secrets = self.secrets.lock().await;
+        secrets.insert((), secret.clone());
+        Ok(())
+    }
+
     /// Save session
     async fn save_session(&self, session: &Session) -> Success {
         let mut sessions = self.sessions.lock().await;
@@ -182,6 +230,16 @@ impl AbstractDatabase for DummyDb {
         let mut tickets = self.tickets.lock().await;
         tickets.insert(ticket.id.to_string(), ticket.clone());
         Ok(())
+    }
+
+    /// Delete callback
+    async fn delete_callback(&self, id: &str) -> Success {
+        let mut callbacks = self.callbacks.lock().await;
+        if callbacks.remove(id).is_some() {
+            Ok(())
+        } else {
+            Err(Error::InvalidState)
+        }
     }
 
     /// Delete session

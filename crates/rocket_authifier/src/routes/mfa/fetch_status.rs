@@ -36,7 +36,7 @@ impl From<MultiFactorAuthentication> for MultiFactorStatus {
 #[openapi(tag = "MFA")]
 #[get("/")]
 pub async fn fetch_status(account: Account) -> Result<Json<MultiFactorStatus>> {
-    Ok(Json(account.mfa.into()))
+    Ok(Json(account.mfa.clone().into()))
 }
 
 #[cfg(test)]

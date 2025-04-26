@@ -22,7 +22,7 @@ pub async fn generate_recovery(
     account.save(authifier).await?;
 
     // Return them to the user
-    Ok(Json(account.mfa.recovery_codes))
+    Ok(Json(account.mfa.recovery_codes.clone()))
 }
 
 #[cfg(test)]

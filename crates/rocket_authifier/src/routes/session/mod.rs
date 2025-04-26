@@ -11,6 +11,7 @@ pub mod revoke_all;
 pub fn routes() -> (Vec<Route>, OpenApi) {
     openapi_get_routes_spec![
         login::login,
+        login::token_login,
         logout::logout,
         fetch_all::fetch_all,
         revoke::revoke,

@@ -15,7 +15,7 @@ pub async fn fetch_recovery(
     account: Account,
     _ticket: ValidatedTicket,
 ) -> Result<Json<Vec<String>>> {
-    Ok(Json(account.mfa.recovery_codes))
+    Ok(Json(account.mfa.recovery_codes.clone()))
 }
 
 #[cfg(test)]
