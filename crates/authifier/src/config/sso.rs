@@ -97,11 +97,42 @@ impl Hash for IdProvider {
 pub struct SSO(HashSet<IdProvider>);
 
 impl Serialize for SSO {
-    fn serialize<S>(&self, _: S) -> Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        todo!()
+        #[derive(Serialize)]
+        struct Mock {
+            pub issuer: Url,
+            pub name: Option<String>,
+            pub icon: Option<Url>,
+            pub scopes: Vec<String>,
+            pub endpoints: Endpoints,
+            pub credentials: Credentials,
+            pub claims: HashMap<Claim, String>,
+            pub code_challenge: bool,
+        }
+
+        let map: HashMap<String, Mock> = self
+            .iter()
+            .map(|provider| {
+                (
+                    provider.id.clone(),
+                    Mock {
+                        issuer: provider.issuer.clone(),
+                        name: provider.name.clone(),
+                        icon: provider.icon.clone(),
+                        scopes: provider.scopes.clone(),
+                        endpoints: provider.endpoints.clone(),
+                        credentials: provider.credentials.clone(),
+                        claims: provider.claims.clone(),
+                        code_challenge: provider.code_challenge,
+                    },
+                )
+            })
+            .collect();
+
+        map.serialize(serializer)
     }
 }
 
