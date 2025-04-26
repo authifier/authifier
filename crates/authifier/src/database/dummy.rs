@@ -48,12 +48,13 @@ impl AbstractDatabase for DummyDb {
     }
 
     /// Find account by SSO ID
-    async fn find_account_by_sso_id(
-        &self,
-        _idp_id: &str,
-        _sub_id: &str,
-    ) -> Result<Option<Account>> {
-        todo!()
+    async fn find_account_by_sso_id(&self, idp_id: &str, sub_id: &str) -> Result<Option<Account>> {
+        let accounts = self.accounts.lock().await;
+        let sub_id = serde_json::from_str(sub_id).map_err(|_| Error::InvalidIdClaim)?;
+        Ok(accounts
+            .values()
+            .find(|account| account.id_providers.get(idp_id) == Some(&sub_id))
+            .cloned())
     }
 
     /// Find account with active pending email verification

@@ -287,12 +287,26 @@ impl AbstractDatabase for MongoDb {
     }
 
     /// Find account by SSO ID
-    async fn find_account_by_sso_id(
-        &self,
-        _idp_id: &str,
-        _sub_id: &str,
-    ) -> Result<Option<Account>> {
-        todo!()
+    async fn find_account_by_sso_id(&self, idp_id: &str, sub_id: &str) -> Result<Option<Account>> {
+        let sub_id: serde_json::Value =
+            serde_json::from_str(sub_id).map_err(|_| Error::InvalidIdClaim)?;
+
+        let sub_id = bson::to_bson(&sub_id).map_err(|_| Error::DatabaseError {
+            operation: "find_one",
+            with: "account",
+        })?;
+
+        self.collection("accounts")
+            .find_one(doc! {
+                "id_providers": {
+                    idp_id: sub_id,
+                },
+            })
+            .await
+            .map_err(|_| Error::DatabaseError {
+                operation: "find_one",
+                with: "account",
+            })
     }
 
     /// Find account with active pending email verification
@@ -661,11 +675,9 @@ impl AbstractDatabase for MongoDb {
     /// Delete callback
     async fn delete_callback(&self, id: &str) -> Success {
         self.collection::<Callback>("callbacks")
-            .delete_one(
-                doc! {
-                    "_id": id
-                },
-            )
+            .delete_one(doc! {
+                "_id": id
+            })
             .await
             .map_err(|_| Error::DatabaseError {
                 operation: "delete_one",

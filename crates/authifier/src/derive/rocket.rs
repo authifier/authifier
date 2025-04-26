@@ -49,29 +49,31 @@ impl<'r> Responder<'r, 'static> for Error {
             Error::DisallowedMFAMethod => Status::BadRequest,
             Error::NotAvailable => Status::NotFound,
 
-            Error::InvalidEndpoints => todo!(),
-            Error::StateMismatch => todo!(),
+            Error::InvalidEndpoints => Status::BadRequest,
+            Error::StateMismatch => Status::BadRequest,
 
-            Error::RequestFailed => todo!(),
-            Error::InvalidRequest => todo!(),
-            Error::InvalidClient => todo!(),
-            Error::InvalidGrant => todo!(),
-            Error::UnauthorizedClient => todo!(),
-            Error::UnsupportedGrantType => todo!(),
-            Error::InvalidScope => todo!(),
+            Error::RequestFailed => Status::BadRequest,
+            Error::InvalidRequest => Status::BadRequest,
+            Error::InvalidClient => Status::BadRequest,
+            Error::InvalidGrant => Status::BadRequest,
+            Error::UnauthorizedClient => Status::BadRequest,
+            Error::UnsupportedGrantType => Status::BadRequest,
+            Error::InvalidScope => Status::BadRequest,
 
-            Error::ContentTypeMismatch => todo!(),
-            Error::InsufficientScope => todo!(),
-            Error::InvalidUserinfo => todo!(),
+            Error::ContentTypeMismatch => Status::BadRequest,
+            Error::InsufficientScope => Status::BadRequest,
+            Error::InvalidUserinfo => Status::BadRequest,
 
-            Error::InvalidRedirectUri => todo!(),
-            Error::InvalidIdpId => todo!(),
-            Error::InvalidIdpConfig => todo!(),
+            Error::InvalidRedirectUri => Status::BadRequest,
+            Error::InvalidIdpId => Status::BadRequest,
+            Error::InvalidIdpConfig => Status::BadRequest,
 
-            Error::MissingCallback => todo!(),
-            Error::InvalidCallback => todo!(),
-            Error::MissingAuthCode => todo!(),
-            Error::InvalidIdClaim => todo!(),
+            Error::MissingCallback => Status::BadRequest,
+            Error::InvalidCallback => Status::BadRequest,
+            Error::MissingAuthCode => Status::BadRequest,
+            Error::InvalidIdClaim => Status::BadRequest,
+
+            Error::PasswordDisabled => Status::BadRequest,
         };
 
         // Serialize the error data structure into JSON.

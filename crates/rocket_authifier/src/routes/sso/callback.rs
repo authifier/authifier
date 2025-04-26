@@ -1,27 +1,28 @@
 //! Handle the callback from the ID provider
 //! GET /sso/authorize
 use std::collections::HashMap;
+use std::str::FromStr;
 
 use authifier::config::Claim;
 use authifier::models::Account;
-use authifier::util::{normalise_email, secure_random_str};
+use authifier::util::normalise_email;
 use authifier::{Authifier, Error, Result};
-use iso8601_timestamp::Timestamp;
-use rocket::http::{Cookie, CookieJar};
+use rocket::http::hyper::Uri;
+use rocket::http::{Cookie, CookieJar, RawStr};
 use rocket::response::Redirect;
-use rocket::time::Duration;
+use rocket::time::{Duration, OffsetDateTime};
 use rocket::State;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LoginToken {
     // ID provider Id
     pub iss: String,
-    // Account Id
-    pub aud: String,
     // Expiry timestamp
-    pub exp: Timestamp,
+    pub exp: i64,
     // Login token value
     pub sub: String,
+
+    pub username: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, FromForm)]
@@ -44,138 +45,128 @@ pub async fn callback(
     data: DataCallback,
     cookies: &CookieJar<'_>,
 ) -> Result<Redirect> {
-    // Retrieve encoding/decoding secret
-    let secret = authifier.database.find_secret().await?;
+    // Verify callback state using stored cookie
+    let id = cookies
+        .get("callback-id")
+        .map(Cookie::value)
+        .ok_or(Error::MissingCallback)?;
 
-    // Retrieve cookie provided during authorization
-    let cookie = cookies.get("callback-id").map(Cookie::value);
-
-    // Ensure presence and validate integrity
-    let id: String = match cookie.map(|c| secret.validate_claims(c)).transpose() {
-        Ok(value) => value.ok_or(Error::MissingCallback)?,
-        Err(_) => {
-            return Err(Error::InvalidCallback);
-        }
-    };
-
-    // Retrieve associated callback
-    let callback = authifier.database.find_callback(&id).await?;
+    // Retrieve and immediately delete the stored callback state
+    let callback = authifier.database.find_callback(id).await?;
     {
-        authifier.database.delete_callback(&id).await?;
+        authifier.database.delete_callback(id).await?;
     }
 
-    // Ensure given ID provider exists
+    // Validate the identity provider
     let id_provider = authifier
         .config
         .sso
         .get(&*callback.idp_id)
         .ok_or(Error::InvalidIdpId)?;
 
-    // Ensure authorization code was provided
     let Some(code) = data.code.as_deref() else {
         return Err(Error::MissingAuthCode);
     };
 
-    // Exchange authorization code for access token
+    // Exchange authorization code for tokens
     let (response, id_token) = id_provider
-        .exchange_authorization_code(authifier, code, &id)
+        .exchange_authorization_code(authifier, &callback, code)
         .await?;
 
-    let mut claims = HashMap::with_capacity(id_provider.claims.len());
+    let mut id_token = id_token.unwrap_or_default();
 
-    // Extract claims for ID token
-    if let Some(id_token) = id_token {
-        let values = id_provider.claims.iter().filter_map(|(claim, key)| {
-            let value = id_token.get(key).cloned()?;
-
-            Some((claim.to_owned(), value))
-        });
-
-        claims.extend(values);
-    }
-
-    // Extract claims for userinfo JWT
+    // Fetch additional userinfo if possible
     if let Some(userinfo) = id_provider
         .fetch_userinfo(authifier, &response.access_token)
         .await?
     {
-        let values = id_provider.claims.iter().filter_map(|(claim, key)| {
-            let value = userinfo.get(key).cloned()?;
-
-            Some((claim.to_owned(), value))
-        });
-
-        claims.extend(values);
+        id_token.extend(userinfo);
     }
 
-    // Ensure either one contained the identifier claim
+    let claims: HashMap<_, _> = id_token
+        .iter()
+        .map(|(key, value)| match Claim::from_str(key) {
+            Ok(claim) => (claim, value.to_owned()),
+            Err(_) => unreachable!("infallible"),
+        })
+        .collect();
+
+    eprintln!("{:?}", &claims);
+
+    // Ensure that we received the mandatory subject ID
     let Some(sub_id) = claims.get(&Claim::Id) else {
-        return Err(Error::InvalidIdClaim);
+        return Err(Error::InvalidIdClaim); // Required for account mapping
     };
 
-    let account = match authifier
+    // Create new account or update existing one
+    match authifier
         .database
         .find_account_by_sso_id(&callback.idp_id, &sub_id.to_string())
         .await?
     {
-        // Account was previously logged in with through SSO
         Some(mut account) => {
+            // Update email if provided in claims
             if let Some(email) = claims.get(&Claim::Email).and_then(|value| value.as_str()) {
-                // Update email if present in claims
                 account.email = email.to_owned();
                 account.email_normalised = normalise_email(email.to_owned());
             }
-
-            account
         }
         None => {
-            // TODO: no email present in claims?
             let Some(email) = claims.get(&Claim::Email).and_then(|value| value.as_str()) else {
+                // TODO: Should handle missing email case properly
                 todo!()
             };
 
-            // Get a normalised representation of the user's email
             let email_normalised = normalise_email(email.to_owned());
 
-            // Try to find an existing account
-            if let Some(_account) = authifier
+            // Check for existing account by email
+            if let Some(mut account) = authifier
                 .database
                 .find_account_by_normalised_email(&email_normalised)
                 .await?
             {
-                // TODO: convert existing account to SSO?
-
-                todo!()
+                account
+                    .id_providers
+                    .insert(callback.idp_id.clone(), sub_id.to_owned());
+            } else {
+                Account::from_claims(authifier, &callback.idp_id, sub_id, email).await?;
             }
-
-            // Create new account
-            Account::from_claims(
-                authifier,
-                callback.idp_id.clone(),
-                sub_id.to_owned(),
-                email.to_owned(),
-            )
-            .await?
         }
     };
 
-    let timestamp = Timestamp::now_utc().checked_add(Duration::seconds(60 * 2));
+    // Generate short-lived login token
+    let exp = OffsetDateTime::now_utc()
+        .checked_add(Duration::minutes(2))
+        .expect("time overflow");
 
-    // Generate login token
     let login_token = LoginToken {
         iss: callback.idp_id.clone(),
-        aud: account.id.clone(),
-        exp: timestamp.map(Into::into).expect("time overflow"),
-        sub: secure_random_str(64),
+        sub: sub_id.to_string(),
+        exp: exp.unix_timestamp(),
+
+        username: claims
+            .get(&Claim::Username)
+            .and_then(|s| s.as_str().map(str::to_owned)),
     };
 
-    // TODO: are we sure this will be overwritten?
-    cookies.add(Cookie::build(("callback-id", String::new())));
+    eprintln!("{login_token:?}");
 
-    // TODO: URI encoding?
+    if let Some(cookie) = cookies.get("callback-id").cloned() {
+        cookies.remove(cookie);
+    }
+
+    let base_uri = callback
+        .redirect_uri
+        .parse::<Uri>()
+        .map_err(|_| Error::InvalidRedirectUri)?;
+
+    let secret = authifier.database.find_secret().await?;
+
+    let claims = secret.sign_claims(&login_token);
+
     Ok(Redirect::found(format!(
-        "{}?redirect_uri={}",
-        callback.redirect_uri,
-        secret.sign_claims(&login_token),
+        "{base_uri}?login_token={}",
+        // Percent-encode the JWT to prevent injection
+        RawStr::new(&claims).percent_encode()
     )))
 }

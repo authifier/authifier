@@ -84,18 +84,20 @@ impl Account {
     /// Create a new account from ID provider claims
     pub async fn from_claims(
         authifier: &Authifier,
-        _idp_id: String,
-        _sub_id: serde_json::Value,
-        email: String,
+        idp_id: &str,
+        sub_id: &serde_json::Value,
+        email: &str,
     ) -> Result<Account> {
         // Create a new account
         let account = Account {
             id: ulid::Ulid::new().to_string(),
 
-            email: email.clone(),
-            email_normalised: normalise_email(email),
+            email: email.to_owned(),
+            email_normalised: normalise_email(email.to_owned()),
             password: None,
-            id_providers: Default::default(),
+            id_providers: [(idp_id.to_owned(), sub_id.to_owned())]
+                .into_iter()
+                .collect(),
 
             disabled: false,
             verification: EmailVerification::Verified,

@@ -1,7 +1,7 @@
 //! Redirect to authorization interface
 //! GET /sso/authorize
 use authifier::{Authifier, Error, Result};
-use rocket::http::{Cookie, CookieJar};
+use rocket::http::{Cookie, CookieJar, SameSite};
 use rocket::response::Redirect;
 use rocket::time::Duration;
 use rocket::State;
@@ -10,7 +10,7 @@ use rocket::State;
 ///
 /// Redirect to authorization interface.
 #[openapi(tag = "SSO")]
-#[get("/sso/authorize/<idp_id>?<redirect_uri>")]
+#[get("/authorize/<idp_id>?<redirect_uri>")]
 pub async fn authorize(
     authifier: &State<Authifier>,
     idp_id: &str,
@@ -34,9 +34,17 @@ pub async fn authorize(
         .create_authorization_uri(authifier, &redirect_uri)
         .await?;
 
+    if let Some(cookie) = cookies.get("callback-id").cloned() {
+        cookies.remove(cookie);
+    }
+
     // Build cookie that can be retrieved during callback
-    let (path, max_age) = ("/sso/callback", Duration::seconds(60 * 10));
-    let cookie = Cookie::build(("callback-id", state)).http_only(true);
+    let (path, max_age) = ("/auth/sso/callback", Duration::seconds(60 * 5));
+
+    let cookie = Cookie::build(("callback-id", state))
+        .same_site(SameSite::Lax)
+        .http_only(true)
+        .secure(true);
 
     // Add the cookie to the response
     cookies.add(cookie.path(path).max_age(max_age));

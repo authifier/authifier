@@ -1,0 +1,16 @@
+server_url = "https://inv.kurosaki.cx"
+
+[sso.gitlab]
+issuer = "https://gitlab.computer.surgery"
+scopes = ["openid", "email"]
+code_challenge = false
+
+[sso.gitlab.endpoints]
+type = "discoverable"
+
+[sso.gitlab.credentials]
+type = "post"
+client_id = "xxx"
+client_secret = "xxx"
+
+[sso.gitlab.claims]

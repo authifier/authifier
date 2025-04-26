@@ -36,6 +36,13 @@ pub enum Error {
     TotpAlreadyEnabled,
     DisallowedMFAMethod,
 
+    PasswordDisabled,
+
+    InvalidRedirectUri,
+    InvalidIdpId,
+    InvalidIdpConfig,
+
+    // ---
     NotAvailable,
 
     InvalidEndpoints,
@@ -52,10 +59,7 @@ pub enum Error {
     ContentTypeMismatch,
     InsufficientScope,
     InvalidUserinfo,
-
-    InvalidRedirectUri,
-    InvalidIdpId,
-    InvalidIdpConfig,
+    // ---
 
     MissingCallback,
     InvalidCallback,

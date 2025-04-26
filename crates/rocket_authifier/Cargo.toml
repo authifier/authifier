@@ -18,7 +18,8 @@ example = [
     "mongodb",
 ]
 
-default = []
+# default = []
+default = ["example"]
 
 [dependencies]
 # Authifier
@@ -52,3 +53,7 @@ async-std = { version = "1.9.0", features = [
     "tokio1",
     "attributes",
 ], optional = true }
+
+[[example]]
+name = "sso"
+path = "crates/rocket_authifier/examples/rocket_sso.rs"

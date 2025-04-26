@@ -64,11 +64,22 @@ impl IdProvider {
             Endpoints::Manual { authorization, .. } => *authorization.clone(),
         };
 
+        let server_url = authifier
+            .config
+            .server_url
+            .as_ref()
+            .expect("server must have a URL");
+
+        let callback_url = format!(
+            "https://{}/auth/sso/callback",
+            server_url.domain().expect("server must have a valid URL")
+        );
+
         // Append the client ID, redirect URI and state to the authorization URI
         {
             authorization_uri.query_pairs_mut().extend_pairs([
                 ("client_id", self.credentials.client_id()),
-                ("redirect_uri", redirect_uri.as_ref()),
+                ("redirect_uri", &callback_url),
                 ("response_type", "code"),
                 ("scope", &*self.scopes.join(" ")),
                 ("state", &*state),
@@ -98,8 +109,8 @@ impl IdProvider {
             ..Callback::new(self.id.clone(), redirect_uri.clone())
         };
 
-        // TODO: embed callback in cookie as JWT or save callback
-        // server-side using state as identifier?
+        eprintln!("{callback:?}");
+
         authifier.database.save_callback(&callback).await?;
 
         Ok((state, authorization_uri))
@@ -109,19 +120,9 @@ impl IdProvider {
     pub async fn exchange_authorization_code(
         &self,
         authifier: &Authifier,
+        callback: &Callback,
         code: &str,
-        state: &str,
     ) -> Result<(AccessTokenResponse, Option<IdToken>)> {
-        // Find callback
-        let callback = authifier.database.find_callback(state).await?;
-
-        // Compare provided state against stored state
-        if state != callback.id {
-            authifier.database.delete_callback(state).await?;
-
-            return Err(Error::StateMismatch);
-        }
-
         let endpoint = match &self.endpoints {
             Endpoints::Discoverable => {
                 // Fetch token endpoint for OIDC provider
@@ -132,10 +133,21 @@ impl IdProvider {
             Endpoints::Manual { token, .. } => *token.clone(),
         };
 
+        let server_url = authifier
+            .config
+            .server_url
+            .as_ref()
+            .expect("server must have a URL");
+
+        let callback_url = format!(
+            "https://{}/auth/sso/callback",
+            server_url.domain().expect("server must have a valid URL")
+        );
+
         // Build request for access token with authorization code
         let body = AccessTokenRequest::AuthorizationCode(AuthorizationCodeGrant {
             code: code.to_owned(),
-            redirect_uri: Some(callback.redirect_uri.parse().unwrap()),
+            redirect_uri: Some(callback_url.parse().unwrap()),
             code_verifier: callback.code_verifier.clone(),
         });
 
@@ -296,8 +308,13 @@ impl IdProvider {
             response.json().await.map_err(|_| Error::InvalidEndpoints)?;
 
         metadata
-            .validate(self.issuer.as_ref())
-            .map_err(|_| Error::InvalidEndpoints)
+            .clone()
+            .validate(self.issuer.as_ref().trim_end_matches("/"))
+            .map_err(|e| {
+                eprintln!("{e} {:?} {:?}", self.issuer.as_str(), &metadata.issuer);
+
+                Error::InvalidEndpoints
+            })
     }
 }
 

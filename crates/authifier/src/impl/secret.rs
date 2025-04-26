@@ -1,4 +1,4 @@
-use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::models::Secret;
@@ -23,7 +23,14 @@ impl Secret {
     {
         let secret = self.expose().as_bytes();
 
-        let (validation, key) = (Validation::default(), DecodingKey::from_secret(secret));
+        let (mut validation, key) = (
+            Validation::new(Algorithm::HS256),
+            DecodingKey::from_secret(secret),
+        );
+
+        validation.set_required_spec_claims(&["sub", "exp", "aud", "iss"]);
+        validation.validate_aud = false;
+        validation.validate_nbf = false;
 
         jsonwebtoken::decode(token, &key, &validation).map(|token| token.claims)
     }

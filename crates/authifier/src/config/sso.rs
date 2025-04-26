@@ -3,10 +3,11 @@ use std::{
     collections::{HashMap, HashSet},
     hash::{Hash, Hasher},
     ops::Deref,
+    str::FromStr,
 };
 
 use reqwest::Url;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "lowercase", tag = "type")]
@@ -45,13 +46,14 @@ impl Credentials {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Serialize, Clone, PartialEq, Eq, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum Claim {
     Id,
     Username,
     Picture,
     Email,
+    Custom(String),
 }
 
 #[derive(Clone, Debug)]
@@ -156,7 +158,7 @@ impl<'de> Deserialize<'de> for SSO {
         }
 
         let map: HashMap<String, Mock> =
-            HashMap::deserialize(deserializer).map_err(serde::de::Error::custom)?;
+            HashMap::deserialize(deserializer).map_err(de::Error::custom)?;
 
         Ok(SSO(map
             .into_iter()
@@ -180,6 +182,30 @@ impl Deref for SSO {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl<'de> Deserialize<'de> for Claim {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Deserialize::deserialize(deserializer)
+            .and_then(|s| str::parse(s).map_err(de::Error::custom))
+    }
+}
+
+impl FromStr for Claim {
+    type Err = std::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s.to_lowercase().as_str() {
+            "sub" | "id" => Claim::Id,
+            "username" | "preferred_username" => Claim::Username,
+            "picture" => Claim::Picture,
+            "email" => Claim::Email,
+            other => Claim::Custom(other.to_string()),
+        })
     }
 }
 
