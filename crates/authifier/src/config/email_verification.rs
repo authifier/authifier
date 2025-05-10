@@ -59,6 +59,8 @@ pub struct Templates {
     pub verify: Template,
     /// Template for password reset
     pub reset: Template,
+    /// Template for password reset when the account already exists on creation
+    pub reset_existing: Template,
     /// Template for account deletion
     pub deletion: Template,
     /// Template for welcome email

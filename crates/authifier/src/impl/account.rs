@@ -40,7 +40,7 @@ impl Account {
             if let EmailVerification::Pending { .. } = &account.verification {
                 account.start_email_verification(authifier).await?;
             } else {
-                account.start_password_reset(authifier).await?;
+                account.start_password_reset(authifier, true).await?;
             }
 
             Ok(account)
@@ -187,19 +187,29 @@ impl Account {
     }
 
     /// Send password reset email
-    pub async fn start_password_reset(&mut self, authifier: &Authifier) -> Success {
+    pub async fn start_password_reset(
+        &mut self,
+        authifier: &Authifier,
+        existing_account: bool,
+    ) -> Success {
         if let EmailVerificationConfig::Enabled {
             templates,
             expiry,
             smtp,
         } = &authifier.config.email_verification
         {
+            let template = if existing_account {
+                &templates.reset_existing
+            } else {
+                &templates.reset
+            };
+
             let token = nanoid!(32);
-            let url = format!("{}{}", templates.reset.url, token);
+            let url = format!("{}{}", template.url, token);
 
             smtp.send_email(
                 self.email.clone(),
-                &templates.reset,
+                &template,
                 json!({
                     "email": self.email.clone(),
                     "url": url

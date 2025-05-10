@@ -47,7 +47,7 @@ pub async fn send_password_reset(
         .find_account_by_normalised_email(&email_normalised)
         .await?
     {
-        account.start_password_reset(authifier).await?;
+        account.start_password_reset(authifier, false).await?;
     }
 
     // Never fail this route, (except for db error)

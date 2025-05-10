@@ -48,7 +48,7 @@ pub async fn resend_verification(
         match account.verification {
             EmailVerification::Verified => {
                 // Send password reset if already verified
-                account.start_password_reset(authifier).await?;
+                account.start_password_reset(authifier, true).await?;
             }
             EmailVerification::Pending { .. } => {
                 // Resend if not verified yet
