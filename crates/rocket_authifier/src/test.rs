@@ -1,6 +1,9 @@
 pub use authifier::{
-    config::*, database::{MongoDb, DummyDb}, models::totp::*, models::*, Authifier, AuthifierEvent, Config,
-    Database, Error, Migration, Result,
+    config::*,
+    database::{DummyDb, MongoDb},
+    models::totp::*,
+    models::*,
+    Authifier, AuthifierEvent, Config, Database, Error, Migration, Result,
 };
 pub use mongodb::Client;
 pub use rocket::http::{ContentType, Status};
@@ -38,6 +41,12 @@ pub async fn test_smtp_config() -> Config {
                 },
                 reset: Template {
                     title: "reset".into(),
+                    text: "[[{{url}}]]".into(),
+                    url: "".into(),
+                    html: None,
+                },
+                reset_existing: Template {
+                    title: "reset_existing".into(),
                     text: "[[{{url}}]]".into(),
                     url: "".into(),
                     html: None,
