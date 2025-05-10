@@ -61,23 +61,18 @@ impl PasswordScanning {
                     secure: bool,
                 }
 
-                if let Ok(response) = reqwest::get(format!("{endpoint}/hash/{pwd_hash:#02x}")).await
-                {
-                    if let Ok(result) = response.json::<EasyPwnedResult>().await {
-                        if result.secure {
-                            Ok(())
-                        } else {
-                            Err(Error::CompromisedPassword)
-                        }
-                    } else if TOP_100K_COMPROMISED.contains(password) {
-                        Err(Error::CompromisedPassword)
-                    } else {
-                        Ok(())
-                    }
-                } else if TOP_100K_COMPROMISED.contains(password) {
-                    Err(Error::CompromisedPassword)
-                } else {
-                    Ok(())
+                let result = match reqwest::get(format!("{endpoint}/hash/{pwd_hash:#02x}")).await {
+                    Ok(response) => match response.json::<EasyPwnedResult>().await {
+                        Ok(result) => Ok(result.secure),
+                        Err(_) => Err(Error::InternalError),
+                    },
+                    Err(_) => Err(Error::InternalError),
+                };
+
+                match result {
+                    Ok(true) => Ok(()),
+                    // todo: report Err(_) case; ideally we merge into Revolt backend at some point, at that point use create_internal_error! macro
+                    _ => Err(Error::CompromisedPassword),
                 }
             }
             #[cfg(feature = "pwned100k")]
