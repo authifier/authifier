@@ -1,6 +1,6 @@
 [package]
 name = "authifier"
-version = "1.0.12"
+version = "1.0.13"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Pawel Makles <me@insrt.uk>"]
@@ -21,7 +21,8 @@ pwned100k = []
 have_i_been_pwned = []
 hcaptcha = ["reqwest"]
 shield = ["reqwest"]
-default_inbuilts = ["pwned100k", "hcaptcha", "shield"]
+easypwned = ["reqwest"]
+default_inbuilts = ["pwned100k", "hcaptcha", "shield", "easypwned"]
 # default_inbuilts = []
 
 default = ["async-std-runtime", "database-mongodb", "default_inbuilts"]
@@ -41,6 +42,7 @@ async-trait = "0.1.56"
 futures = { version = "0.3.21" }
 
 # Serde
+sha1 = "0.10.6"
 serde_json = { version = "1.0.81" }
 iso8601-timestamp = { version = "0.2.10" }
 serde = { version = "1.0.116", features = ["derive"] }

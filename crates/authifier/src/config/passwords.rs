@@ -1,5 +1,7 @@
 use std::collections::HashSet;
 
+use sha1::Digest;
+
 use crate::{Error, Result};
 
 #[derive(Default, Serialize, Deserialize, Clone)]
@@ -13,11 +15,13 @@ pub enum PasswordScanning {
     #[cfg(feature = "pwned100k")]
     #[default]
     Top100k,
+    /// easypwned locally-hosted HIBP database API
+    #[cfg(feature = "easypwned")]
+    EasyPwned { endpoint: String },
     /// Use the Have I Been Pwned? API
     #[cfg(feature = "have_i_been_pwned")]
     HIBP { api_key: String },
 }
-
 
 #[cfg(feature = "pwned100k")]
 lazy_static! {
@@ -41,6 +45,36 @@ impl PasswordScanning {
             PasswordScanning::None => Ok(()),
             PasswordScanning::Custom { passwords } => {
                 if passwords.contains(password) {
+                    Err(Error::CompromisedPassword)
+                } else {
+                    Ok(())
+                }
+            }
+            #[cfg(feature = "easypwned")]
+            PasswordScanning::EasyPwned { endpoint } => {
+                let mut hasher = sha1::Sha1::new();
+                hasher.update(password);
+                let pwd_hash = hasher.finalize();
+
+                #[derive(Deserialize)]
+                struct EasyPwnedResult {
+                    secure: bool,
+                }
+
+                if let Ok(response) = reqwest::get(format!("{endpoint}/hash/{pwd_hash:#02x}")).await
+                {
+                    if let Ok(result) = response.json::<EasyPwnedResult>().await {
+                        if result.secure {
+                            Ok(())
+                        } else {
+                            Err(Error::CompromisedPassword)
+                        }
+                    } else if TOP_100K_COMPROMISED.contains(password) {
+                        Err(Error::CompromisedPassword)
+                    } else {
+                        Ok(())
+                    }
+                } else if TOP_100K_COMPROMISED.contains(password) {
                     Err(Error::CompromisedPassword)
                 } else {
                     Ok(())

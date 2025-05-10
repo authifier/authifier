@@ -1,6 +1,6 @@
 [package]
 name = "rocket_authifier"
-version = "1.0.12"
+version = "1.0.13"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Pawel Makles <me@insrt.uk>"]
@@ -21,7 +21,7 @@ example = [
 default = []
 
 [dependencies]
-# Authifier
+
 authifier = { version = "1.0.11", path = "../authifier", features = [
     "rocket_impl",
     "okapi_impl",
@@ -52,3 +52,4 @@ async-std = { version = "1.9.0", features = [
     "tokio1",
     "attributes",
 ], optional = true }
+# Authifier
