@@ -1,6 +1,6 @@
 [package]
 name = "authifier"
-version = "1.0.14"
+version = "1.0.15"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Pawel Makles <me@insrt.uk>"]
@@ -30,7 +30,7 @@ default = ["async-std-runtime", "database-mongodb", "default_inbuilts"]
 [dependencies]
 # Lang
 log = "0.4"
-ulid = "0.5.0"
+ulid = { version = "0.5.0", features = ["serde"] }
 rand = "0.8.5"
 regex = "1.3.9"
 nanoid = "0.4.0"

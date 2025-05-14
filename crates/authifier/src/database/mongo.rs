@@ -175,7 +175,12 @@ impl AbstractDatabase for MongoDb {
                 // check commits 2025-05-14 (authifier/authifier) for old code
 
                 loop {
-                    let sessions: Vec<Session> = self
+                    #[derive(Deserialize)]
+                    struct SessionId {
+                        _id: Ulid,
+                    }
+
+                    let sessions: Vec<SessionId> = self
                         .collection("sessions")
                         .find(doc! {
                             "$or": [
@@ -195,16 +200,15 @@ impl AbstractDatabase for MongoDb {
                     }
 
                     for session in sessions {
-                        let ulid =
-                            Ulid::from_string(&session.id).expect("Invalid ULID on session!");
-
                         let timestamp = iso8601_timestamp::Timestamp::UNIX_EPOCH
-                            + iso8601_timestamp::Duration::seconds(ulid.datetime().timestamp());
+                            + iso8601_timestamp::Duration::seconds(
+                                session._id.datetime().timestamp(),
+                            );
 
                         self.collection::<Document>("sessions")
                             .update_one(
                                 doc! {
-                                    "_id": &session.id,
+                                    "_id": &session._id.to_string(),
                                 },
                                 doc! {
                                     "$set": {

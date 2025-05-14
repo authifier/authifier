@@ -248,7 +248,7 @@ checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
 
 [[package]]
 name = "authifier"
-version = "1.0.14"
+version = "1.0.15"
 dependencies = [
  "async-std",
  "async-trait",
@@ -2403,7 +2403,7 @@ dependencies = [
 
 [[package]]
 name = "rocket_authifier"
-version = "1.0.14"
+version = "1.0.15"
 dependencies = [
  "async-std",
  "authifier",
@@ -3324,6 +3324,7 @@ checksum = "220b18413e1fe5e85a5580b22f44241f82404a66c792c9f3c9eda74c52d9a22e"
 dependencies = [
  "chrono",
  "rand",
+ "serde",
 ]
 
 [[package]]
