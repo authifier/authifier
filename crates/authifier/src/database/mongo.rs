@@ -1,7 +1,7 @@
 use bson::{to_document, DateTime, Document};
 use chrono::{Duration, Utc};
-use futures::stream::TryStreamExt;
-use mongodb::options::{Collation, CollationStrength, FindOneOptions, ReadConcern, UpdateOptions};
+use futures::{stream::TryStreamExt, StreamExt};
+use mongodb::options::{Collation, CollationStrength, FindOneOptions, UpdateOptions};
 use std::{ops::Deref, str::FromStr};
 use ulid::Ulid;
 
@@ -170,49 +170,33 @@ impl AbstractDatabase for MongoDb {
                 .unwrap();
             }
             Migration::M2025_02_20AddLastSeenToSession => {
-                let session: Option<Document> = self
-                    .collection("sessions")
-                    .find_one(doc! {
-                        "last_seen": { "$exists": false }
-                    })
-                    .await
-                    .expect("Failed to fetch a session!"); // since this is a migration if it fails, handle it ungracefully
-
-                if session.is_none() {
-                    return Ok(());
-                }
-
-                let mut session = self
-                    .client()
-                    .start_session()
-                    .await
-                    .expect("Could not start a db session");
-
-                session
-                    .start_transaction()
-                    .read_concern(ReadConcern::snapshot())
-                    .await
-                    .expect("Failed to start transaction for migration");
-
-                let mut iterator: mongodb::SessionCursor<Document> = self
-                    .collection("sessions")
-                    .find(doc! {
-                        "last_seen": { "$exists": false }
-                    })
-                    .batch_size(25)
-                    .session(&mut session)
-                    .await
-                    .expect("Failed to get cursor for migration");
+                // i had to remove the transaction code which was a lot more sensible
+                // but required transactions hence replica sets =(           - insert
+                // check commits 2025-05-14 (authifier/authifier) for old code
 
                 loop {
-                    let document = iterator.next(&mut session).await;
-                    if let Some(Ok(document)) = document {
-                        let id = document
-                            .get("_id")
-                            .expect("No id present on session!")
-                            .as_str()
-                            .unwrap();
-                        let ulid = Ulid::from_string(id).expect("Invalid ULID on session!");
+                    let sessions: Vec<Session> = self
+                        .collection("sessions")
+                        .find(doc! {
+                            "$or": [
+                                { "last_seen": { "$exists": false } },
+                                { "last_seen": "1970-01-01T00:00:00.000Z" }
+                            ]
+                        })
+                        .limit(50_000) // about 400 batches for 2 million
+                        .await
+                        .expect("Failed to create cursor for sessions!")
+                        .map(|doc| doc.expect("id and username"))
+                        .collect()
+                        .await;
+
+                    if sessions.is_empty() {
+                        break;
+                    }
+
+                    for session in sessions {
+                        let ulid =
+                            Ulid::from_string(&session.id).expect("Invalid ULID on session!");
 
                         let timestamp = iso8601_timestamp::Timestamp::UNIX_EPOCH
                             + iso8601_timestamp::Duration::seconds(ulid.datetime().timestamp());
@@ -220,7 +204,7 @@ impl AbstractDatabase for MongoDb {
                         self.collection::<Document>("sessions")
                             .update_one(
                                 doc! {
-                                    "_id": id,
+                                    "_id": &session.id,
                                 },
                                 doc! {
                                     "$set": {
@@ -228,18 +212,10 @@ impl AbstractDatabase for MongoDb {
                                     }
                                 },
                             )
-                            .session(&mut session)
                             .await
                             .expect("Failed to update a session.");
-                    } else {
-                        break;
                     }
                 }
-
-                session
-                    .commit_transaction()
-                    .await
-                    .expect("Failed to commit the transaction");
             }
         }
 
